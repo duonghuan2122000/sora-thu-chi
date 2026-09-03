@@ -16,7 +16,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 | Thư viện | Mục đích | Module dùng |
 |---|---|---|
 | `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `budget_period_snapshots` |
-| `GetX` | State management | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
+| `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
 | `fl_chart` | Biểu đồ | Báo cáo (pie/bar/line); so sánh dự kiến–thực tế budget (cột đôi/line chồng) |
 | `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
 | `flutter_secure_storage` | Lưu **mã PIN hash + khóa mã hóa** (Keychain/Keystore) | Khóa app, mã hóa dữ liệu — [[Hồ sơ & Bảo mật]] |
@@ -30,6 +30,16 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 - **Transfer 2 dòng liên kết** bằng `transfer_group_id` → xóa/sửa đồng bộ.
 - Widget "% dùng hạn mức thẻ tín dụng" nên tách widget dùng chung → tái dùng cho thanh tiến độ ngân sách.
 
+## Đa ngôn ngữ (i18n) — rule
+Cơ chế chốt: **GetX Translations** (gói `get`, sẵn trong pubspec). Rule triển khai (quyết định user, chưa nằm `docs/`):
+- **Áp từ khi dựng UI**: mọi chuỗi giao diện đi qua key i18n — 1 class `extends Translations` giữ map key→chuỗi theo từng ngôn ngữ, widget gọi `.tr`, **không hardcode tiếng Việt trong widget**. Làm từ đầu để tránh quét refactor khi bật tính năng đa ngôn ngữ (chưa thuộc MVP, xem [[Lộ trình phát triển]]).
+- Cấu hình tại root: `GetMaterialApp(translations: <class Translations>, locale: Locale('vi'), fallbackLocale: Locale('vi'), supportedLocales: [...])`. Mặc định + fallback = **tiếng Việt**.
+- **Ngôn ngữ hỗ trợ**: doc §12 gợi ý "Việt/Anh..." — chốt mặc định `vi`; `en` + danh sách đầy đủ ⚠ chưa chốt.
+- **Không dịch dữ liệu người dùng** (tên ví/danh mục/giao dịch tự đặt, seed category là data) — chỉ dịch chuỗi hệ thống.
+- Chuỗi có tham số/ngữ cảnh (VD insight "Bạn chi nhiều hơn tháng trước 15%") → placeholder trong key + truyền tham số, **không ghép chuỗi tay**.
+- **Không trộn i18n với định dạng số/tiền/ngày**: số tiền theo quy tắc [[Design system]] (dấu chấm nghìn, đơn vị theo tiền tệ ví) và format ngày là vấn đề riêng, **không đổi theo ngôn ngữ giao diện**.
+- Picker Material (date/time) đồng bộ locale → cần thêm `flutter_localizations` + `GlobalMaterialLocalizations` khi có ≥2 ngôn ngữ.
+
 ## Liên kết
-- [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3).
+- [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ chưa gắn GĐ.
 - [[Nguyên tắc nghiệp vụ]] — constraint thiết kế DB.

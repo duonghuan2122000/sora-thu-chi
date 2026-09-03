@@ -12,7 +12,7 @@ Wiki tri thức nghiệp vụ + thiết kế app **Sora Thu Chi** (Flutter, offl
 ## Concepts
 - [[Nguyên tắc nghiệp vụ]] — các rule xuyên module (số dư suy ra, ẩn-vs-xóa, không hồi tố lịch sử...)
 - [[Lộ trình phát triển]] — MVP/GĐ2/GĐ3, phụ thuộc module, **quyết định mở**
-- [[Stack kỹ thuật]] — drift, GetX, fl_chart, notifications, secure storage, local_auth
+- [[Stack kỹ thuật]] — drift, GetX (state + i18n Translations), fl_chart, notifications, secure storage, local_auth
 - [[Design system]] — màu teal/coral, app shell FAB, typography, component
 
 ## Raw sources

@@ -43,6 +43,7 @@ Gom các điểm doc chưa chốt — đóng 1 điểm = 1 lần cập nhật wi
 4. **Đổi múi giờ → tính lại chuỗi recurring?** (auth §3) — ảnh hưởng thời điểm sinh gd định kỳ tiếp theo.
 5. **Tỷ giá quy đổi offline từ đâu** — "bảng tỷ giá lưu sẵn" chưa nói rõ nguồn (nhập tay? seed?) — [[Ví & Tài khoản]].
 6. **Quick Add từ widget/notification** — widget màn hình chính (§12 Tiện ích) & gọi từ notification: thiết bị widget nằm GĐ nào chưa định vị.
+7. **Nhóm Tiện ích & Cá nhân hóa (§12) chưa gắn GĐ**: Light/Dark mode, **đa ngôn ngữ (Việt/Anh...)**, tùy chỉnh format ngày/tiền/kỳ tài chính — đều ngoài bảng MVP/GĐ2/GĐ3 (như #6). Riêng đa ngôn ngữ: cơ chế chốt **GetX Translations** ([[Stack kỹ thuật]]), cần chốt luôn danh sách ngôn ngữ hỗ trợ.
 
 ## Liên kết
 - [[Stack kỹ thuật]] — tech theo từng tính năng.
