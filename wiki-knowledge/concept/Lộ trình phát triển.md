@@ -20,6 +20,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 | **GĐ3** | Mục tiêu tiết kiệm, Quản lý nợ, **Backup/Restore JSON** | — |
 
 ### Ghi chú giai đoạn
+- **Khóa app = mã PIN bắt buộc lần đầu mở app** — quyết định chốt (lệch `docs/auth §2.1` vốn tùy chọn) và **đã triển khai xong (PBI 3)**. Sinh trắc (vân tay/FaceID) là lớp tiện lợi để sau, chưa thuộc đợt này — chi tiết rule tại [[Hồ sơ & Bảo mật]]. `docs/auth` chưa đồng bộ theo.
 - **Backup/Restore GĐ3 nhưng là "van an toàn"** cho mất PIN/gỡ app ([[Hồ sơ & Bảo mật]]) — cân nhắc sớm hơn; khuyến nghị nhắc user backup định kỳ từ sớm.
 - **Import CSV/Excel + OCR**: mô tả "tùy chọn mở rộng/nâng cao", **chưa gắn GĐ cụ thể** trong roadmap chính (transaction doc §1) — ⚠ cần định vị (GĐ2 hay GĐ3).
 - **Ngân sách GĐ2 chia nhỏ:** 2a (budget danh mục + tiến độ, chưa push) → 2b (budget tổng/theo ví, push, copy) → 2c (so sánh dự kiến–thực tế, tốc độ tiêu — cần ≥2 kỳ lịch sử). Xem [[Ngân sách]].

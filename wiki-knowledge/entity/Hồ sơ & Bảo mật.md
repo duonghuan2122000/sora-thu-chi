@@ -1,10 +1,12 @@
 ---
 title: "Hồ sơ & Bảo mật"
 date: 2026-09-03
-tags: [module, auth, security, entity]
+tags: [module, auth, security, pin, entity]
 sources:
   - ../docs/auth/chi-tiet-quan-ly-tai-khoan-nguoi-dung.md
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
+  - ../../.specify/specs/3/spec.md
+  - ../../.specify/specs/3/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -12,18 +14,39 @@ sources:
 Không phải "tài khoản" server — là **device profile** lưu local. App offline: không đăng ký/đăng nhập/đồng bộ. Gồm: vận hành offline, khóa app (PIN/vân tay/Face ID), hồ sơ cá nhân, đổi/quên PIN.
 
 ## Vận hành offline
-- Lần đầu mở → thẳng vào **Onboarding**: chọn tiền tệ mặc định, tạo ví đầu tiên, đặt PIN (tùy chọn).
 - Dữ liệu gắn **1 bản cài đặt trên 1 thiết bị**.
 - Hệ quả: gỡ app/mất máy = mất dữ liệu nếu không backup thủ công → backup JSON là "van an toàn" duy nhất (xem [[Lộ trình phát triển]] GĐ3); **quên PIN không có email/SMS reset** vì không có server.
+- ⚠ Onboarding hoàn chỉnh (chọn tiền tệ, tạo ví đầu tiên...) **chưa tồn tại**; khi có, sẽ gắn quanh luồng thiết lập PIN (xem chốt bên dưới).
 
 ## Khóa app (App Lock)
-- Bật/tắt tùy chọn; bật → nhập PIN **2 lần** (nhập + xác nhận).
-- PIN 4 hoặc 6 số (người dùng chọn trong Cài đặt). Cấm chuỗi dễ đoán (`0000`, `1234`) — cảnh báo nhưng cho phép nếu xác nhận.
-- PIN **hash + lưu qua `flutter_secure_storage`** (Keychain/Keystore), không plaintext trong DB.
-- Sinh trắc học (vân tay/FaceID) = lớp "tiện lợi" thay thế, **PIN vẫn là lớp gốc**.
-- Luồng mở khóa: resume từ nền / sau timeout cấu hình → màn khóa **toàn màn hình** (không app bar/bottom nav — [[Design system]]); nếu bật sinh trắc → auto prompt + nút "Dùng mã PIN thay thế"; sinh trắc fail → fallback nhập PIN.
-- **Chống brute-force:** sai liên tiếp (VD 5 lần) → khóa tạm thời tăng dần (30s/1p/5p...). Không nên có "xóa trắng dữ liệu sau N lần sai" trừ khi user tự bật (rủi ro mất dữ liệu tài chính quá lớn).
-- Trạng thái đặc biệt: sinh trắc bị thu hồi quyền (OS) → tự tắt toggle, yêu cầu bật lại bằng PIN; đổi vân tay đăng ký → **vô hiệu hóa sinh trắc tạm thời**, xác thực lại bằng PIN.
+> **Chốt PBI 3 (2026-09-03, đã triển khai)** — quyết định user, **lệch `docs/auth §2.1`** (vốn "bật/tắt tùy chọn"): khóa app = mã PIN **bắt buộc ngay lần đầu mở app**, luôn có hiệu lực đợt này (không có luồng tắt). `docs/auth` chưa đồng bộ → nguồn thô cần cập nhật theo sau.
+
+**Thiết lập lần đầu (bắt buộc):**
+- Lần đầu mở app trên thiết bị chưa có PIN → màn thiết lập đứng **độc lập trước mọi nội dung** (chưa có Onboarding hoàn chỉnh); không nút bỏ qua/back.
+- Nhập PIN rồi **xác nhận lại lần 2**; chỉ kích hoạt khi khớp (FR-002). Lệch → báo lỗi, nhập lại từ đầu, **chưa ghi gì**; thoát app giữa chừng chưa khớp → lần sau vẫn bắt thiết lập (SC-006).
+- Vừa thiết lập xong trong phiên → **không hỏi lại ngay**; khóa có hiệu lực từ lần vào app sau.
+
+**Quy tắc PIN:**
+- **4 số cố định** đợt này, mỗi ký tự hiện **chấm tròn, không lộ chữ số** (FR-003). Chọn độ dài 4/6 = đợt sau.
+- Chuỗi dễ đoán (`0000`, `1111`, `1234`, `4321`) → **cảnh báo** nhưng cho dùng nếu user xác nhận "Tiếp tục" (không chặn cứng).
+- Lưu: **hash SHA-256 có muối** (salt 16B ngẫu nhiên, gói `crypto`) — chuỗi `"{saltB64}.{hashB64}"` ở key `pin_salt_hash` của `flutter_secure_storage` (Keychain/Keystore); **không lưu PIN đọc được** (FR-011). Trạng thái chống dò lưu key riêng `lock_state` (JSON: `streak`, `lockUntilEpochMs`), **độc lập dữ liệu tài chính** (không phải entity drift).
+
+**Luồng mở khóa (khi đã có PIN):**
+- Mỗi lần **khởi động app** và mỗi lần **trở về từ nền** → màn khóa **toàn màn hình** chặn trước mọi nội dung (không app bar/bottom nav — [[Design system]]), không lộ nội dung tài chính phía sau (SC-002).
+- Nhập đúng → vào **đúng màn đang đứng trước khi khóa**, không reset về màn đầu (FR-007).
+- Nhập sai → báo chung **"mã PIN không đúng"** (không tiết lộ ký tự nào đúng/sai), xóa ký tự vừa nhập, cho nhập lại (FR-008).
+- Back/back-gesture tại màn khóa & màn thiết lập **không thoát được** (FR-010); ngoài phạm vi luồng này: đổi PIN, quên PIN, tắt khóa, tự khóa theo timeout.
+
+**Chống brute-force (chốt):**
+- Chỉ tính khi gõ **đủ 4 số** rồi sai; sửa giữa chừng bằng backspace không tính.
+- Sai **5 lần liên tiếp** → chặn **30s**; tái phạm (chưa có lần đúng xen giữa) tăng bậc **30s → 1p → 5p → 15p (trần)**; nhập đúng → đếm về 0 (FR-009/SC-004).
+- Thời gian chặn còn lại **giữ nguyên khi thoát app** (lưu `lock_state`); hết chặn chỉ mở lại nhập, **không tự mở khóa**.
+- Không bật mặc định "xóa trắng dữ liệu sau N lần sai" (rủi ro mất dữ liệu tài chính) — ngoài đợt.
+- Rủi ro "đổi giờ hệ thống né chặn": chấp nhận (offline 1 thiết bị, không phải đối thủ chủ động).
+
+**Sinh trắc học (vân tay/FaceID):**
+- **Đợt sau (PBI riêng)** — lớp "tiện lợi" thay thế trên nền PIN (PIN vẫn là lớp gốc). Numpad hiện **để trống** vị trí vân tay (hàng cuối trái).
+- Khi có: thu hồi quyền (OS) → tự tắt toggle, yêu cầu bật lại bằng PIN; đổi vân tay đăng ký → vô hiệu hóa sinh trắc tạm thời, xác thực lại bằng PIN.
 
 ## Hồ sơ cá nhân
 | Trường | Chốt |
@@ -48,8 +71,8 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 - Yêu cầu sinh trắc trước khi xem/sửa dữ liệu nhạy cảm (tùy chọn).
 
 ## Màn hình bảo mật (khác biệt với shell)
-- Khóa PIN / sinh trắc: **toàn màn hình, độc lập hoàn toàn** khỏi app shell — chạy trước khi vào app.
-- Numpad: lưới `3×4`, nút tròn ~48–52px, viền mảnh `#E0E0E0`, không nền; hàng cuối: trái = icon vân tay (nếu khóa chính) / trống (nếu đổi PIN), giữa `0`, phải backspace. Dot indicator ~12px: đặc teal = đã nhập, rỗng xám = chưa.
+- Khóa PIN / sinh trắc: **toàn màn hình, độc lập hoàn toàn** khỏi app shell — chạy trước khi vào app (PBI 3: cổng boot nền trung tính làm `home`, đẩy setup/lock trước nội dung để không flash data).
+- Numpad: lưới `3×4`, nút tròn ~48–52px, viền mảnh `#E0E0E0`, không nền; hàng cuối: trái = **để trống** (vị trí vân tay, chưa có sinh trắc đợt này), giữa `0`, phải backspace. Dot indicator ~12px: đặc teal = đã nhập, rỗng xám = chưa.
 
 ## Liên kết
 - [[Design system]] — màn bảo mật tách shell; numpad & dot PIN dùng lại cho màn nhập tiền ([[Giao dịch]]).

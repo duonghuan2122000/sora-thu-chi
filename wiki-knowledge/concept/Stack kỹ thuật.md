@@ -19,7 +19,8 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
 | `fl_chart` | Biểu đồ | Báo cáo (pie/bar/line); so sánh dự kiến–thực tế budget (cột đôi/line chồng) |
 | `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
-| `flutter_secure_storage` | Lưu **mã PIN hash + khóa mã hóa** (Keychain/Keystore) | Khóa app, mã hóa dữ liệu — [[Hồ sơ & Bảo mật]] |
+| `flutter_secure_storage` | Lưu bí mật khóa app + khóa mã hóa (Keychain/Keystore) | Khóa app — PBI 3: key `pin_salt_hash` (hash PIN), key `lock_state` (chống dò JSON) |
+| `crypto` | Băm **SHA-256** (PBI 3, dep mới) | Hash PIN có muối — [[Hồ sơ & Bảo mật]] |
 | `local_auth` | Sinh trắc học (vân tay/FaceID) | Lớp mở khóa tiện lợi + xác thực data nhạy cảm |
 | JSON file | Backup/restore (GĐ3) | Export/import toàn bộ dữ liệu |
 
