@@ -9,4 +9,7 @@ abstract final class AppColors {
   static const Color tabInactive = Color(0xFF9B9B9B);
   static const Color divider = Color(0xFFE0E0E0);
   static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF6B6B6B);
+  static const Color dotEmpty = Color(0xFFB4B2A9);
+  static const Color coral = Color(0xFFD85A30);
 }

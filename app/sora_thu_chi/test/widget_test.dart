@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:sora_thu_chi/app.dart';
+import 'package:sora_thu_chi/core/app_shell.dart';
 import 'package:sora_thu_chi/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sora_thu_chi/core/widgets/screen_header.dart';
+import 'package:sora_thu_chi/theme/app_theme.dart';
+
+/// Shell giờ không còn là `home` mặc định (luồng boot bị PIN gate chiếm) —
+/// nhóm shell pump `AppShell` trực tiếp, tách khỏi luồng boot.
+Future<void> pumpShell(WidgetTester tester) async {
+  await tester.pumpWidget(
+    MaterialApp(theme: AppTheme.themeData, home: const AppShell()),
+  );
+}
 
 void main() {
   group('AppShell — điều hướng 4 vùng chính', () {
     testWidgets('Boot vào Tổng quan, đủ 4 tab + ô giữa', (tester) async {
-      await tester.pumpWidget(const SoraApp());
+      await pumpShell(tester);
 
       expect(find.byType(AppBottomNavBar), findsOneWidget);
       expect(find.byType(ScreenHeader), findsOneWidget);
@@ -21,7 +30,7 @@ void main() {
     });
 
     testWidgets('Tap từng tab → màn chính đổi tương ứng', (tester) async {
-      await tester.pumpWidget(const SoraApp());
+      await pumpShell(tester);
 
       Future<void> tapTab(String label) async {
         await tester.tap(find.text(label));
@@ -42,7 +51,7 @@ void main() {
     });
 
     testWidgets('FAB hiện cố định trên cả 4 màn chính', (tester) async {
-      await tester.pumpWidget(const SoraApp());
+      await pumpShell(tester);
 
       for (final label in ['Giao dịch', 'Báo cáo', 'Cài đặt', 'Tổng quan']) {
         await tester.tap(find.text(label));
@@ -53,7 +62,7 @@ void main() {
     });
 
     testWidgets('Tap FAB → mở màn phụ, không còn bottom nav', (tester) async {
-      await tester.pumpWidget(const SoraApp());
+      await pumpShell(tester);
 
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
@@ -64,7 +73,7 @@ void main() {
     });
 
     testWidgets('Quay lại từ màn phụ → đúng tab cũ', (tester) async {
-      await tester.pumpWidget(const SoraApp());
+      await pumpShell(tester);
 
       // Sang tab Báo cáo rồi mở màn phụ.
       await tester.tap(find.text('Báo cáo'));
@@ -81,7 +90,7 @@ void main() {
     });
 
     testWidgets('FR-004: rời tab rồi quay lại → vẫn ở đúng vùng', (tester) async {
-      await tester.pumpWidget(const SoraApp());
+      await pumpShell(tester);
 
       // Sang Giao dịch.
       await tester.tap(find.text('Giao dịch'));
