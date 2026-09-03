@@ -9,7 +9,7 @@
   <path d="M142 92 v-8 a8 8 0 0 1 16 0 v8" fill="none" stroke="#0F6E56" stroke-width="2.5"/>
 
   <text x="150" y="156" font-family="Arial" font-size="16" font-weight="600" fill="#1A1A1A" text-anchor="middle">Nhập mã PIN</text>
-  <text x="150" y="176" font-family="Arial" font-size="12" fill="#6B6B6B" text-anchor="middle">Mở khóa Sổ Thu Chi</text>
+  <text x="150" y="176" font-family="Arial" font-size="12" fill="#6B6B6B" text-anchor="middle">Mở khóa Sora Thu Chi</text>
 
   <circle cx="120" cy="206" r="6" fill="#0F6E56"/>
   <circle cx="140" cy="206" r="6" fill="#0F6E56"/>

@@ -57,7 +57,7 @@
 | **Coral (cảnh báo/chi tiêu)** | `#D85A30` | Icon mũi tên "Chi tiêu", các cảnh báo liên quan chi tiêu vượt mức |
 | **Chữ chính** | `#1A1A1A` | Tiêu đề, số liệu quan trọng, nhãn trên nền trắng |
 | **Chữ phụ** | `#5F5E5A` | Label mô tả trong danh sách cài đặt |
-| **Chữ phụ nhạt hơn** | `#6B6B6B` | Phụ đề dưới tiêu đề (VD: "Mở khóa Sổ Thu Chi") |
+| **Chữ phụ nhạt hơn** | `#6B6B6B` | Phụ đề dưới tiêu đề (VD: "Mở khóa Sora Thu Chi") |
 | **Chữ mờ / tab chưa chọn** | `#9B9B9B` | Icon/label tab chưa chọn, tiêu đề section viết hoa |
 | **Viền/chấm chưa nhập** | `#B4B2A9` | Viền dot PIN rỗng |
 | **Nền khối phụ** | `#F1EFE8` | Nền card thống kê nhanh (thu/chi tháng này) |
