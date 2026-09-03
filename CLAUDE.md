@@ -11,8 +11,16 @@ Repo hiện đang ở giai đoạn **khởi tạo**: đã có bộ tài liệu n
 ## Cấu trúc repo
 
 - `docs/` — **Nguồn chân lý về nghiệp vụ & thiết kế**. Markdown (tiếng Việt) từng module: `wallet`, `transaction`, `category`, `budget`, `auth` (kèm mockup `.svg`); `design-system-app-thu-chi.md` (UI); `tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md` (toàn cảnh tính năng + roadmap MVP/GĐ2/GĐ3 + stack kỹ thuật). Trước khi làm việc trên module nào, đọc doc tương ứng — nhiều ràng buộc nghiệp vụ quan trọng chỉ nằm trong docs (VD: số dư ví là số **tính toán**, không sửa tay; cờ "ví mặc định" chỉ 1 ví; chuyển khoản nội bộ không tính là thu/chi; đổi tiền tệ...).
+- `wiki-knowledge/` — **Wiki tri thức biên soạn (LLM-wiki) từ `docs/`**: page `entity/` (Ví, Giao dịch, Danh mục, Ngân sách, Hồ sơ & Bảo mật) + `concept/` (nguyên tắc nghiệp vụ xuyên module, lộ trình & quyết định mở, stack, design system), `index.md`, `log.md`, `CLAUDE.md`. **Đọc `wiki-knowledge/index.md` rồi vào page liên quan trước khi làm task trên module nào** — nhiều rule nghiệp vụ được tổng hợp chéo, nhanh hơn quét `docs/` từ đầu. `docs/` vẫn là nguồn chân lý; khi nghiệp vụ đổi hoặc đóng quyết định mở → cập nhật wiki kèm `log.md` (dùng skill `sora-wiki`).
 - `app/sora_thu_chi/` — package Flutter của app (khởi tạo bằng `flutter create`). Không có file README/rule đặc thù ở đây.
 - `.claude/` — commands/skills nội bộ: quy trình `sora-spec/plan/task/implement` và skill `sora-wiki`.
+
+## Wiki tri thức (đọc trước khi bắt đầu task)
+
+Kho `wiki-knowledge/` biên soạn kiến thức nghiệp vụ/thiết kế từ `docs/`, duy trì bằng skill `sora-wiki`. Khi bắt đầu bất kỳ task nào chạm nghiệp vụ hoặc UI:
+
+1. Mở `wiki-knowledge/index.md`, đọc các page liên quan (entity/concept) — không quét lại `docs/` trừ khi page chưa đủ.
+2. Task thay đổi nghiệp vụ đã chốt, hoặc đóng một mục trong danh sách ⚠ quyết định mở (xem page Lộ trình phát triển) → cập nhật wiki: sửa page + append `wiki-knowledge/log.md`.
 
 ## Workflow phát triển (Spec-Driven, qua các command trong repo)
 
