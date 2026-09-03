@@ -69,6 +69,11 @@ Font sans-serif hệ thống (Roboto Android). Numpad nhập số tiền (màn t
 ## Icon
 Outline (line) mảnh, độ dày đồng nhất; màu ngữ cảnh (teal hành động / coral chi / xám trung tính). DS: ~15–16px; trong vòng tròn lớn: ~28–32px trong khối 44–64px.
 
+## Triển khai trong code (rule)
+- **Cấu hình style chung của app gom tại 1 nơi duy nhất** — file/class theme trung tâm (Flutter: `AppTheme` + `ThemeData`) + file hằng số token cho màu, kích thước (bo góc, cao nút, padding/spacing, cỡ icon, cỡ chữ), ánh xạ đúng bảng giá trị ở các mục trên (teal `#0F6E56` = token thương hiệu, nút cao `44px`/bo `8px` = token kích thước...).
+- Widget **không nhúng hex hoặc số cứng** rải rác; chỉ đọc token từ nơi tập trung. Muốn đổi style toàn app → sửa đúng 1 chỗ, không quét tìm từng widget.
+- Theme/token độc lập layer nghiệp vụ — đọc thêm [[Stack kỹ thuật]].
+
 ## Liên kết
 - [[Ví & Tài khoản]] [[Giao dịch]] [[Danh mục]] [[Ngân sách]] — màn hình cụ thể mỗi module.
 - [[Hồ sơ & Bảo mật]] — màn khóa PIN tách shell, numpad.
