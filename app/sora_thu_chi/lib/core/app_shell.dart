@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+
+import '../screens/add_transaction_screen.dart';
+import '../screens/dashboard_screen.dart';
+import '../screens/report_screen.dart';
+import '../screens/settings_screen.dart';
+import '../screens/transaction_screen.dart';
+import '../theme/app_colors.dart';
+import 'widgets/app_bottom_nav_bar.dart';
+
+/// Vỏ app: giữ 4 màn chính sống (IndexedStack) + bottom nav đổi tab.
+class AppShell extends StatefulWidget {
+  const AppShell({super.key});
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _screens = [
+    DashboardScreen(),
+    TransactionScreen(),
+    ReportScreen(),
+    SettingsScreen(),
+  ];
+
+  void _onTabSelected(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
+  void _openAddTransaction(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const AddTransactionScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: Material(
+        color: AppColors.teal,
+        shape: const CircleBorder(),
+        elevation: 6,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => _openAddTransaction(context),
+          child: const SizedBox(
+            width: 52,
+            height: 52,
+            child: Icon(Icons.add, color: AppColors.white, size: 28),
+          ),
+        ),
+      ),
+      bottomNavigationBar: AppBottomNavBar(
+        selectedIndex: _selectedIndex,
+        onTabSelected: _onTabSelected,
+      ),
+    );
+  }
+}
