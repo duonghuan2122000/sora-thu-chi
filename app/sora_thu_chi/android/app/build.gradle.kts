@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.sorathuchi.sora_thu_chi"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 (PBI 1) yêu cầu compileSdk >= 37 — nâng so với mặc định của Flutter.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
