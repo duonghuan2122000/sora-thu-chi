@@ -3,16 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sora_thu_chi/core/profile/device_profile.dart';
 import 'package:sora_thu_chi/screens/settings_screen.dart';
+import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 Future<void> pumpSettings(
   WidgetTester tester, {
   DeviceProfile profile = DeviceProfile.initial,
+  VoidCallback? onManageWalletTap,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.themeData,
-      home: Scaffold(body: SettingsScreen(profile: profile)),
+      home: Scaffold(
+        body: SettingsScreen(
+          profile: profile,
+          onManageWalletTap: onManageWalletTap,
+        ),
+      ),
     ),
   );
 }
@@ -85,7 +92,7 @@ void main() {
     testWidgets('Tap hàng chưa kích hoạt & Switch → không mở màn, Switch giữ tắt', (tester) async {
       await pumpSettings(tester);
 
-      for (final label in ['Tiền tệ mặc định', 'Đổi mã PIN', 'Quản lý ví']) {
+      for (final label in ['Tiền tệ mặc định', 'Đổi mã PIN']) {
         await tester.tap(find.text(label));
         await tester.pumpAndSettle();
       }
@@ -99,10 +106,41 @@ void main() {
       // Không có route/màn mới: màn Cài đặt còn nguyên (không bị đẩy xuống offstage),
       // không có nút back, không lỗi.
       expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(find.byType(WalletListScreen), findsNothing);
       expect(find.byType(BackButton), findsNothing);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Tap "Quản lý ví" → đẩy WalletListScreen, back trả về Cài đặt', (tester) async {
+      await pumpSettings(tester);
+
+      await tester.tap(find.text('Quản lý ví'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WalletListScreen), findsOneWidget);
+      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.text('19.450.000 đ'), findsOneWidget); // 5 ví mẫu mặc định
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(find.byType(WalletListScreen), findsNothing);
+    });
+
+    testWidgets('Bơm onManageWalletTap → gọi callback, không đẩy route', (tester) async {
+      var tapped = false;
+      await pumpSettings(tester, onManageWalletTap: () => tapped = true);
+
+      await tester.tap(find.text('Quản lý ví'));
+      await tester.pumpAndSettle();
+
+      expect(tapped, isTrue);
+      expect(find.byType(WalletListScreen), findsNothing);
+      expect(find.byType(BackButton), findsNothing);
+      expect(find.byType(SettingsScreen), findsOneWidget);
     });
   });
 }

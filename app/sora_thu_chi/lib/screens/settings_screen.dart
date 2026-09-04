@@ -3,14 +3,33 @@ import 'package:flutter/material.dart';
 import '../core/profile/device_profile.dart';
 import '../core/widgets/screen_header.dart';
 import '../theme/app_colors.dart';
+import 'wallet_list_screen.dart';
 
-/// Màn trung tâm Cài đặt — chế độ chỉ hiển thị (MVP): khối hồ sơ + 2 nhóm
-/// mục. Mọi hàng là điểm vào chưa kích hoạt — chạm không mở luồng (FR-006/007).
-/// [profile] là seam để test bơm profile bất kỳ; shell dùng mặc định `initial`.
+/// Màn trung tâm Cài đặt — khối hồ sơ + 2 nhóm mục. Các hàng còn lại là điểm
+/// vào chưa kích hoạt — chạm không mở luồng; riêng hàng "Quản lý ví" điều hướng
+/// sang [WalletListScreen] (FR-001 PBI 5).
+/// [profile]/[onManageWalletTap] là seam để test bơm giá trị; shell dùng mặc định.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, this.profile = DeviceProfile.initial});
+  const SettingsScreen({
+    super.key,
+    this.profile = DeviceProfile.initial,
+    this.onManageWalletTap,
+  });
 
   final DeviceProfile profile;
+  final VoidCallback? onManageWalletTap;
+
+  /// Default đẩy màn list ví; khi test bơm callback → gọi callback không push.
+  void _openManageWallet(BuildContext context) {
+    final callback = onManageWalletTap;
+    if (callback != null) {
+      callback();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => WalletListScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,9 +64,10 @@ class SettingsScreen extends StatelessWidget {
                 trailing: Switch(value: false, onChanged: null),
               ),
               const _SectionLabel('KHÁC'),
-              const _SettingsRow(
+              _SettingsRow(
                 label: 'Quản lý ví',
-                trailing: Icon(
+                onTap: () => _openManageWallet(context),
+                trailing: const Icon(
                   Icons.chevron_right,
                   color: AppColors.tabInactive,
                 ),
@@ -142,16 +162,17 @@ class _SectionLabel extends StatelessWidget {
 }
 
 /// Hàng cài đặt: nhãn trái (chống tràn cỡ chữ lớn) + trailing tuỳ chọn.
-/// Không có onTap — hàng chưa kích hoạt (FR-006).
+/// Có [onTap] → hàng chạm được (hiệu ứng mực); thiếu → đứng im.
 class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({required this.label, this.trailing});
+  const _SettingsRow({required this.label, this.trailing, this.onTap});
 
   final String label;
   final Widget? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final row = Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.listDivider)),
@@ -174,5 +195,8 @@ class _SettingsRow extends StatelessWidget {
         ],
       ),
     );
+    final handler = onTap;
+    if (handler == null) return row;
+    return InkWell(onTap: handler, child: row);
   }
 }
