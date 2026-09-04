@@ -15,6 +15,7 @@ abstract final class AppColors {
   static const Color avatarBg = Color(0xFF3D8C77);
   static const Color listLabel = Color(0xFF5F5E5A);
   static const Color listDivider = Color(0xFFEFEFEF);
+  static const Color coralLightBg = Color(0xFFFAECE7);
   static const Color tealLightBg = Color(0xFFE1F5EE);
   static const Color softCardBg = Color(0xFFF1EFE8);
 }

@@ -5,13 +5,14 @@ import '../core/wallet/wallet.dart';
 import '../core/wallet/wallet_source.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../theme/app_colors.dart';
+import 'wallet_detail_screen.dart';
 
 /// Màn danh sách ví — sub-page từ Cài đặt (FR-001/002), chế độ chỉ hiển thị.
 /// Card tổng + tiêu đề nhóm + danh sách từng ví (loại/mặc định/thẻ/ví ẩn).
 /// [wallets] là seam để test bơm dữ liệu; shell dùng 5 ví mẫu mặc định.
 class WalletListScreen extends StatelessWidget {
   WalletListScreen({super.key, List<Wallet>? wallets})
-      : wallets = wallets ?? WalletSource.all();
+    : wallets = wallets ?? WalletSource.all();
 
   final List<Wallet> wallets;
 
@@ -25,7 +26,10 @@ class WalletListScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _TotalCard(total: activeTotal(wallets), count: activeCount(wallets)),
+            _TotalCard(
+              total: activeTotal(wallets),
+              count: activeCount(wallets),
+            ),
             const _SectionTitle('VÍ CỦA BẠN'),
             Expanded(
               child: display.isEmpty
@@ -33,7 +37,8 @@ class WalletListScreen extends StatelessWidget {
                   : ListView.builder(
                       padding: EdgeInsets.zero,
                       itemCount: display.length,
-                      itemBuilder: (_, index) => _WalletRow(wallet: display[index]),
+                      itemBuilder: (_, index) =>
+                          _WalletRow(wallet: display[index]),
                     ),
             ),
             const _AddWalletButton(),
@@ -86,7 +91,10 @@ class _TotalCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               '$count ví đang hoạt động',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -127,43 +135,51 @@ class _WalletRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = wallet.isHidden;
     final titleColor = muted ? AppColors.tabInactive : AppColors.textPrimary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+    return InkWell(
+      // FR-001 (PBI 6): chạm hàng mở màn chi tiết — mọi ví kể cả ví ẩn.
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => WalletDetailScreen(wallet: wallet),
+        ),
       ),
-      child: Row(
-        children: [
-          _IconBubble(emoji: wallet.icon),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  muted ? wallet.hiddenName : wallet.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: titleColor,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+        ),
+        child: Row(
+          children: [
+            _IconBubble(emoji: wallet.icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    muted ? wallet.hiddenName : wallet.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                _buildSubtitle(muted),
-              ],
+                  const SizedBox(height: 2),
+                  _buildSubtitle(muted),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Trailing co được (ellipsis) để không tràn khi cỡ chữ lớn / số dài.
-          Flexible(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _buildTrailing(muted),
+            const SizedBox(width: 12),
+            // Trailing co được (ellipsis) để không tràn khi cỡ chữ lớn / số dài.
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: _buildTrailing(muted),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -290,7 +306,10 @@ class _EmptyState extends StatelessWidget {
             Text(
               "Chạm '+ Thêm ví mới' để tạo ví đầu tiên.",
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.tabInactive, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.tabInactive,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -315,8 +334,13 @@ class _AddWalletButton extends StatelessWidget {
             backgroundColor: AppColors.teal,
             foregroundColor: AppColors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           onPressed: () {}, // FR-010: chưa mở luồng — không lỗi khi chạm.
           child: const Text('+ Thêm ví mới'),

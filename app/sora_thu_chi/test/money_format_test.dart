@@ -39,4 +39,23 @@ void main() {
       expect(formatMoney(-500000), '-500.000 đ');
     });
   });
+
+  group('formatSignedMoney — formatMoney + dấu +/-, cho dòng giao dịch', () {
+    test('0 → "0 đ" (không dấu)', () {
+      expect(formatSignedMoney(0), '0 đ');
+    });
+
+    test('dương → dấu "+" + phân tách nghìn + " đ"', () {
+      expect(formatSignedMoney(1234567), '+1.234.567 đ');
+    });
+
+    test('âm → dấu trừ ASCII + phân tách nghìn + " đ"', () {
+      expect(formatSignedMoney(-500000), '-500.000 đ');
+    });
+
+    test('giá trị lớn không thừa số lẻ', () {
+      expect(formatSignedMoney(18000000), '+18.000.000 đ');
+      expect(formatSignedMoney(-450000), '-450.000 đ');
+    });
+  });
 }

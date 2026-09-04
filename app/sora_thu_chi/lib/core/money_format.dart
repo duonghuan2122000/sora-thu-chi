@@ -13,3 +13,10 @@ String formatAmount(int value) {
 
 /// [formatAmount] kèm đơn vị `đ` (cách một khoảng trắng), VD `42.500.000 đ`.
 String formatMoney(int value) => '${formatAmount(value)} đ';
+
+/// [formatMoney] kèm dấu `+`/`-` tường minh — số tiền trên dòng giao dịch
+/// (thu `+`, chi `-`). `0` → `'0 đ'`; VD `+18.000.000 đ`, `-450.000 đ`.
+String formatSignedMoney(int value) {
+  final sign = value > 0 ? '+' : '';
+  return '$sign${formatMoney(value)}';
+}
