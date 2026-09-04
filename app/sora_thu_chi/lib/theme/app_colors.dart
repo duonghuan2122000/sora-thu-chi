@@ -12,4 +12,7 @@ abstract final class AppColors {
   static const Color textSecondary = Color(0xFF6B6B6B);
   static const Color dotEmpty = Color(0xFFB4B2A9);
   static const Color coral = Color(0xFFD85A30);
+  static const Color avatarBg = Color(0xFF3D8C77);
+  static const Color listLabel = Color(0xFF5F5E5A);
+  static const Color listDivider = Color(0xFFEFEFEF);
 }

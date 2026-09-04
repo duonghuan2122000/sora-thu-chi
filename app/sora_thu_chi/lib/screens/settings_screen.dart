@@ -1,18 +1,178 @@
 import 'package:flutter/material.dart';
 
+import '../core/profile/device_profile.dart';
 import '../core/widgets/screen_header.dart';
+import '../theme/app_colors.dart';
 
-/// Màn Cài đặt — khung; nội dung nghiệp vụ gắn sau (PBI module).
+/// Màn trung tâm Cài đặt — chế độ chỉ hiển thị (MVP): khối hồ sơ + 2 nhóm
+/// mục. Mọi hàng là điểm vào chưa kích hoạt — chạm không mở luồng (FR-006/007).
+/// [profile] là seam để test bơm profile bất kỳ; shell dùng mặc định `initial`.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.profile = DeviceProfile.initial});
+
+  final DeviceProfile profile;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
-        ScreenHeader(title: 'Cài đặt'),
-        Expanded(child: SizedBox()),
+        ScreenHeader(title: 'Cài đặt', bottom: _ProfileBlock(profile: profile)),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 4, bottom: 24),
+            children: [
+              const _SectionLabel('TÀI KHOẢN'),
+              _SettingsRow(
+                label: 'Tiền tệ mặc định',
+                trailing: Text(
+                  profile.currencyCode,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const _SettingsRow(
+                label: 'Đổi mã PIN',
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.tabInactive,
+                ),
+              ),
+              const _SettingsRow(
+                label: 'Mở khóa sinh trắc học',
+                trailing: Switch(value: false, onChanged: null),
+              ),
+              const _SectionLabel('KHÁC'),
+              const _SettingsRow(
+                label: 'Quản lý ví',
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.tabInactive,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Khối hồ sơ trong vùng teal: avatar tròn + tên hiển thị + dòng phụ.
+/// Không gắn thao tác — chạm không phản hồi (FR-006).
+class _ProfileBlock extends StatelessWidget {
+  const _ProfileBlock({required this.profile});
+
+  final DeviceProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: const BoxDecoration(
+            color: AppColors.avatarBg,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initialsOf(profile.resolvedDisplayName),
+            style: const TextStyle(
+              color: AppColors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                profile.resolvedDisplayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Chạm để đổi ảnh đại diện',
+                style: const TextStyle(
+                  color: AppColors.tealLightText,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Tiêu đề nhóm viết hoa (TÀI KHOẢN / KHÁC) — chữ mờ.
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.tabInactive,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+/// Hàng cài đặt: nhãn trái (chống tràn cỡ chữ lớn) + trailing tuỳ chọn.
+/// Không có onTap — hàng chưa kích hoạt (FR-006).
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({required this.label, this.trailing});
+
+  final String label;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.listLabel,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 8),
+            trailing!,
+          ],
+        ],
+      ),
     );
   }
 }
