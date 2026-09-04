@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_source.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
+import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/screens/wallet_detail_screen.dart';
+import 'package:sora_thu_chi/screens/wallet_form_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
+
+import 'fakes/fake_wallet_repository.dart';
 
 const _bank = Wallet(
   id: 2,
@@ -89,6 +94,15 @@ Color? _textColor(WidgetTester tester, String text) =>
 
 String _ddMM(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+
+/// Đăng ký controller + fake repo (mọi case detail "Sửa ví" mở form cần nó).
+Future<void> _registerFakeController() async {
+  Get.reset();
+  final controller = WalletController(FakeWalletRepository());
+  Get.put(controller);
+  await controller.init();
+  addTearDown(Get.reset);
+}
 
 void main() {
   group('WalletDetailScreen — màn chi tiết ví', () {
@@ -260,8 +274,9 @@ void main() {
     );
 
     testWidgets(
-      '(h) chạm 3 hành động + dòng giao dịch → không mở màn, không lỗi',
+      '(h) Chuyển tiền/Ẩn ví/dòng giao dịch không mở màn; "Sửa ví" mở WalletFormScreen',
       (tester) async {
+        await _registerFakeController();
         final now = DateTime.now();
         final list = [
           _txn(
@@ -285,16 +300,54 @@ void main() {
         ];
         await _pump(tester, wallet: _bank, transactions: list);
 
-        for (final action in ['Chuyển tiền', 'Sửa ví', 'Ẩn ví']) {
+        // 2 hành động còn lại + dòng giao dịch: điểm vào PBI sau — không mở màn.
+        for (final action in ['Chuyển tiền', 'Ẩn ví']) {
           await tester.tap(find.text(action));
           await tester.pumpAndSettle();
+          expect(find.byType(WalletDetailScreen), findsOneWidget);
+          expect(find.byType(WalletFormScreen), findsNothing);
         }
         for (final title in ['Lương', 'Siêu thị Coopmart']) {
           await tester.tap(find.text(title));
           await tester.pumpAndSettle();
         }
+        expect(find.byType(WalletFormScreen), findsNothing);
 
-        expect(find.byType(WalletDetailScreen), findsOneWidget);
+        // "Sửa ví" → mở form chế độ sửa (FR-009/010).
+        await tester.tap(find.text('Sửa ví'));
+        await tester.pumpAndSettle();
+        expect(find.byType(WalletFormScreen), findsOneWidget);
+        expect(find.text('Sửa ví'), findsWidgets); // title app bar
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '(k) sửa tên Vietcombank đã có giao dịch → về chi tiết tên mới, số dư & lịch sử không đổi (SC-004)',
+      (tester) async {
+        await _registerFakeController();
+        // Màn cao để đủ dòng giao dịch Vietcombank được dựng.
+        await tester.binding.setSurfaceSize(const Size(360, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Default transactions của Vietcombank (đã có giao dịch → form khóa).
+        await _pump(tester, wallet: _bank);
+
+        await tester.tap(find.text('Sửa ví'));
+        await tester.pumpAndSettle();
+        expect(find.byType(WalletFormScreen), findsOneWidget);
+
+        // Sửa tên (ô tên là TextFormField đầu tiên), giữ nguyên các trường khác.
+        await tester.enterText(find.byType(TextFormField).at(0), 'Vietcombank CN');
+        await tester.tap(find.text('Lưu ví'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(WalletFormScreen), findsNothing);
+        expect(find.text('Vietcombank CN'), findsWidgets); // app bar detail
+        // Số dư & lịch sử không đổi (SC-004).
+        expect(find.text('14.800.000 đ'), findsOneWidget);
+        expect(find.text('+12.000.000 đ'), findsOneWidget);
+        expect(find.text('-450.000 đ'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

@@ -1,57 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
-import 'package:sora_thu_chi/core/wallet/wallet_source.dart';
+import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/screens/wallet_detail_screen.dart';
+import 'package:sora_thu_chi/screens/wallet_form_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
-const _cash = Wallet(
-  id: 1,
-  name: 'Tiền mặt',
-  type: WalletType.cash,
-  icon: '💵',
-  balance: 3200000,
-  isDefault: true,
-  sortOrder: 1,
-);
-const _bank = Wallet(
-  id: 2,
-  name: 'Vietcombank',
-  type: WalletType.bank,
-  icon: '🏦',
-  balance: 14800000,
-  sortOrder: 2,
-);
-const _credit = Wallet(
-  id: 3,
-  name: 'Thẻ tín dụng VIB',
-  type: WalletType.credit,
-  icon: '💳',
-  balance: 0,
-  sortOrder: 3,
-  creditLimit: 20000000,
-  creditUsed: 6500000,
-);
-const _ewallet = Wallet(
-  id: 4,
-  name: 'Momo',
-  type: WalletType.eWallet,
-  icon: '📱',
-  balance: 1450000,
-  sortOrder: 4,
-);
-const _savings = Wallet(
-  id: 5,
-  name: 'Sổ tiết kiệm',
-  type: WalletType.savings,
-  icon: '🏷️',
-  balance: 9000000,
-  isHidden: true,
-  sortOrder: 5,
-);
+import 'fakes/fake_wallet_repository.dart';
+
+/// Đăng ký [WalletController] + fake repo (seed [wallets]) trước khi pump —
+/// list đọc controller reactive (thay vì bơm tham số `wallets` cũ).
+Future<WalletController> registerController(
+  WidgetTester tester, {
+  List<Wallet>? wallets,
+}) async {
+  Get.reset();
+  final controller = WalletController(FakeWalletRepository(wallets));
+  Get.put(controller);
+  await controller.init();
+  addTearDown(Get.reset);
+  return controller;
+}
 
 Future<void> pumpList(
   WidgetTester tester, {
@@ -59,6 +32,7 @@ Future<void> pumpList(
   double textScale = 1.0,
   EdgeInsets safe = EdgeInsets.zero,
 }) async {
+  await registerController(tester, wallets: wallets);
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.themeData,
@@ -69,7 +43,7 @@ Future<void> pumpList(
         ),
         child: child!,
       ),
-      home: WalletListScreen(wallets: wallets),
+      home: const WalletListScreen(),
     ),
   );
 }
@@ -82,7 +56,7 @@ void main() {
     testWidgets('(a) 5 ví mẫu: card tổng 19.450.000 đ / 4 ví, đủ hàng', (
       tester,
     ) async {
-      await pumpList(tester, wallets: WalletSource.all());
+      await pumpList(tester);
 
       expect(find.text('Quản lý ví'), findsOneWidget); // app bar
       expect(find.text('TỔNG SỐ DƯ TẤT CẢ VÍ'), findsOneWidget);
@@ -103,7 +77,7 @@ void main() {
     testWidgets(
       '(b) thẻ tín dụng: "Đã dùng…/…đ" + "32%" coral, không số dư dương',
       (tester) async {
-        await pumpList(tester, wallets: WalletSource.all());
+        await pumpList(tester);
 
         expect(find.text('Đã dùng 6.500.000 / 20.000.000 đ'), findsOneWidget);
         expect(find.text('32%'), findsOneWidget);
@@ -122,7 +96,7 @@ void main() {
     testWidgets(
       '(c) ví ẩn mờ, tên "(đã ẩn)", không tính vào tổng, dư vẫn hiện, ở cuối',
       (tester) async {
-        await pumpList(tester, wallets: WalletSource.all());
+        await pumpList(tester);
 
         final hiddenName = find.text('Sổ tiết kiệm (đã ẩn)');
         expect(hiddenName, findsOneWidget);
@@ -141,7 +115,7 @@ void main() {
     );
 
     testWidgets('(d) đúng 1 nhãn "Mặc định" trên ví tiền mặt', (tester) async {
-      await pumpList(tester, wallets: WalletSource.all());
+      await pumpList(tester);
 
       // Dòng phụ mặc định = Text.rich "Mặc định • Tiền mặt" — duy nhất 1 hàng.
       final defaultFinder = find.byWidgetPredicate(
@@ -190,6 +164,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(360, 640));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
+      await pumpList(tester);
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.themeData,
@@ -201,9 +176,7 @@ void main() {
             ),
             child: child!,
           ),
-          home: WalletListScreen(
-            wallets: const [_cash, _bank, _credit, _ewallet, _savings],
-          ),
+          home: const WalletListScreen(),
         ),
       );
       expect(tester.takeException(), isNull);
@@ -217,14 +190,13 @@ void main() {
     });
 
     testWidgets(
-      '(h) tap hàng ví → mở WalletDetailScreen, back về list, "+ Thêm ví mới" không mở route',
+      '(h) tap hàng → mở chi tiết, back về list; "+ Thêm ví mới" mở form thêm',
       (tester) async {
-        await pumpList(tester, wallets: WalletSource.all());
+        await pumpList(tester);
 
         await tester.tap(find.text('Vietcombank'));
         await tester.pumpAndSettle();
 
-        // FR-001: điều hướng sang màn chi tiết đúng ví.
         expect(find.byType(WalletDetailScreen), findsOneWidget);
         expect(find.text('Vietcombank'), findsOneWidget); // app bar detail
         expect(find.byType(BackButton), findsOneWidget);
@@ -234,16 +206,17 @@ void main() {
         expect(find.byType(WalletDetailScreen), findsNothing);
         expect(find.byType(WalletListScreen), findsOneWidget);
 
-        // "+ Thêm ví mới" vẫn là điểm vào chưa kích hoạt — không mở route.
+        // "+ Thêm ví mới" giờ mở WalletFormScreen (chế độ thêm).
         await tester.tap(find.text('+ Thêm ví mới'));
         await tester.pumpAndSettle();
-        expect(find.byType(WalletDetailScreen), findsNothing);
-        expect(find.byType(WalletListScreen), findsOneWidget);
+        expect(find.byType(WalletFormScreen), findsOneWidget);
+        expect(find.text('Thêm ví mới'), findsWidgets); // title app bar
         expect(tester.takeException(), isNull);
       },
     );
 
     testWidgets('(i) mở từ route khác → có BackButton trả về', (tester) async {
+      await registerController(tester);
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.themeData,
@@ -253,8 +226,7 @@ void main() {
                 child: TextButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) =>
-                          WalletListScreen(wallets: WalletSource.all()),
+                      builder: (_) => const WalletListScreen(),
                     ),
                   ),
                   child: const Text('mở danh sách ví'),
@@ -275,5 +247,35 @@ void main() {
       expect(find.byType(WalletListScreen), findsNothing);
       expect(find.text('mở danh sách ví'), findsOneWidget);
     });
+
+    testWidgets(
+      '(j) tạo ví qua form → về list thấy ví mới + tổng tăng (FR-013)',
+      (tester) async {
+        await pumpList(tester);
+
+        await tester.tap(find.text('+ Thêm ví mới'));
+        await tester.pumpAndSettle();
+        expect(find.byType(WalletFormScreen), findsOneWidget);
+
+        await tester.enterText(find.byType(TextFormField).at(0), 'Quỹ chi tiêu hàng ngày');
+        await tester.enterText(find.byType(TextFormField).at(1), '3200000');
+        await tester.tap(find.text('Lưu ví'));
+        await tester.pumpAndSettle();
+
+        // Về list: tổng/count cập nhật ngay (FR-013) — kiểm ở đầu danh sách.
+        expect(find.byType(WalletFormScreen), findsNothing);
+        expect(find.text('22.650.000 đ'), findsOneWidget);
+        expect(find.text('5 ví đang hoạt động'), findsOneWidget);
+
+        // Cuộn xuống (ListView lazy) để hàng mới được dựng.
+        for (var i = 0; i < 3; i++) {
+          await tester.drag(find.byType(ListView), const Offset(0, -400));
+          await tester.pump();
+        }
+        expect(find.text('Quỹ chi tiêu hàng ngày'), findsOneWidget);
+        expect(find.text('3.200.000 đ'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

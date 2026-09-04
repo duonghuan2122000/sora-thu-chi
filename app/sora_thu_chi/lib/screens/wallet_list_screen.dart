@@ -1,49 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/money_format.dart';
 import '../core/wallet/wallet.dart';
-import '../core/wallet/wallet_source.dart';
+import '../core/wallet/wallet_controller.dart';
 import '../core/widgets/sub_page_scaffold.dart';
+import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
 import 'wallet_detail_screen.dart';
+import 'wallet_form_screen.dart';
 
-/// Màn danh sách ví — sub-page từ Cài đặt (FR-001/002), chế độ chỉ hiển thị.
-/// Card tổng + tiêu đề nhóm + danh sách từng ví (loại/mặc định/thẻ/ví ẩn).
-/// [wallets] là seam để test bơm dữ liệu; shell dùng 5 ví mẫu mặc định.
-class WalletListScreen extends StatelessWidget {
-  WalletListScreen({super.key, List<Wallet>? wallets})
-    : wallets = wallets ?? WalletSource.all();
+/// Màn danh sách ví — sub-page từ Cài đặt (FR-001/002).
+/// Nguồn sự thật: [WalletController] reactive (cache sau thêm/sửa tự cập nhật —
+/// FR-013). Nút "+ Thêm ví mới" mở [WalletFormScreen] chế độ thêm.
+class WalletListScreen extends StatefulWidget {
+  const WalletListScreen({super.key});
 
-  final List<Wallet> wallets;
+  @override
+  State<WalletListScreen> createState() => _WalletListScreenState();
+}
+
+class _WalletListScreenState extends State<WalletListScreen> {
+  WalletController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Đăng ký controller (fake trong test, drift thật ở app) rồi đọc cache.
+    _controller = ensureWalletController();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final display = walletsByDisplayOrder(wallets);
+    final controller = _controller!;
     return SubPageScaffold(
       title: 'Quản lý ví',
       child: SafeArea(
         top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _TotalCard(
-              total: activeTotal(wallets),
-              count: activeCount(wallets),
-            ),
-            const _SectionTitle('VÍ CỦA BẠN'),
-            Expanded(
-              child: display.isEmpty
-                  ? const _EmptyState()
-                  : ListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: display.length,
-                      itemBuilder: (_, index) =>
-                          _WalletRow(wallet: display[index]),
-                    ),
-            ),
-            const _AddWalletButton(),
-          ],
-        ),
+        child: Obx(() {
+          if (controller.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final wallets = controller.wallets;
+          final display = walletsByDisplayOrder(wallets);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _TotalCard(
+                total: activeTotal(wallets),
+                count: activeCount(wallets),
+              ),
+              const _SectionTitle('VÍ CỦA BẠN'),
+              Expanded(
+                child: display.isEmpty
+                    ? const _EmptyState()
+                    : ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: display.length,
+                        itemBuilder: (_, index) =>
+                            _WalletRow(wallet: display[index]),
+                      ),
+              ),
+              _AddWalletButton(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => WalletFormScreen(controller: controller),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -318,9 +345,11 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-/// Nút "+ Thêm ví mới" cố định chân màn — điểm vào chưa kích hoạt (FR-010/013).
+/// Nút "+ Thêm ví mới" cố định chân màn — mở form thêm (FR-010/013).
 class _AddWalletButton extends StatelessWidget {
-  const _AddWalletButton();
+  const _AddWalletButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +371,7 @@ class _AddWalletButton extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          onPressed: () {}, // FR-010: chưa mở luồng — không lỗi khi chạm.
+          onPressed: onTap,
           child: const Text('+ Thêm ví mới'),
         ),
       ),

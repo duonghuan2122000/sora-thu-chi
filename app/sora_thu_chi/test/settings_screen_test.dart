@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/profile/device_profile.dart';
+import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/screens/settings_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
+
+import 'fakes/fake_wallet_repository.dart';
+
+/// Danh sách ví giờ đọc [WalletController] — đăng ký controller fake để list
+/// không khởi tạo drift (sqlite native) trong widget test.
+Future<void> _registerWalletController() async {
+  Get.reset();
+  final controller = WalletController(FakeWalletRepository());
+  Get.put(controller);
+  await controller.init();
+  addTearDown(Get.reset);
+}
 
 Future<void> pumpSettings(
   WidgetTester tester, {
@@ -114,6 +128,7 @@ void main() {
     });
 
     testWidgets('Tap "Quản lý ví" → đẩy WalletListScreen, back trả về Cài đặt', (tester) async {
+      await _registerWalletController();
       await pumpSettings(tester);
 
       await tester.tap(find.text('Quản lý ví'));

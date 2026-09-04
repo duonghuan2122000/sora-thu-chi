@@ -20,6 +20,7 @@ class WalletSource {
       name: 'Vietcombank',
       type: WalletType.bank,
       icon: '🏦',
+      initialBalance: 1200000, // gốc 1.200.000, đã có giao dịch → số dư 14.800.000
       balance: 14800000,
       sortOrder: 2,
     ),

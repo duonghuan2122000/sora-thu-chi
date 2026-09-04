@@ -6,14 +6,16 @@ import '../core/transaction/transaction.dart';
 import '../core/transaction/transaction_source.dart';
 import '../core/wallet/wallet.dart';
 import '../core/widgets/sub_page_scaffold.dart';
+import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
+import 'wallet_form_screen.dart';
 
-/// Màn chi tiết một ví — sub-page từ danh sách ví (PBI 5, FR-001/002).
+/// Màn chi tiết một ví — sub-page từ danh sách ví (PBI 5/6).
 /// Vùng teal hero (tên ở app bar, số dư/credit + loại ví), 3 hành động nhanh
-/// (điểm vào chưa kích hoạt, FR-006/007) và nhóm "GIAO DỊCH GẦN ĐÂY" đúng ví
-/// (FR-008..012). Chỉ xem: không thao tác nào đổi dữ liệu (SC-008).
+/// (Chuyển tiền/Ẩn ví là điểm vào PBI sau; **Sửa ví** mở [WalletFormScreen] —
+/// PBI 7) và nhóm "GIAO DỊCH GẦN ĐÂY" đúng ví.
 /// [transactions] là seam để test bơm; default lấy [TransactionSource.forWallet].
-class WalletDetailScreen extends StatelessWidget {
+class WalletDetailScreen extends StatefulWidget {
   WalletDetailScreen({
     super.key,
     required Wallet wallet,
@@ -25,21 +27,49 @@ class WalletDetailScreen extends StatelessWidget {
   final List<Transaction> transactions;
 
   @override
+  State<WalletDetailScreen> createState() => _WalletDetailScreenState();
+}
+
+class _WalletDetailScreenState extends State<WalletDetailScreen> {
+  late Wallet _wallet = widget.wallet;
+
+  Future<void> _openEdit() async {
+    final controller = ensureWalletController();
+    final edited = await Navigator.of(context).push<Wallet>(
+      MaterialPageRoute(
+        builder: (_) => WalletFormScreen(
+          wallet: _wallet,
+          hasTransactions: widget.transactions.isNotEmpty,
+          controller: controller,
+        ),
+      ),
+    );
+    if (edited != null && mounted) {
+      // FR-013: tên/icon/… mới hiện ngay; số dư & lịch sử không đổi (SC-004).
+      setState(() => _wallet = edited);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
-      title: wallet.name,
+      title: _wallet.name,
       child: SafeArea(
         top: false,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            _Hero(wallet: wallet),
-            const _QuickActions(),
+            _Hero(wallet: _wallet),
+            _QuickActions(
+              onTransfer: () {}, // PBI sau.
+              onEdit: _openEdit,
+              onHide: () {}, // PBI sau.
+            ),
             const _SectionHeader('GIAO DỊCH GẦN ĐÂY'),
-            if (transactions.isEmpty)
+            if (widget.transactions.isEmpty)
               const _EmptyTransactions()
             else
-              ...transactions.map((t) => _TxnRow(transaction: t)),
+              ...widget.transactions.map((t) => _TxnRow(transaction: t)),
           ],
         ),
       ),
@@ -97,9 +127,18 @@ class _Hero extends StatelessWidget {
   }
 }
 
-/// Ba hành động nhanh tròn teal nhạt — chạm không mở luồng (FR-006/007).
+/// Ba hành động nhanh tròn teal nhạt. Chuyển tiền/Ẩn ví giữ no-op (PBI sau);
+/// "Sửa ví" mở form sửa (FR-006/007 PBI 7).
 class _QuickActions extends StatelessWidget {
-  const _QuickActions();
+  const _QuickActions({
+    required this.onTransfer,
+    required this.onEdit,
+    required this.onHide,
+  });
+
+  final VoidCallback onTransfer;
+  final VoidCallback onEdit;
+  final VoidCallback onHide;
 
   @override
   Widget build(BuildContext context) {
@@ -107,18 +146,18 @@ class _QuickActions extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
       child: Row(
         children: [
-          _action(Icons.swap_horiz, 'Chuyển tiền'),
-          _action(Icons.edit_outlined, 'Sửa ví'),
-          _action(Icons.visibility_off_outlined, 'Ẩn ví'),
+          _action(Icons.swap_horiz, 'Chuyển tiền', onTransfer),
+          _action(Icons.edit_outlined, 'Sửa ví', onEdit),
+          _action(Icons.visibility_off_outlined, 'Ẩn ví', onHide),
         ],
       ),
     );
   }
 
-  Widget _action(IconData icon, String label) {
+  Widget _action(IconData icon, String label, VoidCallback onTap) {
     return Expanded(
       child: InkWell(
-        onTap: () {}, // FR-007: điểm vào PBI sau, chưa kích hoạt.
+        onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
