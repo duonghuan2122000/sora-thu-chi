@@ -1,5 +1,10 @@
 # Log cập nhật wiki
 
+## [2026-09-05] implement | Tìm kiếm & Lọc giao dịch (PBI 12) — nguồn .specify/specs/12
+- Cập nhật [[Giao dịch]] §Tìm/lọc/sắp xếp: mô tả **đã triển khai** màn `05` (chip 4 loại, 5 bộ lọc nâng cao, bản nháp + Áp dụng/back giữ tập cũ, bỏ dấu tiếng Việt tự viết, AND, summary `N/Tổng` với transfer/adjustment ngoài tổng, group-keep transfer khi lọc ví).
+- Ghi 2 lựa chọn hiển thị **user đã chốt** (R4 sort tiền → list phẳng; R5 đang lọc → ẩn card tháng, thay thanh `N kết quả · Tổng` + Bỏ lọc) + kỹ thuật: lọc trong bộ nhớ (cache mỗi load), filter sống `TransactionController` bền qua tab, không đổi schema.
+- ⚠ `docs/transaction` chưa chép phần triển khai này (raw chỉ đọc — nghiệp vụ tinh chỉnh từ mô tả đặc tả); PBI 12 vẫn còn T011 QA emulator thủ công.
+
 ## [2026-09-03] rule | Khóa app = mã PIN bắt buộc lần đầu (PBI 3 đã implement) — nguồn .specify/specs/3
 - Cập nhật [[Hồ sơ & Bảo mật]] §Khóa app: chốt **PIN bắt buộc ngay lần đầu mở app** + luôn có hiệu lực (lệch `docs/auth §2.1` "bật/tắt tùy chọn" — quyết định user, đã chốt) — ghi chi tiết: thiết lập 2 lần khớp, PIN 4 số cố định, PIN yếu cảnh báo-cho phép, hash SHA-256 có muối (`crypto`) + `lock_state` JSON trong flutter_secure_storage, mở khóa mỗi boot/resume về đúng màn, chống dò ladder 30s→1p→5p→15p giữ khi thoát app, sinh trắc & đổi/quên PIN & độ dài 4/6 ngoài đợt. Numpad hàng cuối trái để trống (chưa sinh trắc).
 - Cập nhật [[Lộ trình phát triển]]: ghi chú MVP — khóa PIN đã xong PBI 3 (sinh trắc để sau).
