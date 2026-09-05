@@ -12,3 +12,8 @@ String relativeDayLabel(DateTime date, {DateTime? now}) {
 }
 
 String _two(int value) => value.toString().padLeft(2, '0');
+
+/// Định dạng ngày giờ đầy đủ `'dd/MM/yyyy HH:mm'` (mỗi số 2 chữ số) — dòng
+/// hiển thị ngày giờ người dùng chọn trên màn chuyển tiền (FR-006).
+String formatDateTimeLabel(DateTime d) =>
+    '${_two(d.day)}/${_two(d.month)}/${d.year} ${_two(d.hour)}:${_two(d.minute)}';

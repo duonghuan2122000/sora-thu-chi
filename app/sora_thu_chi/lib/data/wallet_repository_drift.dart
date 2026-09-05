@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 
+import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
 import 'db/app_database.dart';
 import 'wallet_repository.dart';
@@ -80,6 +81,72 @@ class DriftWalletRepository implements WalletRepository {
         .getSingle();
     return _toWallet(row);
   }
+
+  @override
+  Future<List<Transaction>> transactionsOf(int walletId) async {
+    final rows = await (_db.select(_db.transactions)
+          ..where((t) => t.walletId.equals(walletId)))
+        .get();
+    return sortNewestFirst(rows.map(_toTransaction).toList());
+  }
+
+  @override
+  Future<void> performTransfer({
+    required int fromWalletId,
+    required int toWalletId,
+    required int amount,
+    required DateTime date,
+    String note = '',
+  }) async {
+    // Một db.transaction() — 4 ghi đi cùng nhau, không bao giờ lệch một phía
+    // (FR-012/015): trừ/cộng balance 2 ví + 2 dòng type=transfer liên kết group.
+    await _db.transaction(() async {
+      final src = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(fromWalletId)))
+          .getSingle();
+      final dst = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(toWalletId)))
+          .getSingle();
+
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(fromWalletId)))
+          .write(WalletsCompanion(balance: Value(src.balance - amount)));
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(toWalletId)))
+          .write(WalletsCompanion(balance: Value(dst.balance + amount)));
+
+      // Vế nguồn ghi trước (R7) → lấy id làm transfer_group_id của cả 2 vế.
+      final sourceId = await _db.into(_db.transactions).insert(
+        TransactionsCompanion.insert(
+          walletId: fromWalletId,
+          type: TxnType.transfer,
+          amount: -amount,
+          note: Value(note),
+          transactionDate: date,
+        ),
+      );
+      await _db.into(_db.transactions).insert(
+        TransactionsCompanion.insert(
+          walletId: toWalletId,
+          type: TxnType.transfer,
+          amount: amount,
+          note: Value(note),
+          transactionDate: date,
+          transferGroupId: Value(sourceId),
+        ),
+      );
+      await (_db.update(_db.transactions)..where((r) => r.id.equals(sourceId)))
+          .write(TransactionsCompanion(transferGroupId: Value(sourceId)));
+    });
+  }
+
+  Transaction _toTransaction(TransactionsRow r) => Transaction(
+    id: r.id,
+    walletId: r.walletId,
+    type: r.type,
+    category: r.category,
+    note: r.note,
+    amount: r.amount,
+    date: r.transactionDate,
+  );
 
   Wallet _toWallet(WalletsRow r) => Wallet(
     id: r.id,

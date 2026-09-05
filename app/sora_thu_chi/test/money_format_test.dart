@@ -58,4 +58,33 @@ void main() {
       expect(formatSignedMoney(-450000), '-450.000 đ');
     });
   });
+
+  group('parseAmount — đọc-xuôi-ngược formatAmount (spec FR-005, research R9)', () {
+    test('bỏ dấu chấm phân tách nghìn', () {
+      expect(parseAmount('2.000.000'), 2000000);
+      expect(parseAmount('1.234.567'), 1234567);
+    });
+
+    test('rỗng / không chứa chữ số → 0', () {
+      expect(parseAmount(''), 0);
+      expect(parseAmount('   '), 0);
+      expect(parseAmount('abc'), 0);
+      expect(parseAmount('đ'), 0);
+    });
+
+    test('dấu trừ đứng trước → giá trị âm (Unicode − và ASCII -)', () {
+      expect(parseAmount('−500.000'), -500000);
+      expect(parseAmount('-500.000'), -500000);
+    });
+
+    test('đối nghịch đúng formatAmount — không mất số khi đi-về', () {
+      expect(parseAmount(formatAmount(2000000)), 2000000);
+      expect(parseAmount(formatAmount(-500000)), -500000);
+    });
+
+    test('số rất lớn không tràn / không lỗi', () {
+      expect(parseAmount('1000000000000'), 1000000000000);
+      expect(parseAmount(formatAmount(999999999999)), 999999999999);
+    });
+  });
 }

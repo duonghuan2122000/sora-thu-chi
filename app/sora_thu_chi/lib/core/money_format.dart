@@ -20,3 +20,18 @@ String formatSignedMoney(int value) {
   final sign = value > 0 ? '+' : '';
   return '$sign${formatMoney(value)}';
 }
+
+/// Đọc-xuôi ngược của [formatAmount]: lọc ký tự không phải chữ số (bỏ `.`
+/// phân tách nghìn, khoảng trắng…) từ chuỗi nhập ở màn chuyển tiền (FR-005).
+/// Rỗng / không có chữ số → `0`; có dấu trừ đứng trước (ASCII `-` hoặc `−`)
+/// → giá trị âm; đối nghịch đúng [formatAmount] (research R9).
+int parseAmount(String input) {
+  var text = input.trim();
+  final negative = text.startsWith('-') || text.startsWith('−');
+  if (negative) text = text.substring(1);
+  final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+  if (digits.isEmpty) return 0;
+  final value = int.tryParse(digits);
+  if (value == null) return 0;
+  return negative ? -value : value;
+}

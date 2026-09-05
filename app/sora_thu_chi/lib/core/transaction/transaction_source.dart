@@ -1,11 +1,17 @@
 import 'transaction.dart';
 
-/// Nguồn giao dịch đợt này = bộ mẫu cố định (spec SC-003) — chưa có luồng ghi
-/// giao dịch/DB. Ngày dùng tương đối `DateTime.now()` để màn có đủ nhãn
-/// "Hôm nay / Hôm qua / dd/MM". Khi PBI Giao dịch (drift) đến → thay nguồn bằng
-/// đọc bảng `transactions`, giữ interface trả [List<Transaction>].
+/// Bộ 11 dòng giao dịch mẫu (PBI 6) — giờ là **hằng seed** dùng chung cho:
+/// migration bảng `transactions` (schema v2), `FakeWalletRepository` và DAO test
+/// (research R2). Ngày dùng tương đối `DateTime.now()` để màn có đủ nhãn
+/// "Hôm nay / Hôm qua / dd/MM". Gỡ cùng Quyết định mở #1 khi PBI Giao dịch có
+/// luồng xóa + dữ liệu thật.
 class TransactionSource {
   TransactionSource._();
+
+  /// Cặp 2 vế của khoản chuyển mẫu — map id vế nguồn (ghi trước) → id vế đích.
+  /// Seed DB gán `transfer_group_id` = id vế nguồn vừa ghi (R7): VCB `-700.000`
+  /// (id 8) ↔ Momo `+700.000` (id 11), cùng note 'Chuyển sang Momo' (data-model §Migration).
+  static const Map<int, int> transferGroupLegs = {8: 11};
 
   /// Bộ mẫu: Vietcombank (id 2) = 3 thu + 2 chi + 1 chuyển khoản đi, dàn
   /// `nền 1.200.000 + Σ signed = 14.800.000` (khớp [WalletSource] PBI 5);

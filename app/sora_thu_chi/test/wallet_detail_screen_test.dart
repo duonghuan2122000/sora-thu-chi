@@ -8,6 +8,7 @@ import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/screens/wallet_detail_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_form_screen.dart';
+import 'package:sora_thu_chi/screens/wallet_transfer_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
@@ -71,9 +72,20 @@ Future<void> _pump(
   WidgetTester tester, {
   required Wallet wallet,
   List<Transaction>? transactions,
+  List<Wallet>? wallets,
   double textScale = 1.0,
   EdgeInsets safe = EdgeInsets.zero,
 }) async {
+  // Đăng ký controller + fake repo trước pump: màn đọc động giao dịch qua
+  // ensureWalletController() (transactions == null) và hành động Chuyển/Sửa
+  // luôn cần controller — không bao giờ tạo DriftWalletRepository thật trong test.
+  if (!Get.isRegistered<WalletController>()) {
+    Get.reset();
+    final controller = WalletController(FakeWalletRepository(wallets));
+    Get.put(controller);
+    await controller.init();
+    addTearDown(Get.reset);
+  }
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.themeData,
@@ -87,6 +99,9 @@ Future<void> _pump(
       home: WalletDetailScreen(wallet: wallet, transactions: transactions),
     ),
   );
+  if (transactions == null) {
+    await tester.pumpAndSettle(); // đợi nạp danh sách giao dịch (dynamic).
+  }
 }
 
 Color? _textColor(WidgetTester tester, String text) =>
@@ -274,50 +289,61 @@ void main() {
     );
 
     testWidgets(
-      '(h) Chuyển tiền/Ẩn ví/dòng giao dịch không mở màn; "Sửa ví" mở WalletFormScreen',
+      '(h) Chuyển tiền end-to-end: mở màn, chọn Momo, nhập 2.000.000, xác nhận → '
+      'về chi tiết số dư mới + dòng chuyển trong giao dịch (FR-001/014, SC-002)',
       (tester) async {
-        await _registerFakeController();
-        final now = DateTime.now();
-        final list = [
-          _txn(
-            1,
-            2,
-            TxnType.income,
-            note: 'Lương',
-            category: 'Lương',
-            amount: 1500000,
-            date: now,
-          ),
-          _txn(
-            2,
-            2,
-            TxnType.expense,
-            note: 'Siêu thị Coopmart',
-            category: 'Ăn uống',
-            amount: -450000,
-            date: now,
-          ),
-        ];
-        await _pump(tester, wallet: _bank, transactions: list);
+        await tester.binding.setSurfaceSize(const Size(360, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        // 2 hành động còn lại + dòng giao dịch: điểm vào PBI sau — không mở màn.
-        for (final action in ['Chuyển tiền', 'Ẩn ví']) {
-          await tester.tap(find.text(action));
-          await tester.pumpAndSettle();
-          expect(find.byType(WalletDetailScreen), findsOneWidget);
-          expect(find.byType(WalletFormScreen), findsNothing);
-        }
-        for (final title in ['Lương', 'Siêu thị Coopmart']) {
-          await tester.tap(find.text(title));
-          await tester.pumpAndSettle();
-        }
-        expect(find.byType(WalletFormScreen), findsNothing);
+        // Nguồn Vietcombank, đọc động từ fake (có ví đích hợp lệ Momo/Tiền mặt).
+        await _pump(tester, wallet: _bank);
+        expect(find.text('14.800.000 đ'), findsOneWidget);
 
-        // "Sửa ví" → mở form chế độ sửa (FR-009/010).
-        await tester.tap(find.text('Sửa ví'));
+        // Mở màn chuyển tiền (sub-page, nút back, không bottom nav).
+        await tester.tap(find.text('Chuyển tiền'));
         await tester.pumpAndSettle();
-        expect(find.byType(WalletFormScreen), findsOneWidget);
-        expect(find.text('Sửa ví'), findsWidgets); // title app bar
+        expect(find.byType(WalletTransferScreen), findsOneWidget);
+        expect(find.text('Chuyển tiền giữa ví'), findsOneWidget);
+        expect(find.byType(BottomNavigationBar), findsNothing);
+
+        // Chọn ví đích Momo từ sheet.
+        await tester.tap(find.text('Chọn ví'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Momo'));
+        await tester.pumpAndSettle();
+
+        // Nhập số tiền → preview đúng 12.800.000 / 3.450.000 (SC-002).
+        await tester.enterText(
+          find.byKey(const ValueKey('amount-field')),
+          '2000000',
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('12.800.000 đ / 3.450.000 đ'), findsOneWidget);
+
+        // Xác nhận → pop về chi tiết với số dư & giao dịch đã nạp lại.
+        await tester.tap(find.text('Xác nhận chuyển tiền'));
+        await tester.pumpAndSettle();
+        expect(find.byType(WalletTransferScreen), findsNothing);
+        expect(find.text('12.800.000 đ'), findsOneWidget); // hero số dư mới
+        expect(find.text('-2.000.000 đ'), findsOneWidget); // vế chuyển mới
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '(h1) chi tiết thẻ tín dụng: chạm "Chuyển tiền" → thông báo, không mở màn '
+      '(acceptance 10, FR-018)',
+      (tester) async {
+        await _pump(tester, wallet: _credit, transactions: const []);
+
+        await tester.tap(find.text('Chuyển tiền'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(WalletTransferScreen), findsNothing);
+        expect(
+          find.text('Thẻ tín dụng chưa dùng để chuyển tiền.'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -386,6 +412,7 @@ void main() {
     });
 
     testWidgets('(j) mở từ route khác → có BackButton trả về', (tester) async {
+      await _registerFakeController(); // default-load cần controller (PBI 8).
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.themeData,

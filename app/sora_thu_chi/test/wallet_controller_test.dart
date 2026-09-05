@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 
@@ -145,6 +146,61 @@ void main() {
 
       expect(updated.isDefault, isTrue); // không cho tắt
       expect(_countDefault(controller.wallets), 1);
+    });
+  });
+
+  group('WalletController — chuyển tiền & đọc giao dịch (PBI 8)', () {
+    test('transfer gọi repo → reload cache 2 ví đúng số dư (acceptance 7, SC-002)', () async {
+      final controller = WalletController(FakeWalletRepository());
+      await controller.init();
+
+      await controller.transfer(
+        fromId: 2,
+        toId: 4,
+        amount: 2000000,
+        date: DateTime(2026, 9, 5, 9, 30),
+        note: 'Nạp tiền ví điện tử',
+      );
+
+      final vcb = controller.wallets.firstWhere((w) => w.id == 2);
+      expect(vcb.balance, 12800000); // 14.800.000 − 2.000.000
+      final momo = controller.wallets.firstWhere((w) => w.id == 4);
+      expect(momo.balance, 3450000); // 1.450.000 + 2.000.000
+    });
+
+    test('transactionsOf trả đúng giao dịch của ví, có vế chuyển mới (FR-008/014)', () async {
+      final controller = WalletController(FakeWalletRepository());
+      await controller.init();
+
+      // Seed mặc định: Vietcombank (id 2) có 6 dòng; Sổ tiết kiệm (id 5) rỗng.
+      expect((await controller.transactionsOf(2)).length, 6);
+      expect(await controller.transactionsOf(5), isEmpty);
+
+      await controller.transfer(
+        fromId: 2,
+        toId: 4,
+        amount: 2000000,
+        date: DateTime(2026, 9, 5, 9, 30),
+        note: 'Nạp tiền ví điện tử',
+      );
+
+      final vcbTx = await controller.transactionsOf(2);
+      expect(vcbTx.length, 7);
+      expect(
+        vcbTx.where(
+          (t) => t.type == TxnType.transfer && t.amount == -2000000,
+        ),
+        hasLength(1),
+      );
+
+      final momoTx = await controller.transactionsOf(4);
+      expect(momoTx.length, 2);
+      expect(
+        momoTx.where(
+          (t) => t.type == TxnType.transfer && t.amount == 2000000,
+        ),
+        hasLength(1),
+      );
     });
   });
 }

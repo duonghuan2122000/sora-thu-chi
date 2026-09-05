@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../data/wallet_repository.dart';
+import '../transaction/transaction.dart';
 import 'wallet.dart';
 import 'wallet_rules.dart';
 
@@ -89,6 +90,31 @@ class WalletController extends GetxController {
     await _reload();
     return saved;
   }
+
+  /// Ghi atomic một lần chuyển tiền rồi reload cache (số dư cả 2 ví mới —
+  /// FR-014). [amount] > 0; validation nghiệp vụ do màn chuyển ([transfer_rules])
+  /// đảm nhận. Ném lỗi nếu ghi thất bại — UI báo, giữ dữ liệu đã nhập (FR-015).
+  Future<void> transfer({
+    required int fromId,
+    required int toId,
+    required int amount,
+    required DateTime date,
+    String note = '',
+  }) async {
+    await _repository.performTransfer(
+      fromWalletId: fromId,
+      toWalletId: toId,
+      amount: amount,
+      date: date,
+      note: note,
+    );
+    await _reload();
+  }
+
+  /// Giao dịch đúng ví [walletId], mới nhất trước — façade cho màn chi tiết
+  /// đọc qua controller (không đụng repository trực tiếp, FR-014).
+  Future<List<Transaction>> transactionsOf(int walletId) =>
+      _repository.transactionsOf(walletId);
 
   Future<void> _reload() async {
     _wallets.assignAll(await _repository.loadAll());

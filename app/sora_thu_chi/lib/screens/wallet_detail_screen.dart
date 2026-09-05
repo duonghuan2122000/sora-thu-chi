@@ -3,44 +3,78 @@ import 'package:flutter/material.dart';
 import '../core/date_label.dart';
 import '../core/money_format.dart';
 import '../core/transaction/transaction.dart';
-import '../core/transaction/transaction_source.dart';
+import '../core/wallet/transfer_rules.dart';
 import '../core/wallet/wallet.dart';
+import '../core/wallet/wallet_controller.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
 import 'wallet_form_screen.dart';
+import 'wallet_transfer_screen.dart';
 
 /// Màn chi tiết một ví — sub-page từ danh sách ví (PBI 5/6).
 /// Vùng teal hero (tên ở app bar, số dư/credit + loại ví), 3 hành động nhanh
-/// (Chuyển tiền/Ẩn ví là điểm vào PBI sau; **Sửa ví** mở [WalletFormScreen] —
-/// PBI 7) và nhóm "GIAO DỊCH GẦN ĐÂY" đúng ví.
-/// [transactions] là seam để test bơm; default lấy [TransactionSource.forWallet].
+/// (**Chuyển tiền** mở [WalletTransferScreen] — PBI 8; **Sửa ví** mở
+/// [WalletFormScreen] — PBI 7; Ẩn ví điểm vào PBI sau) và nhóm
+/// "GIAO DỊCH GẦN ĐÂY" đúng ví.
+/// [transactions] là seam để test bơm list tĩnh; null → đọc động từ
+/// [WalletController.transactionsOf] (research R5) — mọi khoản chuyển mới hiện
+/// ngay sau khi trở về (FR-014).
 class WalletDetailScreen extends StatefulWidget {
-  WalletDetailScreen({
+  const WalletDetailScreen({
     super.key,
-    required Wallet wallet,
-    List<Transaction>? transactions,
-  }) : wallet = wallet,
-       transactions = transactions ?? TransactionSource.forWallet(wallet.id);
+    required this.wallet,
+    this.transactions,
+  });
 
   final Wallet wallet;
-  final List<Transaction> transactions;
+  final List<Transaction>? transactions;
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
 }
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
+  late final WalletController _controller;
   late Wallet _wallet = widget.wallet;
 
+  /// Danh sách giao dịch hiển thị: [widget.transactions] seam bơm thẳng (đọc live
+  /// theo mỗi build) hoặc [wallet] đọc từ repository qua [_txns].
+  List<Transaction>? _txns;
+  bool _loading = false;
+
+  List<Transaction> get _currentTxns =>
+      widget.transactions ?? _txns ?? const [];
+
+  bool get _hasTransactions =>
+      (widget.transactions ?? _txns)?.isNotEmpty ?? false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ensureWalletController();
+    if (widget.transactions == null) {
+      _loadTransactions();
+    }
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() => _loading = true);
+    final list = await _controller.transactionsOf(_wallet.id);
+    if (!mounted) return;
+    setState(() {
+      _txns = list;
+      _loading = false;
+    });
+  }
+
   Future<void> _openEdit() async {
-    final controller = ensureWalletController();
     final edited = await Navigator.of(context).push<Wallet>(
       MaterialPageRoute(
         builder: (_) => WalletFormScreen(
           wallet: _wallet,
-          hasTransactions: widget.transactions.isNotEmpty,
-          controller: controller,
+          hasTransactions: _hasTransactions,
+          controller: _controller,
         ),
       ),
     );
@@ -48,6 +82,59 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       // FR-013: tên/icon/… mới hiện ngay; số dư & lịch sử không đổi (SC-004).
       setState(() => _wallet = edited);
     }
+  }
+
+  /// Hành động nhanh "Chuyển tiền" (FR-001/018/019): thẻ tín dụng hoặc không
+  /// còn ví đích hợp lệ → thông báo rõ, không mở màn; ngược lại mở màn chuyển
+  /// với ví đang xem làm nguồn. Trở về `true` → số dư + danh sách giao dịch
+  /// của ví được nạp lại (FR-014).
+  Future<void> _openTransfer() async {
+    if (!canTransferFromWallet(_wallet)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thẻ tín dụng chưa dùng để chuyển tiền.'),
+          backgroundColor: AppColors.coral,
+        ),
+      );
+      return;
+    }
+    if (!hasEligibleDestination(_controller.wallets, _wallet.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chưa có ví đích hợp lệ để chuyển tiền.'),
+          backgroundColor: AppColors.coral,
+        ),
+      );
+      return;
+    }
+    final transferred = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => WalletTransferScreen(
+          sourceWallet: _wallet,
+          controller: _controller,
+        ),
+      ),
+    );
+    if (transferred == true && mounted) {
+      await _reloadAfterTransfer();
+    }
+  }
+
+  Future<void> _reloadAfterTransfer() async {
+    Wallet? fresh;
+    for (final w in _controller.wallets) {
+      if (w.id == _wallet.id) {
+        fresh = w;
+        break;
+      }
+    }
+    final list = await _controller.transactionsOf(_wallet.id);
+    if (!mounted) return;
+    setState(() {
+      if (fresh != null) _wallet = fresh; // số dư mới (FR-014).
+      _txns = list;
+      _loading = false;
+    });
   }
 
   @override
@@ -61,15 +148,20 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           children: [
             _Hero(wallet: _wallet),
             _QuickActions(
-              onTransfer: () {}, // PBI sau.
+              onTransfer: _openTransfer,
               onEdit: _openEdit,
               onHide: () {}, // PBI sau.
             ),
             const _SectionHeader('GIAO DỊCH GẦN ĐÂY'),
-            if (widget.transactions.isEmpty)
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_currentTxns.isEmpty)
               const _EmptyTransactions()
             else
-              ...widget.transactions.map((t) => _TxnRow(transaction: t)),
+              ..._currentTxns.map((t) => _TxnRow(transaction: t)),
           ],
         ),
       ),
