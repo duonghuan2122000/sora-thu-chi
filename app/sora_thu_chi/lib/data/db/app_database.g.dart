@@ -1169,6 +1169,40 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _receiptImageMeta = const VerificationMeta(
+    'receiptImage',
+  );
+  @override
+  late final GeneratedColumn<String> receiptImage = GeneratedColumn<String>(
+    'receipt_image',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1179,6 +1213,9 @@ class $TransactionsTable extends Transactions
     note,
     transactionDate,
     transferGroupId,
+    tags,
+    receiptImage,
+    location,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1243,6 +1280,27 @@ class $TransactionsTable extends Transactions
         ),
       );
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
+    }
+    if (data.containsKey('receipt_image')) {
+      context.handle(
+        _receiptImageMeta,
+        receiptImage.isAcceptableOrUnknown(
+          data['receipt_image']!,
+          _receiptImageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
     return context;
   }
 
@@ -1286,6 +1344,18 @@ class $TransactionsTable extends Transactions
         DriftSqlType.int,
         data['${effectivePrefix}transfer_group_id'],
       ),
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      )!,
+      receiptImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}receipt_image'],
+      )!,
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      )!,
     );
   }
 
@@ -1307,6 +1377,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
   final String note;
   final DateTime transactionDate;
   final int? transferGroupId;
+  final String tags;
+  final String receiptImage;
+  final String location;
   const TransactionsRow({
     required this.id,
     required this.walletId,
@@ -1316,6 +1389,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     required this.note,
     required this.transactionDate,
     this.transferGroupId,
+    required this.tags,
+    required this.receiptImage,
+    required this.location,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1334,6 +1410,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     if (!nullToAbsent || transferGroupId != null) {
       map['transfer_group_id'] = Variable<int>(transferGroupId);
     }
+    map['tags'] = Variable<String>(tags);
+    map['receipt_image'] = Variable<String>(receiptImage);
+    map['location'] = Variable<String>(location);
     return map;
   }
 
@@ -1349,6 +1428,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       transferGroupId: transferGroupId == null && nullToAbsent
           ? const Value.absent()
           : Value(transferGroupId),
+      tags: Value(tags),
+      receiptImage: Value(receiptImage),
+      location: Value(location),
     );
   }
 
@@ -1368,6 +1450,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       note: serializer.fromJson<String>(json['note']),
       transactionDate: serializer.fromJson<DateTime>(json['transactionDate']),
       transferGroupId: serializer.fromJson<int?>(json['transferGroupId']),
+      tags: serializer.fromJson<String>(json['tags']),
+      receiptImage: serializer.fromJson<String>(json['receiptImage']),
+      location: serializer.fromJson<String>(json['location']),
     );
   }
   @override
@@ -1384,6 +1469,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       'note': serializer.toJson<String>(note),
       'transactionDate': serializer.toJson<DateTime>(transactionDate),
       'transferGroupId': serializer.toJson<int?>(transferGroupId),
+      'tags': serializer.toJson<String>(tags),
+      'receiptImage': serializer.toJson<String>(receiptImage),
+      'location': serializer.toJson<String>(location),
     };
   }
 
@@ -1396,6 +1484,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     String? note,
     DateTime? transactionDate,
     Value<int?> transferGroupId = const Value.absent(),
+    String? tags,
+    String? receiptImage,
+    String? location,
   }) => TransactionsRow(
     id: id ?? this.id,
     walletId: walletId ?? this.walletId,
@@ -1407,6 +1498,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     transferGroupId: transferGroupId.present
         ? transferGroupId.value
         : this.transferGroupId,
+    tags: tags ?? this.tags,
+    receiptImage: receiptImage ?? this.receiptImage,
+    location: location ?? this.location,
   );
   TransactionsRow copyWithCompanion(TransactionsCompanion data) {
     return TransactionsRow(
@@ -1422,6 +1516,11 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       transferGroupId: data.transferGroupId.present
           ? data.transferGroupId.value
           : this.transferGroupId,
+      tags: data.tags.present ? data.tags.value : this.tags,
+      receiptImage: data.receiptImage.present
+          ? data.receiptImage.value
+          : this.receiptImage,
+      location: data.location.present ? data.location.value : this.location,
     );
   }
 
@@ -1435,7 +1534,10 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           ..write('category: $category, ')
           ..write('note: $note, ')
           ..write('transactionDate: $transactionDate, ')
-          ..write('transferGroupId: $transferGroupId')
+          ..write('transferGroupId: $transferGroupId, ')
+          ..write('tags: $tags, ')
+          ..write('receiptImage: $receiptImage, ')
+          ..write('location: $location')
           ..write(')'))
         .toString();
   }
@@ -1450,6 +1552,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     note,
     transactionDate,
     transferGroupId,
+    tags,
+    receiptImage,
+    location,
   );
   @override
   bool operator ==(Object other) =>
@@ -1462,7 +1567,10 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           other.category == this.category &&
           other.note == this.note &&
           other.transactionDate == this.transactionDate &&
-          other.transferGroupId == this.transferGroupId);
+          other.transferGroupId == this.transferGroupId &&
+          other.tags == this.tags &&
+          other.receiptImage == this.receiptImage &&
+          other.location == this.location);
 }
 
 class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
@@ -1474,6 +1582,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
   final Value<String> note;
   final Value<DateTime> transactionDate;
   final Value<int?> transferGroupId;
+  final Value<String> tags;
+  final Value<String> receiptImage;
+  final Value<String> location;
   const TransactionsCompanion({
     this.id = const Value.absent(),
     this.walletId = const Value.absent(),
@@ -1483,6 +1594,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     this.note = const Value.absent(),
     this.transactionDate = const Value.absent(),
     this.transferGroupId = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.receiptImage = const Value.absent(),
+    this.location = const Value.absent(),
   });
   TransactionsCompanion.insert({
     this.id = const Value.absent(),
@@ -1493,6 +1607,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     this.note = const Value.absent(),
     required DateTime transactionDate,
     this.transferGroupId = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.receiptImage = const Value.absent(),
+    this.location = const Value.absent(),
   }) : walletId = Value(walletId),
        type = Value(type),
        amount = Value(amount),
@@ -1506,6 +1623,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     Expression<String>? note,
     Expression<DateTime>? transactionDate,
     Expression<int>? transferGroupId,
+    Expression<String>? tags,
+    Expression<String>? receiptImage,
+    Expression<String>? location,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1516,6 +1636,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
       if (note != null) 'note': note,
       if (transactionDate != null) 'transaction_date': transactionDate,
       if (transferGroupId != null) 'transfer_group_id': transferGroupId,
+      if (tags != null) 'tags': tags,
+      if (receiptImage != null) 'receipt_image': receiptImage,
+      if (location != null) 'location': location,
     });
   }
 
@@ -1528,6 +1651,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     Value<String>? note,
     Value<DateTime>? transactionDate,
     Value<int?>? transferGroupId,
+    Value<String>? tags,
+    Value<String>? receiptImage,
+    Value<String>? location,
   }) {
     return TransactionsCompanion(
       id: id ?? this.id,
@@ -1538,6 +1664,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
       note: note ?? this.note,
       transactionDate: transactionDate ?? this.transactionDate,
       transferGroupId: transferGroupId ?? this.transferGroupId,
+      tags: tags ?? this.tags,
+      receiptImage: receiptImage ?? this.receiptImage,
+      location: location ?? this.location,
     );
   }
 
@@ -1570,6 +1699,15 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     if (transferGroupId.present) {
       map['transfer_group_id'] = Variable<int>(transferGroupId.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
+    if (receiptImage.present) {
+      map['receipt_image'] = Variable<String>(receiptImage.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
     return map;
   }
 
@@ -1583,7 +1721,10 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
           ..write('category: $category, ')
           ..write('note: $note, ')
           ..write('transactionDate: $transactionDate, ')
-          ..write('transferGroupId: $transferGroupId')
+          ..write('transferGroupId: $transferGroupId, ')
+          ..write('tags: $tags, ')
+          ..write('receiptImage: $receiptImage, ')
+          ..write('location: $location')
           ..write(')'))
         .toString();
   }
@@ -2105,6 +2246,9 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String> note,
       required DateTime transactionDate,
       Value<int?> transferGroupId,
+      Value<String> tags,
+      Value<String> receiptImage,
+      Value<String> location,
     });
 typedef $$TransactionsTableUpdateCompanionBuilder =
     TransactionsCompanion Function({
@@ -2116,6 +2260,9 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String> note,
       Value<DateTime> transactionDate,
       Value<int?> transferGroupId,
+      Value<String> tags,
+      Value<String> receiptImage,
+      Value<String> location,
     });
 
 class $$TransactionsTableFilterComposer
@@ -2165,6 +2312,21 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<int> get transferGroupId => $composableBuilder(
     column: $table.transferGroupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get receiptImage => $composableBuilder(
+    column: $table.receiptImage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2217,6 +2379,21 @@ class $$TransactionsTableOrderingComposer
     column: $table.transferGroupId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get receiptImage => $composableBuilder(
+    column: $table.receiptImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TransactionsTableAnnotationComposer
@@ -2255,6 +2432,17 @@ class $$TransactionsTableAnnotationComposer
     column: $table.transferGroupId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
+
+  GeneratedColumn<String> get receiptImage => $composableBuilder(
+    column: $table.receiptImage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
 }
 
 class $$TransactionsTableTableManager
@@ -2296,6 +2484,9 @@ class $$TransactionsTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<DateTime> transactionDate = const Value.absent(),
                 Value<int?> transferGroupId = const Value.absent(),
+                Value<String> tags = const Value.absent(),
+                Value<String> receiptImage = const Value.absent(),
+                Value<String> location = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
                 walletId: walletId,
@@ -2305,6 +2496,9 @@ class $$TransactionsTableTableManager
                 note: note,
                 transactionDate: transactionDate,
                 transferGroupId: transferGroupId,
+                tags: tags,
+                receiptImage: receiptImage,
+                location: location,
               ),
           createCompanionCallback:
               ({
@@ -2316,6 +2510,9 @@ class $$TransactionsTableTableManager
                 Value<String> note = const Value.absent(),
                 required DateTime transactionDate,
                 Value<int?> transferGroupId = const Value.absent(),
+                Value<String> tags = const Value.absent(),
+                Value<String> receiptImage = const Value.absent(),
+                Value<String> location = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
                 walletId: walletId,
@@ -2325,6 +2522,9 @@ class $$TransactionsTableTableManager
                 note: note,
                 transactionDate: transactionDate,
                 transferGroupId: transferGroupId,
+                tags: tags,
+                receiptImage: receiptImage,
+                location: location,
               ),
           withReferenceMapper: (p0) => p0
               .map(

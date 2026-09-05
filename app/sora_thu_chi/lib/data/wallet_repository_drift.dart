@@ -153,6 +153,9 @@ class DriftWalletRepository implements WalletRepository {
     amount: r.amount,
     date: r.transactionDate,
     transferGroupId: r.transferGroupId,
+    tags: r.tags,
+    receiptImage: r.receiptImage,
+    location: r.location,
   );
 
   Wallet _toWallet(WalletsRow r) => Wallet(

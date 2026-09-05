@@ -16,6 +16,8 @@ class TxnRow {
     required this.amount,
     required this.date,
     required this.sortId,
+    this.detailTransactionId,
+    this.detailGroupId,
   });
 
   final TxnType type;
@@ -37,6 +39,13 @@ class TxnRow {
 
   /// Khóa thứ tự ổn định khi trùng ngày giờ (mỗi giao dịch đúng 1 lần — SC-004).
   final int sortId;
+
+  /// Định danh mở màn chi tiết giao dịch (PBI 10, R2) — **đúng 1 trong 2 khác
+  /// null**: dòng thường/adjustment/vế lẻ → [detailTransactionId] = id bút toán;
+  /// dòng transfer đã gộp → [detailGroupId] = `transfer_group_id` (màn tìm đủ 2
+  /// vế). Dòng dựng tay ở test không truyền → null (không dùng ref).
+  final int? detailTransactionId;
+  final int? detailGroupId;
 }
 
 /// Một nhóm ngày trong danh sách: nhãn [header] + các dòng sắp mới nhất trước.
@@ -99,6 +108,9 @@ List<TxnRow> buildDisplayRows(
         amount: source.amount.abs(),
         date: source.date,
         sortId: source.id < dest.id ? source.id : dest.id,
+        // Dòng transfer đã gộp chỉ còn biết nhóm → mang ref theo group để màn
+        // chi tiết tìm đủ 2 vế nguồn/đích (R2/FR-006).
+        detailGroupId: source.transferGroupId,
       ),
     );
   }
@@ -124,6 +136,8 @@ TxnRow _plainRow(Transaction t, Map<int, String> walletName) {
     amount: neutral ? t.amount.abs() : t.amount,
     date: t.date,
     sortId: t.id,
+    // Dòng thường mở chi tiết đúng bút toán theo id (R2/FR-001).
+    detailTransactionId: t.id,
   );
 }
 

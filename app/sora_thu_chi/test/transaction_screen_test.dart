@@ -52,6 +52,9 @@ Future<TransactionController> _pumpScreen(
 }) async {
   Get.reset();
   final repository = repo ?? FakeWalletRepository(null, _now);
+  // Đăng ký cả WalletRepository để màn chi tiết (PBI 10) đọc qua
+  // ensureWalletRepository() dùng chung fake — không tạo drift (R10).
+  Get.put<WalletRepository>(repository);
   final controller = TransactionController(repository);
   Get.put(controller);
   await controller.load(now: _now);
@@ -155,12 +158,17 @@ void main() {
         expect(find.text('-85.000 đ'), findsOneWidget); // chi hôm nay.
         expect(find.text('Chuyển khoản'), findsOneWidget); // gộp 1 dòng.
 
-        // Chạm icon lọc + một dòng → no-op, không crash.
+        // Chạm icon lọc → no-op, không crash.
         await tester.tap(find.byIcon(Icons.filter_list));
         await tester.pump();
+        // Chạm một dòng → mở màn chi tiết giao dịch (PBI 10), không no-op.
         await tester.tap(find.text('Lương'));
-        await tester.pump();
+        await tester.pumpAndSettle();
+        expect(find.text('Chi tiết giao dịch'), findsOneWidget);
         expect(tester.takeException(), isNull);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        expect(find.text('Giao dịch'), findsNWidgets(2)); // header + tab.
 
         // FAB (shell) mở màn ghi giao dịch tạm, không lỗi.
         await tester.tap(find.byIcon(Icons.add));
@@ -260,6 +268,71 @@ void main() {
       await _pumpScreen(tester, repo: repo);
 
       expect(find.text('+1.234.567.890.123 đ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('TransactionScreen — chạm dòng mở màn chi tiết (PBI 10, R2)', () {
+    double listOffset(WidgetTester tester) {
+      final scrollable = find.descendant(
+        of: find.byType(CustomScrollView),
+        matching: find.byType(Scrollable),
+      );
+      return tester.state<ScrollableState>(scrollable).position.pixels;
+    }
+
+    testWidgets('chạm dòng thu → mở detail đúng dữ liệu; back giữ vị trí cuộn '
+        '(acceptance 6/7, FR-010/013)', (tester) async {
+      // Màn hình nhỏ để danh sách phải cuộn — mới đo được giữ vị trí.
+      await tester.binding.setSurfaceSize(const Size(420, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpScreen(tester);
+
+      // Cuộn tới dòng cuối (Bán đồ cũ) để xác minh giữ vị trí sau khi back.
+      while (find.text('Bán đồ cũ').evaluate().isEmpty) {
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+        await tester.pump();
+      }
+      await tester.ensureVisible(find.text('Bán đồ cũ'));
+      await tester.pumpAndSettle();
+      final before = listOffset(tester);
+      expect(before, greaterThan(0)); // đã cuộn khỏi đầu.
+
+      await tester.tap(find.text('Bán đồ cũ'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+      expect(find.text('+2.500.000 đ'), findsOneWidget);
+      expect(_textColor(tester, '+2.500.000 đ'), AppColors.teal);
+      expect(tester.takeException(), isNull);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('Chi tiết giao dịch'), findsNothing);
+      expect(listOffset(tester), before); // vị trí cuộn giữ nguyên (SC-008).
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('chạm dòng transfer đã gộp → 1 màn chi tiết trung tính, 2 hàng '
+        'Ví nguồn/đích (FR-006/SC-005)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpScreen(tester);
+
+      await tester.tap(find.text('Chuyển khoản'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+      // Khối tóm tắt trung tính: không dấu +/-, màu trung tính.
+      expect(find.text('700.000 đ'), findsOneWidget);
+      expect(_textColor(tester, '700.000 đ'), AppColors.textPrimary);
+      expect(find.text('+700.000 đ'), findsNothing);
+      // Vùng chi tiết: đúng chiều nguồn → đích.
+      expect(find.text('Ví nguồn'), findsOneWidget);
+      expect(find.text('Ví đích'), findsOneWidget);
+      expect(find.text('Vietcombank'), findsOneWidget);
+      expect(find.text('Momo'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

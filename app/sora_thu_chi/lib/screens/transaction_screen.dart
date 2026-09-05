@@ -4,10 +4,12 @@ import 'package:get/get.dart';
 import '../core/money_format.dart';
 import '../core/transaction/transaction.dart';
 import '../core/transaction/transaction_controller.dart';
+import '../core/transaction/transaction_detail.dart';
 import '../core/transaction/transaction_list.dart';
 import '../core/widgets/screen_header.dart';
 import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
+import 'transaction_detail_screen.dart';
 
 /// Màn "Giao dịch" (tab chính thứ 2) — theo mockup 01-danh-sach-giao-dich.svg:
 /// header teal + icon lọc, card "Thu/Chi tháng này", danh sách giao dịch nhóm
@@ -277,7 +279,19 @@ class _TransactionRow extends StatelessWidget {
             ? AppColors.coral
             : AppColors.listLabel;
     return InkWell(
-      onTap: () {}, // điểm vào chi tiết giao dịch — PBI sau, no-op (FR-014)
+      // Mở màn chi tiết theo ref (R2): dòng transfer đã gộp → theo group tìm
+      // đủ 2 vế; dòng thường → theo id bút toán. Detail là sub-page đè lên
+      // shell; quay lại giữ vị trí cuộn danh sách (route dưới — SC-008).
+      onTap: () {
+        final detailRef = row.detailGroupId != null
+            ? TransactionDetailRef(transferGroupId: row.detailGroupId)
+            : TransactionDetailRef(transactionId: row.detailTransactionId);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TransactionDetailScreen(ref: detailRef),
+          ),
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: const BoxDecoration(

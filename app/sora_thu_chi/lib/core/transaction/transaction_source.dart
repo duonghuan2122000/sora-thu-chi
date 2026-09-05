@@ -25,8 +25,11 @@ class TransactionSource {
       String note,
       String category,
       int amount,
-      int daysAgo,
-    ) => Transaction(
+      int daysAgo, {
+      String tags = '',
+      String location = '',
+      String receiptImage = '',
+    }) => Transaction(
       id: id,
       walletId: walletId,
       type: type,
@@ -34,11 +37,19 @@ class TransactionSource {
       category: category,
       amount: amount,
       date: now.subtract(Duration(days: daysAgo)),
+      tags: tags,
+      location: location,
+      receiptImage: receiptImage,
     );
 
     return [
-      // Tiền mặt (id 1).
-      txn(1, 1, TxnType.expense, 'Ăn trưa văn phòng', 'Ăn uống', -85000, 0),
+      // Tiền mặt (id 1). Làm giàu tags/location để QA đối chiếu mockup 04
+      // (chip #côngty + hàng Vị trí); receiptImage trống — chưa có ảnh thật.
+      txn(
+        1, 1, TxnType.expense, 'Ăn trưa văn phòng', 'Ăn uống', -85000, 0,
+        tags: 'côngty',
+        location: '123 Láng Hạ, Đống Đa, Hà Nội',
+      ),
       txn(2, 1, TxnType.expense, '', 'Di chuyển', -120000, 1),
       // Vietcombank (id 2): 3 thu + 2 chi + 1 chuyển đi.
       txn(3, 2, TxnType.income, 'Lương tháng 8', 'Lương', 12000000, 1),

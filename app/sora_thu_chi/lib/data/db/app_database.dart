@@ -12,7 +12,7 @@ import '../../core/wallet/wallet_source.dart';
 
 part 'app_database.g.dart';
 
-/// Bảng ví — 18 cột nghiệp vụ (data-model.md §Bảng drift), schemaVersion 2.
+/// Bảng ví — 18 cột nghiệp vụ (data-model.md §Bảng drift), schemaVersion 3.
 /// Seed 5 ví mẫu (từ [WalletSource]) chỉ chạy lúc tạo DB lần đầu (onCreate) để
 /// giữ liên tục demo PBI 5/6; gỡ khi PBI Giao dịch có dữ liệu thật.
 @DataClassName('WalletsRow')
@@ -38,11 +38,13 @@ class Wallets extends Table {
   TextColumn get lastDigits => text().nullable()();
 }
 
-/// Bảng giao dịch — subset cột đủ PBI 8 (data-model.md §Giao dịch, research R3).
+/// Bảng giao dịch — subset cột đủ PBI 8/10 (data-model.md §Giao dịch, R3).
 /// Một lần Transfer = **2 dòng** liên kết `transfer_group_id` (vế nguồn `−x`,
 /// vế đích `+x`, cùng ngày/note) — group = id vế ghi trước (R7). `category` là
 /// chữ tạm (chưa có bảng `categories`); thay bằng `category_id` khi module
-/// Giao dịch đến. Seed 11 dòng mẫu (từ [TransactionSource]) ở onCreate/onUpgrade.
+/// Giao dịch đến. `tags`/`receipt_image`/`location` là 3 cột tùy chọn (default
+/// `''` — schema v3, PBI 10). Seed 11 dòng mẫu (từ [TransactionSource]) ở
+/// onCreate/onUpgrade.
 @DataClassName('TransactionsRow')
 @TableIndex(name: 'transactions_wallet_id_index', columns: {#walletId})
 class Transactions extends Table {
@@ -54,6 +56,9 @@ class Transactions extends Table {
   TextColumn get note => text().withDefault(const Constant(''))();
   DateTimeColumn get transactionDate => dateTime()();
   IntColumn get transferGroupId => integer().nullable()();
+  TextColumn get tags => text().withDefault(const Constant(''))();
+  TextColumn get receiptImage => text().withDefault(const Constant(''))();
+  TextColumn get location => text().withDefault(const Constant(''))();
 }
 
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
@@ -70,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -80,9 +85,18 @@ class AppDatabase extends _$AppDatabase {
       await _seedSampleTransactions();
     },
     onUpgrade: (m, from, to) async {
+      // from < 2: bảng transactions chưa tồn tại → tạo mới theo định nghĩa hiện
+      // tại (**đã gồm 3 cột v3**) + seed; không addColumn nữa (else-if) để
+      // tránh duplicate-column trên DB v1 nâng thẳng lên v3.
       if (from < 2) {
         await m.createTable(transactions);
         await _seedSampleTransactions();
+      } else if (from < 3) {
+        // DB v2 cũ: bảng đã có dữ liệu → chỉ thêm 3 cột tùy chọn (default ''),
+        // an toàn, không mất dữ liệu (data-model §Migration, R3).
+        await m.addColumn(transactions, transactions.tags);
+        await m.addColumn(transactions, transactions.receiptImage);
+        await m.addColumn(transactions, transactions.location);
       }
     },
   );
@@ -132,6 +146,9 @@ class AppDatabase extends _$AppDatabase {
           category: Value(t.category),
           note: Value(t.note),
           transactionDate: t.date,
+          tags: Value(t.tags),
+          receiptImage: Value(t.receiptImage),
+          location: Value(t.location),
         ),
       );
       newIds[t.id] = id;
@@ -160,6 +177,9 @@ class AppDatabase extends _$AppDatabase {
           note: Value(t.note),
           transactionDate: t.date,
           transferGroupId: Value(newIds[anchorId]),
+          tags: Value(t.tags),
+          receiptImage: Value(t.receiptImage),
+          location: Value(t.location),
         ),
       );
     }

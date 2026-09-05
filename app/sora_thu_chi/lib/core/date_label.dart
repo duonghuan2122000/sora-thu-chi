@@ -31,3 +31,9 @@ String formatDayGroupHeader(DateTime date, {DateTime? now}) {
 /// hiển thị ngày giờ người dùng chọn trên màn chuyển tiền (FR-006).
 String formatDateTimeLabel(DateTime d) =>
     '${_two(d.day)}/${_two(d.month)}/${d.year} ${_two(d.hour)}:${_two(d.minute)}';
+
+/// Định dạng ngày giờ vùng chi tiết giao dịch `'dd/MM/yyyy · HH:mm'` (mỗi số
+/// 2 chữ số, dấu `·`) — hàng "Ngày giờ" màn chi tiết (PBI 10, mockup 04).
+/// Tách riêng [formatDateTimeLabel] (PBI 8 đang dùng) để không đổi hành vi.
+String formatDateTimeDetailLabel(DateTime d) =>
+    '${_two(d.day)}/${_two(d.month)}/${d.year} · ${_two(d.hour)}:${_two(d.minute)}';

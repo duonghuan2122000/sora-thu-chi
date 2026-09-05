@@ -82,6 +82,45 @@ void main() {
       expect(rows.every((r) => r.type == TxnType.transfer), isTrue);
     });
 
+    test('ref mở chi tiết: đúng 1 trong 2 khác null (R2, PBI 10)', () {
+      final list = [
+        txn(1, 1, TxnType.income, 100000, category: 'Lương'),
+        txn(2, 1, TxnType.expense, -50000),
+        txn(3, 2, TxnType.adjustment, -3000),
+        txn(4, 2, TxnType.transfer, -700000, group: 50),
+        txn(5, 4, TxnType.transfer, 700000, group: 50),
+        txn(6, 3, TxnType.transfer, -999000, group: 60), // vế lẻ (thiếu cặp).
+      ];
+
+      final rows = buildDisplayRows(list, {1: 'A', 2: 'B', 3: 'C', 4: 'D'});
+
+      // Dòng transfer đã gộp → ref theo group, không mang id bút toán.
+      final merged = rows.firstWhere((r) => r.amount == 700000);
+      expect(merged.detailGroupId, 50);
+      expect(merged.detailTransactionId, isNull);
+
+      // Dòng thường (thu/chi/adjustment) → ref theo id bút toán.
+      TxnRow byId(int id) =>
+          rows.firstWhere((r) => r.detailTransactionId == id);
+      expect(byId(1).title, 'Lương');
+      expect(byId(1).detailGroupId, isNull);
+      expect(byId(2).title, 'Chi');
+      expect(byId(3).title, 'Điều chỉnh số dư');
+      // Vế lẻ (group 60 thiếu cặp) → xử như dòng thường, ref theo id (R2).
+      final odd = byId(6);
+      expect(odd.title, 'Chuyển khoản');
+      expect(odd.detailGroupId, isNull);
+
+      // Mọi dòng đúng 1 trong 2 ref khác null (điều kiện assert ref).
+      for (final r in rows) {
+        expect(
+          (r.detailTransactionId == null) != (r.detailGroupId == null),
+          isTrue,
+          reason: 'Dòng phải mang đúng 1 ref detail: ${r.title}',
+        );
+      }
+    });
+
     test('dòng phụ thu/chi: "Ví · ghi chú"; không ghi chú → chỉ tên ví', () {
       final rows = buildDisplayRows([
         txn(1, 1, TxnType.expense, -85000, category: 'Ăn uống', note: 'Ăn trưa'),

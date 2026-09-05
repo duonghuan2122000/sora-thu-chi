@@ -24,6 +24,9 @@ class Transaction {
     required this.amount,
     required this.date,
     this.transferGroupId,
+    this.tags = '',
+    this.receiptImage = '',
+    this.location = '',
   });
 
   final int id;
@@ -43,6 +46,16 @@ class Transaction {
   /// null = giao dịch thường hoặc vế chưa nối; dùng để gộp 2 vế transfer
   /// thành 1 dòng trên màn danh sách (FR-007). Additive — màn ví không dùng.
   final int? transferGroupId;
+
+  /// Chuỗi tag thô (phân tách `,`, không ký tự `#`) — phân tích bằng [parseTags].
+  /// Rỗng = không có tag → màn chi tiết ẩn hàng Tag (FR-007).
+  final String tags;
+
+  /// Đường dẫn ảnh hóa đơn (tùy chọn). Rỗng = không có ảnh → ẩn hàng (FR-007).
+  final String receiptImage;
+
+  /// Text vị trí rút gọn (tùy chọn). Rỗng = không có vị trí → ẩn hàng (FR-007).
+  final String location;
 
   String get typeLabel => type.label;
 }

@@ -67,6 +67,33 @@ void main() {
     });
   });
 
+  group('formatDateTimeDetailLabel — dd/MM/yyyy · HH:mm (PBI 10, R8)', () {
+    test('bổ sung số 0: "05/09/2026 · 09:05"', () {
+      expect(
+        formatDateTimeDetailLabel(DateTime(2026, 9, 5, 9, 5)),
+        '05/09/2026 · 09:05',
+      );
+      expect(
+        formatDateTimeDetailLabel(DateTime(2026, 3, 2, 7, 1)),
+        '02/03/2026 · 07:01',
+      );
+    });
+
+    test('ngày/giờ hai chữ số sẵn + dấu · phân cách', () {
+      expect(
+        formatDateTimeDetailLabel(DateTime(2026, 12, 31, 23, 59)),
+        '31/12/2026 · 23:59',
+      );
+    });
+
+    test('deterministic với DateTime cụ thể, không đổi formatDateTimeLabel', () {
+      final d = DateTime(2026, 8, 20, 14, 30);
+      expect(formatDateTimeDetailLabel(d), '20/08/2026 · 14:30');
+      // Hàm PBI 8 giữ nguyên hành vi (khoảng trắng, không dấu ·).
+      expect(formatDateTimeLabel(d), '20/08/2026 14:30');
+    });
+  });
+
   group('formatDayGroupHeader — tiêu đề nhóm ngày (FR-005)', () {
     test('cùng ngày lịch → "HÔM NAY - dd/MM/yyyy"', () {
       expect(
