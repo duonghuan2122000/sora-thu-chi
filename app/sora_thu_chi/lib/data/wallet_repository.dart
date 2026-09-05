@@ -43,6 +43,17 @@ abstract class WalletRepository {
   /// UI tự tách cha-con bằng [Category.parentId]. Sắp theo sortOrder. (R3/R5)
   Future<List<Category>> categories({required CategoryType type});
 
+  /// Toàn bộ danh mục thuộc [type] cho **màn quản lý danh mục** (PBI 13): gồm
+  /// cha cấp 1 **và** con cấp 2, đang hoạt động **và** đang ẩn (`isHidden` đúng
+  /// với dòng — màn hiện cả ẩn để quản lý, FR-006); cần con để đếm dòng phụ
+  /// "N danh mục con" gồm con ẩn (FR-005). Sắp tăng `sortOrder` (không đảm bảo
+  /// cha trước con — UI tự tách qua [Category.isParent]/`parentId`).
+  /// Khác [categories]: method đó chỉ trả danh mục **đang hoạt động** cho picker
+  /// giao dịch mới (PBI 11) — giữ nguyên, không đổi ngữ nghĩa.
+  Future<List<Category>> categoriesIncludingHidden({
+    required CategoryType type,
+  });
+
   /// Ghi atomic một giao dịch **thu/chi** mới (FR-012/SC-003): bù `balance` ví
   /// (`income` +, `expense` −) và insert 1 dòng `transactions` có dấu theo loại
   /// (`income` `+x`, `expense` `−x`), `category_id = category.id`,

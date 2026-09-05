@@ -161,6 +161,21 @@ class DriftWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<List<Category>> categoriesIncludingHidden({
+    required CategoryType type,
+  }) async {
+    // Không lọc `is_hidden` (khác `categories()`) — màn quản lý hiện cả ẩn
+    // (PBI 13 FR-006); lọc type trong Dart như categories() (cột enum converter).
+    final rows = await _db.select(_db.categories).get();
+    final list = rows
+        .where((r) => r.type == type)
+        .map(_toCategory)
+        .toList();
+    list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return list;
+  }
+
+  @override
   Future<void> addTransaction({
     required int walletId,
     required TxnType type,

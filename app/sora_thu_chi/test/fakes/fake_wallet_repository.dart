@@ -10,27 +10,54 @@ import 'package:sora_thu_chi/data/wallet_repository.dart';
 /// (không cần sqlite native). Seed mặc định = [WalletSource.all()] + 11 dòng
 /// giao dịch [TransactionSource.all()] để khớp màn chi tiết (spec acceptance 7).
 class FakeWalletRepository implements WalletRepository {
+  /// Giữ API cũ (seed ví/giao dịch positional) — mọi test PBI trước không đổi.
   FakeWalletRepository([
     List<Wallet>? seed,
     DateTime? seedNow,
     List<Transaction>? seedTransactions,
-  ]) {
-    for (final w in seed ?? WalletSource.all()) {
+  ]) : this._(
+         wallets: seed,
+         now: seedNow,
+         transactions: seedTransactions,
+         categoriesSeed: null,
+       );
+
+  /// Thêm seed danh mục tuỳ chọn (PBI 13 — màn danh sách cần case ẩn/con lạ):
+  /// mặc định giữ [CategorySource.all], additive nên test cũ không đổi hành vi.
+  FakeWalletRepository.withCategories({
+    List<Wallet>? wallets,
+    DateTime? now,
+    List<Transaction>? transactions,
+    List<Category>? categoriesSeed,
+  }) : this._(
+         wallets: wallets,
+         now: now,
+         transactions: transactions,
+         categoriesSeed: categoriesSeed,
+       );
+
+  FakeWalletRepository._({
+    List<Wallet>? wallets,
+    DateTime? now,
+    List<Transaction>? transactions,
+    List<Category>? categoriesSeed,
+  }) {
+    for (final w in wallets ?? WalletSource.all()) {
       _store[w.id] = w;
     }
     _nextId = (_store.keys.fold<int>(0, (max, id) => id > max ? id : max)) + 1;
 
-    // Dòng mẫu giữ id (seed DB tự sinh 1..N cùng thứ tự). [seedNow] ấn định
+    // Dòng mẫu giữ id (seed DB tự sinh 1..N cùng thứ tự). [now] ấn định
     // ngày seed (mặc định giờ thật) để test deterministic. Gán transferGroupId
     // cho 2 vế transfer như seed DB (R7): group = id vế nguồn (ghi trước) —
     // chỉ khi seed từ [TransactionSource] (custom list do caller tự đặt group).
-    final source = seedTransactions ?? TransactionSource.all(at: seedNow);
+    final source = transactions ?? TransactionSource.all(at: now);
     var maxId = 0;
     for (final t in source) {
       _transactions.add(t);
       if (t.id > maxId) maxId = t.id;
     }
-    if (seedTransactions == null) {
+    if (transactions == null) {
       for (final entry in TransactionSource.transferGroupLegs.entries) {
         final group = entry.key; // domain id vế nguồn == id fake (giữ id gốc).
         for (var i = 0; i < _transactions.length; i++) {
@@ -51,10 +78,12 @@ class FakeWalletRepository implements WalletRepository {
       }
     }
     _nextTxnId = maxId + 1;
+    _categorySeed = categoriesSeed ?? CategorySource.all;
   }
 
   final Map<int, Wallet> _store = {};
   final List<Transaction> _transactions = [];
+  late final List<Category> _categorySeed;
   late int _nextId;
   late int _nextTxnId;
 
@@ -123,9 +152,19 @@ class FakeWalletRepository implements WalletRepository {
 
   @override
   Future<List<Category>> categories({required CategoryType type}) async {
-    final list = CategorySource.all
+    final list = _categorySeed
         .where((c) => !c.isHidden && c.type == type)
         .toList();
+    list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return list;
+  }
+
+  @override
+  Future<List<Category>> categoriesIncludingHidden({
+    required CategoryType type,
+  }) async {
+    // Màn quản lý danh mục (PBI 13): không lọc ẩn — trả cha + con gồm cả ẩn.
+    final list = _categorySeed.where((c) => c.type == type).toList();
     list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return list;
   }

@@ -3,21 +3,26 @@ import 'package:flutter/material.dart';
 import '../core/profile/device_profile.dart';
 import '../core/widgets/screen_header.dart';
 import '../theme/app_colors.dart';
+import 'category_list_screen.dart';
 import 'wallet_list_screen.dart';
 
 /// Màn trung tâm Cài đặt — khối hồ sơ + 2 nhóm mục. Các hàng còn lại là điểm
 /// vào chưa kích hoạt — chạm không mở luồng; riêng hàng "Quản lý ví" điều hướng
-/// sang [WalletListScreen] (FR-001 PBI 5).
-/// [profile]/[onManageWalletTap] là seam để test bơm giá trị; shell dùng mặc định.
+/// sang [WalletListScreen] (FR-001 PBI 5) và hàng "Danh mục" sang
+/// [CategoryListScreen] (FR-001 PBI 13).
+/// [profile]/[onManageWalletTap]/[onManageCategoryTap] là seam để test bơm giá
+/// trị; shell dùng mặc định.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     this.profile = DeviceProfile.initial,
     this.onManageWalletTap,
+    this.onManageCategoryTap,
   });
 
   final DeviceProfile profile;
   final VoidCallback? onManageWalletTap;
+  final VoidCallback? onManageCategoryTap;
 
   /// Default đẩy màn list ví; khi test bơm callback → gọi callback không push.
   void _openManageWallet(BuildContext context) {
@@ -28,6 +33,18 @@ class SettingsScreen extends StatelessWidget {
     }
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => WalletListScreen()),
+    );
+  }
+
+  /// Default đẩy màn danh sách danh mục; test bơm callback → không push.
+  void _openManageCategory(BuildContext context) {
+    final callback = onManageCategoryTap;
+    if (callback != null) {
+      callback();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => CategoryListScreen()),
     );
   }
 
@@ -67,6 +84,14 @@ class SettingsScreen extends StatelessWidget {
               _SettingsRow(
                 label: 'Quản lý ví',
                 onTap: () => _openManageWallet(context),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.tabInactive,
+                ),
+              ),
+              _SettingsRow(
+                label: 'Danh mục',
+                onTap: () => _openManageCategory(context),
                 trailing: const Icon(
                   Icons.chevron_right,
                   color: AppColors.tabInactive,
