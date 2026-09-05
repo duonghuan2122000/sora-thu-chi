@@ -1076,6 +1076,556 @@ class WalletsCompanion extends UpdateCompanion<WalletsRow> {
   }
 }
 
+class $CategoriesTable extends Categories
+    with TableInfo<$CategoriesTable, CategoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<CategoryType, String> type =
+      GeneratedColumn<String>(
+        'type',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<CategoryType>($CategoriesTable.$convertertype);
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
+  @override
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+    'icon',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<int> color = GeneratedColumn<int>(
+    'color',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parentIdMeta = const VerificationMeta(
+    'parentId',
+  );
+  @override
+  late final GeneratedColumn<int> parentId = GeneratedColumn<int>(
+    'parent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isSystemMeta = const VerificationMeta(
+    'isSystem',
+  );
+  @override
+  late final GeneratedColumn<bool> isSystem = GeneratedColumn<bool>(
+    'is_system',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_system" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isHiddenMeta = const VerificationMeta(
+    'isHidden',
+  );
+  @override
+  late final GeneratedColumn<bool> isHidden = GeneratedColumn<bool>(
+    'is_hidden',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_hidden" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    type,
+    icon,
+    color,
+    parentId,
+    sortOrder,
+    isSystem,
+    isHidden,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CategoryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('icon')) {
+      context.handle(
+        _iconMeta,
+        icon.isAcceptableOrUnknown(data['icon']!, _iconMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_iconMeta);
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_colorMeta);
+    }
+    if (data.containsKey('parent_id')) {
+      context.handle(
+        _parentIdMeta,
+        parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('is_system')) {
+      context.handle(
+        _isSystemMeta,
+        isSystem.isAcceptableOrUnknown(data['is_system']!, _isSystemMeta),
+      );
+    }
+    if (data.containsKey('is_hidden')) {
+      context.handle(
+        _isHiddenMeta,
+        isHidden.isAcceptableOrUnknown(data['is_hidden']!, _isHiddenMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CategoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CategoryRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      type: $CategoriesTable.$convertertype.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}type'],
+        )!,
+      ),
+      icon: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon'],
+      )!,
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color'],
+      )!,
+      parentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}parent_id'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      isSystem: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_system'],
+      )!,
+      isHidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_hidden'],
+      )!,
+    );
+  }
+
+  @override
+  $CategoriesTable createAlias(String alias) {
+    return $CategoriesTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<CategoryType, String, String> $convertertype =
+      const EnumNameConverter<CategoryType>(CategoryType.values);
+}
+
+class CategoryRow extends DataClass implements Insertable<CategoryRow> {
+  final int id;
+  final String name;
+  final CategoryType type;
+  final String icon;
+  final int color;
+  final int? parentId;
+  final int sortOrder;
+  final bool isSystem;
+  final bool isHidden;
+  const CategoryRow({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.icon,
+    required this.color,
+    this.parentId,
+    required this.sortOrder,
+    required this.isSystem,
+    required this.isHidden,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    {
+      map['type'] = Variable<String>(
+        $CategoriesTable.$convertertype.toSql(type),
+      );
+    }
+    map['icon'] = Variable<String>(icon);
+    map['color'] = Variable<int>(color);
+    if (!nullToAbsent || parentId != null) {
+      map['parent_id'] = Variable<int>(parentId);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['is_system'] = Variable<bool>(isSystem);
+    map['is_hidden'] = Variable<bool>(isHidden);
+    return map;
+  }
+
+  CategoriesCompanion toCompanion(bool nullToAbsent) {
+    return CategoriesCompanion(
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      icon: Value(icon),
+      color: Value(color),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
+      sortOrder: Value(sortOrder),
+      isSystem: Value(isSystem),
+      isHidden: Value(isHidden),
+    );
+  }
+
+  factory CategoryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CategoryRow(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      type: $CategoriesTable.$convertertype.fromJson(
+        serializer.fromJson<String>(json['type']),
+      ),
+      icon: serializer.fromJson<String>(json['icon']),
+      color: serializer.fromJson<int>(json['color']),
+      parentId: serializer.fromJson<int?>(json['parentId']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      isSystem: serializer.fromJson<bool>(json['isSystem']),
+      isHidden: serializer.fromJson<bool>(json['isHidden']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'type': serializer.toJson<String>(
+        $CategoriesTable.$convertertype.toJson(type),
+      ),
+      'icon': serializer.toJson<String>(icon),
+      'color': serializer.toJson<int>(color),
+      'parentId': serializer.toJson<int?>(parentId),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'isSystem': serializer.toJson<bool>(isSystem),
+      'isHidden': serializer.toJson<bool>(isHidden),
+    };
+  }
+
+  CategoryRow copyWith({
+    int? id,
+    String? name,
+    CategoryType? type,
+    String? icon,
+    int? color,
+    Value<int?> parentId = const Value.absent(),
+    int? sortOrder,
+    bool? isSystem,
+    bool? isHidden,
+  }) => CategoryRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    icon: icon ?? this.icon,
+    color: color ?? this.color,
+    parentId: parentId.present ? parentId.value : this.parentId,
+    sortOrder: sortOrder ?? this.sortOrder,
+    isSystem: isSystem ?? this.isSystem,
+    isHidden: isHidden ?? this.isHidden,
+  );
+  CategoryRow copyWithCompanion(CategoriesCompanion data) {
+    return CategoryRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      type: data.type.present ? data.type.value : this.type,
+      icon: data.icon.present ? data.icon.value : this.icon,
+      color: data.color.present ? data.color.value : this.color,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      isSystem: data.isSystem.present ? data.isSystem.value : this.isSystem,
+      isHidden: data.isHidden.present ? data.isHidden.value : this.isHidden,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoryRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('icon: $icon, ')
+          ..write('color: $color, ')
+          ..write('parentId: $parentId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('isSystem: $isSystem, ')
+          ..write('isHidden: $isHidden')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    type,
+    icon,
+    color,
+    parentId,
+    sortOrder,
+    isSystem,
+    isHidden,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CategoryRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.type == this.type &&
+          other.icon == this.icon &&
+          other.color == this.color &&
+          other.parentId == this.parentId &&
+          other.sortOrder == this.sortOrder &&
+          other.isSystem == this.isSystem &&
+          other.isHidden == this.isHidden);
+}
+
+class CategoriesCompanion extends UpdateCompanion<CategoryRow> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<CategoryType> type;
+  final Value<String> icon;
+  final Value<int> color;
+  final Value<int?> parentId;
+  final Value<int> sortOrder;
+  final Value<bool> isSystem;
+  final Value<bool> isHidden;
+  const CategoriesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.type = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.color = const Value.absent(),
+    this.parentId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.isSystem = const Value.absent(),
+    this.isHidden = const Value.absent(),
+  });
+  CategoriesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required CategoryType type,
+    required String icon,
+    required int color,
+    this.parentId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.isSystem = const Value.absent(),
+    this.isHidden = const Value.absent(),
+  }) : name = Value(name),
+       type = Value(type),
+       icon = Value(icon),
+       color = Value(color);
+  static Insertable<CategoryRow> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? type,
+    Expression<String>? icon,
+    Expression<int>? color,
+    Expression<int>? parentId,
+    Expression<int>? sortOrder,
+    Expression<bool>? isSystem,
+    Expression<bool>? isHidden,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (type != null) 'type': type,
+      if (icon != null) 'icon': icon,
+      if (color != null) 'color': color,
+      if (parentId != null) 'parent_id': parentId,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (isSystem != null) 'is_system': isSystem,
+      if (isHidden != null) 'is_hidden': isHidden,
+    });
+  }
+
+  CategoriesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<CategoryType>? type,
+    Value<String>? icon,
+    Value<int>? color,
+    Value<int?>? parentId,
+    Value<int>? sortOrder,
+    Value<bool>? isSystem,
+    Value<bool>? isHidden,
+  }) {
+    return CategoriesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      parentId: parentId ?? this.parentId,
+      sortOrder: sortOrder ?? this.sortOrder,
+      isSystem: isSystem ?? this.isSystem,
+      isHidden: isHidden ?? this.isHidden,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(
+        $CategoriesTable.$convertertype.toSql(type.value),
+      );
+    }
+    if (icon.present) {
+      map['icon'] = Variable<String>(icon.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<int>(color.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<int>(parentId.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (isSystem.present) {
+      map['is_system'] = Variable<bool>(isSystem.value);
+    }
+    if (isHidden.present) {
+      map['is_hidden'] = Variable<bool>(isHidden.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CategoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('type: $type, ')
+          ..write('icon: $icon, ')
+          ..write('color: $color, ')
+          ..write('parentId: $parentId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('isSystem: $isSystem, ')
+          ..write('isHidden: $isHidden')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TransactionsTable extends Transactions
     with TableInfo<$TransactionsTable, TransactionsRow> {
   @override
@@ -1169,6 +1719,17 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
   @override
   late final GeneratedColumn<String> tags = GeneratedColumn<String>(
@@ -1213,6 +1774,7 @@ class $TransactionsTable extends Transactions
     note,
     transactionDate,
     transferGroupId,
+    categoryId,
     tags,
     receiptImage,
     location,
@@ -1280,6 +1842,12 @@ class $TransactionsTable extends Transactions
         ),
       );
     }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
     if (data.containsKey('tags')) {
       context.handle(
         _tagsMeta,
@@ -1344,6 +1912,10 @@ class $TransactionsTable extends Transactions
         DriftSqlType.int,
         data['${effectivePrefix}transfer_group_id'],
       ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}category_id'],
+      ),
       tags: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}tags'],
@@ -1377,6 +1949,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
   final String note;
   final DateTime transactionDate;
   final int? transferGroupId;
+  final int? categoryId;
   final String tags;
   final String receiptImage;
   final String location;
@@ -1389,6 +1962,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     required this.note,
     required this.transactionDate,
     this.transferGroupId,
+    this.categoryId,
     required this.tags,
     required this.receiptImage,
     required this.location,
@@ -1410,6 +1984,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     if (!nullToAbsent || transferGroupId != null) {
       map['transfer_group_id'] = Variable<int>(transferGroupId);
     }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
     map['tags'] = Variable<String>(tags);
     map['receipt_image'] = Variable<String>(receiptImage);
     map['location'] = Variable<String>(location);
@@ -1428,6 +2005,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       transferGroupId: transferGroupId == null && nullToAbsent
           ? const Value.absent()
           : Value(transferGroupId),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
       tags: Value(tags),
       receiptImage: Value(receiptImage),
       location: Value(location),
@@ -1450,6 +2030,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       note: serializer.fromJson<String>(json['note']),
       transactionDate: serializer.fromJson<DateTime>(json['transactionDate']),
       transferGroupId: serializer.fromJson<int?>(json['transferGroupId']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
       tags: serializer.fromJson<String>(json['tags']),
       receiptImage: serializer.fromJson<String>(json['receiptImage']),
       location: serializer.fromJson<String>(json['location']),
@@ -1469,6 +2050,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       'note': serializer.toJson<String>(note),
       'transactionDate': serializer.toJson<DateTime>(transactionDate),
       'transferGroupId': serializer.toJson<int?>(transferGroupId),
+      'categoryId': serializer.toJson<int?>(categoryId),
       'tags': serializer.toJson<String>(tags),
       'receiptImage': serializer.toJson<String>(receiptImage),
       'location': serializer.toJson<String>(location),
@@ -1484,6 +2066,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     String? note,
     DateTime? transactionDate,
     Value<int?> transferGroupId = const Value.absent(),
+    Value<int?> categoryId = const Value.absent(),
     String? tags,
     String? receiptImage,
     String? location,
@@ -1498,6 +2081,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     transferGroupId: transferGroupId.present
         ? transferGroupId.value
         : this.transferGroupId,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
     tags: tags ?? this.tags,
     receiptImage: receiptImage ?? this.receiptImage,
     location: location ?? this.location,
@@ -1516,6 +2100,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       transferGroupId: data.transferGroupId.present
           ? data.transferGroupId.value
           : this.transferGroupId,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
       tags: data.tags.present ? data.tags.value : this.tags,
       receiptImage: data.receiptImage.present
           ? data.receiptImage.value
@@ -1535,6 +2122,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           ..write('note: $note, ')
           ..write('transactionDate: $transactionDate, ')
           ..write('transferGroupId: $transferGroupId, ')
+          ..write('categoryId: $categoryId, ')
           ..write('tags: $tags, ')
           ..write('receiptImage: $receiptImage, ')
           ..write('location: $location')
@@ -1552,6 +2140,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     note,
     transactionDate,
     transferGroupId,
+    categoryId,
     tags,
     receiptImage,
     location,
@@ -1568,6 +2157,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           other.note == this.note &&
           other.transactionDate == this.transactionDate &&
           other.transferGroupId == this.transferGroupId &&
+          other.categoryId == this.categoryId &&
           other.tags == this.tags &&
           other.receiptImage == this.receiptImage &&
           other.location == this.location);
@@ -1582,6 +2172,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
   final Value<String> note;
   final Value<DateTime> transactionDate;
   final Value<int?> transferGroupId;
+  final Value<int?> categoryId;
   final Value<String> tags;
   final Value<String> receiptImage;
   final Value<String> location;
@@ -1594,6 +2185,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     this.note = const Value.absent(),
     this.transactionDate = const Value.absent(),
     this.transferGroupId = const Value.absent(),
+    this.categoryId = const Value.absent(),
     this.tags = const Value.absent(),
     this.receiptImage = const Value.absent(),
     this.location = const Value.absent(),
@@ -1607,6 +2199,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     this.note = const Value.absent(),
     required DateTime transactionDate,
     this.transferGroupId = const Value.absent(),
+    this.categoryId = const Value.absent(),
     this.tags = const Value.absent(),
     this.receiptImage = const Value.absent(),
     this.location = const Value.absent(),
@@ -1623,6 +2216,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     Expression<String>? note,
     Expression<DateTime>? transactionDate,
     Expression<int>? transferGroupId,
+    Expression<int>? categoryId,
     Expression<String>? tags,
     Expression<String>? receiptImage,
     Expression<String>? location,
@@ -1636,6 +2230,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
       if (note != null) 'note': note,
       if (transactionDate != null) 'transaction_date': transactionDate,
       if (transferGroupId != null) 'transfer_group_id': transferGroupId,
+      if (categoryId != null) 'category_id': categoryId,
       if (tags != null) 'tags': tags,
       if (receiptImage != null) 'receipt_image': receiptImage,
       if (location != null) 'location': location,
@@ -1651,6 +2246,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     Value<String>? note,
     Value<DateTime>? transactionDate,
     Value<int?>? transferGroupId,
+    Value<int?>? categoryId,
     Value<String>? tags,
     Value<String>? receiptImage,
     Value<String>? location,
@@ -1664,6 +2260,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
       note: note ?? this.note,
       transactionDate: transactionDate ?? this.transactionDate,
       transferGroupId: transferGroupId ?? this.transferGroupId,
+      categoryId: categoryId ?? this.categoryId,
       tags: tags ?? this.tags,
       receiptImage: receiptImage ?? this.receiptImage,
       location: location ?? this.location,
@@ -1699,6 +2296,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     if (transferGroupId.present) {
       map['transfer_group_id'] = Variable<int>(transferGroupId.value);
     }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
     if (tags.present) {
       map['tags'] = Variable<String>(tags.value);
     }
@@ -1722,6 +2322,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
           ..write('note: $note, ')
           ..write('transactionDate: $transactionDate, ')
           ..write('transferGroupId: $transferGroupId, ')
+          ..write('categoryId: $categoryId, ')
           ..write('tags: $tags, ')
           ..write('receiptImage: $receiptImage, ')
           ..write('location: $location')
@@ -1734,6 +2335,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $WalletsTable wallets = $WalletsTable(this);
+  late final $CategoriesTable categories = $CategoriesTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final Index transactionsWalletIdIndex = Index(
     'transactions_wallet_id_index',
@@ -1745,6 +2347,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     wallets,
+    categories,
     transactions,
     transactionsWalletIdIndex,
   ];
@@ -2236,6 +2839,286 @@ typedef $$WalletsTableProcessedTableManager =
       WalletsRow,
       PrefetchHooks Function()
     >;
+typedef $$CategoriesTableCreateCompanionBuilder =
+    CategoriesCompanion Function({
+      Value<int> id,
+      required String name,
+      required CategoryType type,
+      required String icon,
+      required int color,
+      Value<int?> parentId,
+      Value<int> sortOrder,
+      Value<bool> isSystem,
+      Value<bool> isHidden,
+    });
+typedef $$CategoriesTableUpdateCompanionBuilder =
+    CategoriesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<CategoryType> type,
+      Value<String> icon,
+      Value<int> color,
+      Value<int?> parentId,
+      Value<int> sortOrder,
+      Value<bool> isSystem,
+      Value<bool> isHidden,
+    });
+
+class $$CategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $CategoriesTable> {
+  $$CategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<CategoryType, CategoryType, String> get type =>
+      $composableBuilder(
+        column: $table.type,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSystem => $composableBuilder(
+    column: $table.isSystem,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isHidden => $composableBuilder(
+    column: $table.isHidden,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CategoriesTable> {
+  $$CategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSystem => $composableBuilder(
+    column: $table.isSystem,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isHidden => $composableBuilder(
+    column: $table.isHidden,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CategoriesTable> {
+  $$CategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<CategoryType, String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get icon =>
+      $composableBuilder(column: $table.icon, builder: (column) => column);
+
+  GeneratedColumn<int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<int> get parentId =>
+      $composableBuilder(column: $table.parentId, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSystem =>
+      $composableBuilder(column: $table.isSystem, builder: (column) => column);
+
+  GeneratedColumn<bool> get isHidden =>
+      $composableBuilder(column: $table.isHidden, builder: (column) => column);
+}
+
+class $$CategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CategoriesTable,
+          CategoryRow,
+          $$CategoriesTableFilterComposer,
+          $$CategoriesTableOrderingComposer,
+          $$CategoriesTableAnnotationComposer,
+          $$CategoriesTableCreateCompanionBuilder,
+          $$CategoriesTableUpdateCompanionBuilder,
+          (
+            CategoryRow,
+            BaseReferences<_$AppDatabase, $CategoriesTable, CategoryRow>,
+          ),
+          CategoryRow,
+          PrefetchHooks Function()
+        > {
+  $$CategoriesTableTableManager(_$AppDatabase db, $CategoriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CategoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CategoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CategoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<CategoryType> type = const Value.absent(),
+                Value<String> icon = const Value.absent(),
+                Value<int> color = const Value.absent(),
+                Value<int?> parentId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> isSystem = const Value.absent(),
+                Value<bool> isHidden = const Value.absent(),
+              }) => CategoriesCompanion(
+                id: id,
+                name: name,
+                type: type,
+                icon: icon,
+                color: color,
+                parentId: parentId,
+                sortOrder: sortOrder,
+                isSystem: isSystem,
+                isHidden: isHidden,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required CategoryType type,
+                required String icon,
+                required int color,
+                Value<int?> parentId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> isSystem = const Value.absent(),
+                Value<bool> isHidden = const Value.absent(),
+              }) => CategoriesCompanion.insert(
+                id: id,
+                name: name,
+                type: type,
+                icon: icon,
+                color: color,
+                parentId: parentId,
+                sortOrder: sortOrder,
+                isSystem: isSystem,
+                isHidden: isHidden,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CategoriesTable, CategoryRow>(table),
+                  BaseReferences<_$AppDatabase, $CategoriesTable, CategoryRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CategoriesTable,
+      CategoryRow,
+      $$CategoriesTableFilterComposer,
+      $$CategoriesTableOrderingComposer,
+      $$CategoriesTableAnnotationComposer,
+      $$CategoriesTableCreateCompanionBuilder,
+      $$CategoriesTableUpdateCompanionBuilder,
+      (
+        CategoryRow,
+        BaseReferences<_$AppDatabase, $CategoriesTable, CategoryRow>,
+      ),
+      CategoryRow,
+      PrefetchHooks Function()
+    >;
 typedef $$TransactionsTableCreateCompanionBuilder =
     TransactionsCompanion Function({
       Value<int> id,
@@ -2246,6 +3129,7 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String> note,
       required DateTime transactionDate,
       Value<int?> transferGroupId,
+      Value<int?> categoryId,
       Value<String> tags,
       Value<String> receiptImage,
       Value<String> location,
@@ -2260,6 +3144,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String> note,
       Value<DateTime> transactionDate,
       Value<int?> transferGroupId,
+      Value<int?> categoryId,
       Value<String> tags,
       Value<String> receiptImage,
       Value<String> location,
@@ -2312,6 +3197,11 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<int> get transferGroupId => $composableBuilder(
     column: $table.transferGroupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2380,6 +3270,11 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get tags => $composableBuilder(
     column: $table.tags,
     builder: (column) => ColumnOrderings(column),
@@ -2430,6 +3325,11 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<int> get transferGroupId => $composableBuilder(
     column: $table.transferGroupId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
     builder: (column) => column,
   );
 
@@ -2484,6 +3384,7 @@ class $$TransactionsTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<DateTime> transactionDate = const Value.absent(),
                 Value<int?> transferGroupId = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
                 Value<String> tags = const Value.absent(),
                 Value<String> receiptImage = const Value.absent(),
                 Value<String> location = const Value.absent(),
@@ -2496,6 +3397,7 @@ class $$TransactionsTableTableManager
                 note: note,
                 transactionDate: transactionDate,
                 transferGroupId: transferGroupId,
+                categoryId: categoryId,
                 tags: tags,
                 receiptImage: receiptImage,
                 location: location,
@@ -2510,6 +3412,7 @@ class $$TransactionsTableTableManager
                 Value<String> note = const Value.absent(),
                 required DateTime transactionDate,
                 Value<int?> transferGroupId = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
                 Value<String> tags = const Value.absent(),
                 Value<String> receiptImage = const Value.absent(),
                 Value<String> location = const Value.absent(),
@@ -2522,6 +3425,7 @@ class $$TransactionsTableTableManager
                 note: note,
                 transactionDate: transactionDate,
                 transferGroupId: transferGroupId,
+                categoryId: categoryId,
                 tags: tags,
                 receiptImage: receiptImage,
                 location: location,
@@ -2566,6 +3470,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$WalletsTableTableManager get wallets =>
       $$WalletsTableTableManager(_db, _db.wallets);
+  $$CategoriesTableTableManager get categories =>
+      $$CategoriesTableTableManager(_db, _db.categories);
   $$TransactionsTableTableManager get transactions =>
       $$TransactionsTableTableManager(_db, _db.transactions);
 }

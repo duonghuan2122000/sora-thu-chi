@@ -37,10 +37,15 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  void _openAddTransaction(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const AddTransactionScreen()),
+  Future<void> _openAddTransaction(BuildContext context) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
     );
+    // Lưu thu/chi thành công hoặc xong chuyển khoản (qua tab) đều pop `true` →
+    // làm mới ngay danh sách + card "Thu/Chi tháng này" (FR-013/SC-006, R10).
+    if (saved == true && mounted) {
+      ensureTransactionController().load();
+    }
   }
 
   @override

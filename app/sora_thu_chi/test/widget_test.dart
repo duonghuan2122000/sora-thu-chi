@@ -22,6 +22,14 @@ Future<void> pumpShell(WidgetTester tester) async {
   );
 }
 
+/// Màn ảo cao đủ hiện mọi dòng màn thêm giao dịch mà không cần cuộn.
+void useTallView(WidgetTester tester) {
+  tester.view.physicalSize = const Size(720, 2000);
+  tester.view.devicePixelRatio = 2.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 void main() {
   group('AppShell — điều hướng 4 vùng chính', () {
     testWidgets('Boot vào Tổng quan, đủ 4 tab + ô giữa', (tester) async {
@@ -69,7 +77,8 @@ void main() {
       }
     });
 
-    testWidgets('Tap FAB → mở màn phụ, không còn bottom nav', (tester) async {
+    testWidgets('Tap FAB → mở màn thêm giao dịch thật (không no-op)', (tester) async {
+      useTallView(tester);
       await pumpShell(tester);
 
       await tester.tap(find.byIcon(Icons.add));
@@ -77,10 +86,15 @@ void main() {
 
       expect(find.text('Thêm giao dịch'), findsOneWidget);
       expect(find.byType(AppBottomNavBar), findsNothing);
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      // App bar: icon đóng X (trái) + check (phải) — không còn BackButton stub.
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.text('Chi'), findsOneWidget); // segmented mặc định Chi.
+      expect(find.text('Lưu giao dịch'), findsOneWidget);
     });
 
     testWidgets('Quay lại từ màn phụ → đúng tab cũ', (tester) async {
+      useTallView(tester);
       await pumpShell(tester);
 
       // Sang tab Báo cáo rồi mở màn phụ.
@@ -89,12 +103,40 @@ void main() {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
-      // Back bằng nút app bar (BackButton) → về đúng tab Báo cáo.
-      await tester.tap(find.byType(BackButton));
+      // Đóng bằng icon X (màn sạch → pop thẳng, không dialog) → về đúng tab.
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
       expect(find.byType(AppBottomNavBar), findsOneWidget);
       expect(find.text('Báo cáo'), findsNWidgets(2)); // header + tab còn chọn
+    });
+
+    testWidgets('FR-013/SC-006: lưu giao dịch qua FAB → shell làm mới danh sách ngay',
+        (tester) async {
+      useTallView(tester);
+      await pumpShell(tester);
+
+      // Sang Giao dịch rồi mở FAB (danh sách đang có 11 dòng seed).
+      await tester.tap(find.text('Giao dịch'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      // Nhập khoản chi 90 đ danh mục "Nhà ở" (cha không con → chọn ngay).
+      await tester.tap(find.text('9'));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('field-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nhà ở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      // Đã quay lại shell; dòng mới hiện trong danh sách Giao dịch — không cần
+      // thao tác làm mới thủ công.
+      expect(find.text('Thêm giao dịch'), findsNothing);
+      expect(find.byType(AppBottomNavBar), findsOneWidget);
+      expect(find.text('Nhà ở'), findsWidgets);
     });
 
     testWidgets('FR-004: rời tab rồi quay lại → vẫn ở đúng vùng', (tester) async {

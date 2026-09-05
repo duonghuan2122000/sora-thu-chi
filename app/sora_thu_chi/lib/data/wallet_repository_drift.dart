@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 
+import '../core/category/category.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
 import 'db/app_database.dart';
@@ -144,6 +145,66 @@ class DriftWalletRepository implements WalletRepository {
     });
   }
 
+  @override
+  Future<List<Category>> categories({required CategoryType type}) async {
+    // Lọc is_hidden trong SQL; type lọc sau (cột enum dùng converter — so sánh
+    // trong Dart cho chắc, bảng nhỏ local).
+    final rows = await (_db.select(_db.categories)
+          ..where((c) => c.isHidden.equals(false)))
+        .get();
+    final list = rows
+        .where((r) => r.type == type)
+        .map(_toCategory)
+        .toList();
+    list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return list;
+  }
+
+  @override
+  Future<void> addTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required Category category,
+    required DateTime date,
+    String note = '',
+  }) async {
+    // Một db.transaction(): bù balance + insert — không bao giờ lệch một phía
+    // (FR-012/SC-003). Số dư cập nhật ngay theo ngày ghi (balance eager,
+    // ponytail: ceiling — số dư "suy ra theo ngày giao dịch" để module ví sau).
+    final signedAmount = type == TxnType.income ? amount : -amount;
+    await _db.transaction(() async {
+      final wallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(walletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(walletId)))
+          .write(WalletsCompanion(balance: Value(wallet.balance + signedAmount)));
+      await _db.into(_db.transactions).insert(
+        TransactionsCompanion.insert(
+          walletId: walletId,
+          type: type,
+          amount: signedAmount,
+          category: Value(category.name),
+          note: Value(note),
+          transactionDate: date,
+          categoryId: Value(category.id),
+        ),
+      );
+    });
+  }
+
+  Category _toCategory(CategoryRow r) => Category(
+    id: r.id,
+    name: r.name,
+    type: r.type,
+    icon: r.icon,
+    color: r.color,
+    parentId: r.parentId,
+    sortOrder: r.sortOrder,
+    isHidden: r.isHidden,
+    isSystem: r.isSystem,
+  );
+
   Transaction _toTransaction(TransactionsRow r) => Transaction(
     id: r.id,
     walletId: r.walletId,
@@ -153,6 +214,7 @@ class DriftWalletRepository implements WalletRepository {
     amount: r.amount,
     date: r.transactionDate,
     transferGroupId: r.transferGroupId,
+    categoryId: r.categoryId,
     tags: r.tags,
     receiptImage: r.receiptImage,
     location: r.location,

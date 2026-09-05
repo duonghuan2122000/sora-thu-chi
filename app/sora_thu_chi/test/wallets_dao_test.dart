@@ -141,8 +141,10 @@ void main() {
     final first = AppDatabase(NativeDatabase.createInBackground(file));
     final repo1 = DriftWalletRepository(first);
     expect((await repo1.loadAll()).length, 5);
-    // Giả lập trạng thái DB "cũ" v1: bỏ bảng giao dịch, hạ user_version.
+    // Giả lập trạng thái DB "cũ" v1: bỏ bảng giao dịch + danh mục (cả hai chưa
+    // tồn tại ở schema v1), hạ user_version.
     await first.customStatement('DROP TABLE transactions');
+    await first.customStatement('DROP TABLE categories');
     await first.customStatement('PRAGMA user_version = 1');
     await first.close();
 

@@ -24,6 +24,7 @@ class Transaction {
     required this.amount,
     required this.date,
     this.transferGroupId,
+    this.categoryId,
     this.tags = '',
     this.receiptImage = '',
     this.location = '',
@@ -46,6 +47,11 @@ class Transaction {
   /// null = giao dịch thường hoặc vế chưa nối; dùng để gộp 2 vế transfer
   /// thành 1 dòng trên màn danh sách (FR-007). Additive — màn ví không dùng.
   final int? transferGroupId;
+
+  /// id danh mục (trỏ `categories.id`), schema v4 — additive; giao dịch cũ/
+  /// transfer/adjustment/dòng seed không khớp tên danh mục mặc định → null.
+  /// Hiển thị màn danh sách/chi tiết vẫn đọc [category] text (snapshot, R2).
+  final int? categoryId;
 
   /// Chuỗi tag thô (phân tách `,`, không ký tự `#`) — phân tích bằng [parseTags].
   /// Rỗng = không có tag → màn chi tiết ẩn hàng Tag (FR-007).

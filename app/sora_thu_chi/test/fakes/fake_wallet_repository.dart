@@ -1,3 +1,5 @@
+import 'package:sora_thu_chi/core/category/category.dart';
+import 'package:sora_thu_chi/core/category/category_source.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_source.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
@@ -115,6 +117,44 @@ class FakeWalletRepository implements WalletRepository {
         amount: amount,
         date: date,
         transferGroupId: groupId,
+      ),
+    );
+  }
+
+  @override
+  Future<List<Category>> categories({required CategoryType type}) async {
+    final list = CategorySource.all
+        .where((c) => !c.isHidden && c.type == type)
+        .toList();
+    list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return list;
+  }
+
+  @override
+  Future<void> addTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required Category category,
+    required DateTime date,
+    String note = '',
+  }) async {
+    final wallet = _store[walletId];
+    if (wallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    final signedAmount = type == TxnType.income ? amount : -amount;
+    _store[walletId] = wallet.copyWith(balance: wallet.balance + signedAmount);
+    _transactions.add(
+      Transaction(
+        id: _nextTxnId++,
+        walletId: walletId,
+        type: type,
+        category: category.name,
+        note: note,
+        amount: signedAmount,
+        date: date,
+        categoryId: category.id,
       ),
     );
   }

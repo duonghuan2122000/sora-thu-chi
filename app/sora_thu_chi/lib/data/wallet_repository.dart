@@ -1,3 +1,4 @@
+import '../core/category/category.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
 
@@ -34,6 +35,26 @@ abstract class WalletRepository {
     required int fromWalletId,
     required int toWalletId,
     required int amount,
+    required DateTime date,
+    String note = '',
+  });
+
+  /// Danh mục **đang hoạt động** (`!isHidden`) thuộc [type] — gồm cha & con;
+  /// UI tự tách cha-con bằng [Category.parentId]. Sắp theo sortOrder. (R3/R5)
+  Future<List<Category>> categories({required CategoryType type});
+
+  /// Ghi atomic một giao dịch **thu/chi** mới (FR-012/SC-003): bù `balance` ví
+  /// (`income` +, `expense` −) và insert 1 dòng `transactions` có dấu theo loại
+  /// (`income` `+x`, `expense` `−x`), `category_id = category.id`,
+  /// `category = category.name`, trong một `db.transaction()` — không lệch phía.
+  /// Đầu vào hợp lệ: [type] income/expense, [amount] > 0, `category.type` khớp
+  /// [type], `category.id` > 0. Giao dịch mới để trống transferGroupId/tags/
+  /// receiptImage/location (R3).
+  Future<void> addTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required Category category,
     required DateTime date,
     String note = '',
   });
