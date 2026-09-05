@@ -1,5 +1,12 @@
 # Log cập nhật wiki
 
+## [2026-09-05] implement | Màn danh sách danh mục (PBI 13) + sync schema v4 Danh mục (backlog PBI 11) — nguồn .specify/specs/13, /11
+- Cập nhật [[Danh mục]] §Mô hình: sửa claim lệch (wiki cũ ghi `id(UUID)/created_at/updated_at`) → đúng drift schema **v4**: `categories` `id(int autoincrement), name(≤30), type(income|expense), icon, color(ARGB), parent_id(null=cha), sort_order, is_system, is_hidden`; giao dịch tham chiếu `transactions.category_id` (nullable) + `category` text **snapshot** tên. **Backlog PBI 11 chưa sync giờ đã ghi** (trước PBI 13 mới chạm bảng này).
+- Cập nhật §Seed data: sửa thiếu "Khác" (nay đủ **4 cha thu** gồm Khác + 8 cha chi + 3 con Ăn uống), khớp `CategorySource.all`.
+- Thêm §Màn `01` + đổi bảng Màn hình sang trạng thái: `01` ✅ **đã triển khai** (PBI 13 `CategoryListScreen`), `02/03/04` ⏳ PBI sau. Mô tả: entry Cài đặt nhóm KHÁC sau "Quản lý ví"; StatefulWidget nạp **2 loại 1 lúc** + chuyển tab lọc local (không GetX); hiện **cả danh mục ẩn** + nhãn "Đã ẩn"/mờ; "N danh mục con" **gồm con ẩn**; empty thật vs **ẩn-toàn-bộ không empty giả**; FAB/dòng/icon "Sắp xếp" no-op có ripple chờ `02/03/04`; mỗi lần vào reload.
+- Ghi 2 seam đọc phân vai: `categories({type})` (đang hoạt động, picker PBI 11) vs `categoriesIncludingHidden({type})` (gồm ẩn, màn quản lý PBI 13) + module thuần `category_list.dart` (`topLevelParents`/`childrenOf` sort ổn định).
+- Cập nhật [[Lộ trình phát triển]] ghi chú MVP: module Danh mục màn `01` xong, còn `02/03/04`. Không đổi schema drift v4 (PBI 13 chỉ đọc, không `build_runner`); 314 test pass; QA emulator A–F pass (G qua widget test — chưa tạo ẩn bằng UI).
+
 ## [2026-09-05] implement | Tìm kiếm & Lọc giao dịch (PBI 12) — nguồn .specify/specs/12
 - Cập nhật [[Giao dịch]] §Tìm/lọc/sắp xếp: mô tả **đã triển khai** màn `05` (chip 4 loại, 5 bộ lọc nâng cao, bản nháp + Áp dụng/back giữ tập cũ, bỏ dấu tiếng Việt tự viết, AND, summary `N/Tổng` với transfer/adjustment ngoài tổng, group-keep transfer khi lọc ví).
 - Ghi 2 lựa chọn hiển thị **user đã chốt** (R4 sort tiền → list phẳng; R5 đang lọc → ẩn card tháng, thay thanh `N kết quả · Tổng` + Bỏ lọc) + kỹ thuật: lọc trong bộ nhớ (cache mỗi load), filter sống `TransactionController` bền qua tab, không đổi schema.
