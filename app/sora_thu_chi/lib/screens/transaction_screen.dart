@@ -5,18 +5,39 @@ import '../core/money_format.dart';
 import '../core/transaction/transaction.dart';
 import '../core/transaction/transaction_controller.dart';
 import '../core/transaction/transaction_detail.dart';
+import '../core/transaction/transaction_filter.dart';
 import '../core/transaction/transaction_list.dart';
 import '../core/widgets/screen_header.dart';
 import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
+import 'search_filter_screen.dart';
 import 'transaction_detail_screen.dart';
 
 /// Màn "Giao dịch" (tab chính thứ 2) — theo mockup 01-danh-sach-giao-dich.svg:
 /// header teal + icon lọc, card "Thu/Chi tháng này", danh sách giao dịch nhóm
 /// ngày. Đọc qua [TransactionController]; nạp lại mỗi lần chọn tab (FR-011).
-/// FAB / icon lọc / chạm dòng là điểm vào no-op — màn đích ở PBI sau (FR-014).
+/// Icon lọc mở màn tìm/lọc (PBI 12); khi đang áp dụng bộ lọc → card tháng ẩn,
+/// thay bằng thanh `N kết quả · Tổng` + Bỏ lọc (R5/FR-013).
 class TransactionScreen extends StatelessWidget {
   const TransactionScreen({super.key});
+
+  /// Mở màn lọc (bản nháp = bộ lọc đang áp dụng hoặc mặc định); Áp dụng →
+  /// [TransactionController.setFilter], back → giữ tập cũ (FR-015).
+  Future<void> _openFilter(
+    BuildContext context,
+    TransactionController controller,
+  ) async {
+    final filter = await Navigator.of(context).push<TxnSearchFilter>(
+      MaterialPageRoute(
+        builder: (_) => SearchFilterScreen(
+          now: controller.now,
+          initial: controller.activeFilter.value,
+        ),
+      ),
+    );
+    if (filter == null || !context.mounted) return;
+    controller.setFilter(filter);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +47,7 @@ class TransactionScreen extends StatelessWidget {
         ScreenHeader(
           title: 'Giao dịch',
           centerTitle: true,
-          trailing: const _FilterButton(),
+          trailing: _FilterButton(onTap: () => _openFilter(context, controller)),
         ),
         Expanded(
           child: Obx(() {
@@ -42,6 +63,14 @@ class TransactionScreen extends StatelessWidget {
               }
               return const SizedBox.expand();
             }
+            // Đang áp dụng bộ lọc → hiển thị tập đã lọc (additive, không hồi quy
+            // đường không-lọc — R13). Bộ lọc sống trong controller (SC-007).
+            if (controller.activeFilter.value != null) {
+              final filteredView = controller.filtered.value;
+              if (filteredView != null) {
+                return _FilteredList(view: filteredView);
+              }
+            }
             return _TransactionList(view: view);
           }),
         ),
@@ -50,15 +79,17 @@ class TransactionScreen extends StatelessWidget {
   }
 }
 
-/// Nút lọc trong app bar — điểm vào tìm kiếm/lọc (PBI sau), chạm không lỗi.
+/// Nút lọc trong app bar — mở màn "Tìm kiếm & Lọc" (FR-014 → PBI 12).
 class _FilterButton extends StatelessWidget {
-  const _FilterButton();
+  const _FilterButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       customBorder: const CircleBorder(),
-      onTap: () {}, // no-op — FR-014
+      onTap: onTap,
       child: const SizedBox(
         width: 48,
         height: 48,
@@ -147,6 +178,134 @@ class _TransactionList extends StatelessWidget {
           padding: EdgeInsets.only(bottom: 96),
         ),
       ],
+    );
+  }
+}
+
+/// Danh sách khi đang áp dụng bộ lọc (PBI 12, R4/R5): card "Thu/Chi tháng
+/// này" **ẩn**, thay bằng thanh chỉ báo `N kết quả · Tổng: X đ` + Bỏ lọc; vẽ
+/// nhóm ngày (sort ngày) hoặc **phẳng** (sort tiền); empty-khớp riêng.
+class _FilteredList extends StatelessWidget {
+  const _FilteredList({required this.view});
+
+  final FilteredTxView view;
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = view.groups;
+    final flat = view.flatRows;
+    final empty =
+        (groups?.isEmpty ?? true) && (flat?.isEmpty ?? true);
+    return CustomScrollView(
+      key: const PageStorageKey('transaction-filter-list'),
+      slivers: [
+        SliverToBoxAdapter(
+          child: _FilterBar(
+            count: view.summary.count,
+            signedTotal: view.summary.signedTotal,
+            onClear: () => ensureTransactionController().clearFilter(),
+          ),
+        ),
+        if (empty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: _NoMatchState(),
+          )
+        else if (groups != null)
+          for (final group in groups) ...[
+            SliverToBoxAdapter(child: _DayHeader(header: group.header)),
+            SliverList.builder(
+              itemCount: group.rows.length,
+              itemBuilder: (_, index) =>
+                  _TransactionRow(row: group.rows[index]),
+            ),
+          ]
+        else
+          SliverList.builder(
+            itemCount: flat!.length,
+            itemBuilder: (_, index) => _TransactionRow(row: flat[index]),
+          ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
+      ],
+    );
+  }
+}
+
+/// Thanh chỉ báo lọc đầu danh sách (R5/FR-013) — thay card "Thu/Chi tháng này".
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({
+    required this.count,
+    required this.signedTotal,
+    required this.onClear,
+  });
+
+  final int count;
+  final int signedTotal;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 12, 4),
+      child: Row(
+        children: [
+          const Icon(Icons.filter_list, color: AppColors.teal, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$count kết quả · Tổng: ${formatMoney(signedTotal)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          TextButton(
+            key: const ValueKey('clear-filter'),
+            onPressed: onClear,
+            child: const Text('Bỏ lọc'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Empty khi tập khớp bộ lọc rỗng (FR-016/R14) — khác "Chưa có giao dịch nào."
+class _NoMatchState extends StatelessWidget {
+  const _NoMatchState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off, color: AppColors.tabInactive, size: 44),
+            const SizedBox(height: 12),
+            const Text(
+              'Không có giao dịch khớp bộ lọc.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Bỏ lọc để xem toàn bộ.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.tabInactive, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

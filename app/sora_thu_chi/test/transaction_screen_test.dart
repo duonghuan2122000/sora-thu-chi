@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:sora_thu_chi/core/app_shell.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_controller.dart';
+import 'package:sora_thu_chi/core/transaction/transaction_filter.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_source.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
@@ -158,9 +159,14 @@ void main() {
         expect(find.text('-85.000 đ'), findsOneWidget); // chi hôm nay.
         expect(find.text('Chuyển khoản'), findsOneWidget); // gộp 1 dòng.
 
-        // Chạm icon lọc → no-op, không crash.
+        // Chạm icon lọc → mở màn "Tìm kiếm & Lọc" thật (PBI 12, không còn no-op).
         await tester.tap(find.byIcon(Icons.filter_list));
-        await tester.pump();
+        await tester.pumpAndSettle();
+        expect(find.text('Tìm kiếm giao dịch...'), findsOneWidget);
+        expect(find.text('BỘ LỌC NÂNG CAO'), findsOneWidget);
+        expect(find.text('Áp dụng'), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
         // Chạm một dòng → mở màn chi tiết giao dịch (PBI 10), không no-op.
         await tester.tap(find.text('Lương'));
         await tester.pumpAndSettle();
@@ -333,6 +339,115 @@ void main() {
       expect(find.text('Ví đích'), findsOneWidget);
       expect(find.text('Vietcombank'), findsOneWidget);
       expect(find.text('Momo'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('TransactionScreen — nhánh đã lọc (PBI 12, R4/R5)', () {
+    /// Chi + danh mục Ăn uống, preset `all` — 3 dòng seed (id 1/6/10),
+    /// Tổng −885.000. Cố định [sort].
+    TxnSearchFilter eatFilter({SortOption sort = SortOption.dateNewest}) =>
+        TxnSearchFilter.defaults(now: _now)
+            .withDateRange(DatePreset.all)
+            .copyWith(type: TxnTypeFilter.expense, categoryIds: {1}, sort: sort);
+
+    testWidgets('Áp dụng → thanh N kết quả · Tổng thay card tháng; list chỉ tập '
+        'khớp; chạm dòng mở chi tiết (FR-012/013)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = await _pumpScreen(tester);
+      controller.setFilter(eatFilter());
+      await tester.pump();
+
+      // Card "Thu/Chi tháng này" ẩn; thay bằng thanh chỉ báo.
+      expect(find.text('Thu tháng này'), findsNothing);
+      expect(find.text('3 kết quả · Tổng: -885.000 đ'), findsOneWidget);
+      expect(find.text('Bỏ lọc'), findsOneWidget);
+      // Chỉ 3 chi Ăn uống — không còn thu/các chi khác.
+      expect(find.text('+12.000.000 đ'), findsNothing);
+      expect(find.text('-120.000 đ'), findsNothing);
+      expect(find.text('Ăn uống'), findsNWidgets(3));
+
+      // Chạm dòng vẫn mở chi tiết (FR-012).
+      await tester.tap(find.text('-450.000 đ'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+      expect(find.text('-450.000 đ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sort Số tiền giảm dần → list phẳng không header ngày, khoản '
+        'lớn trước (R4)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = await _pumpScreen(tester);
+      controller.setFilter(eatFilter(sort: SortOption.amountDesc));
+      await tester.pump();
+
+      // Phẳng: không có header ngày.
+      expect(find.textContaining('HÔM'), findsNothing);
+      expect(find.text('3 kết quả · Tổng: -885.000 đ'), findsOneWidget);
+      // Khoản 450.000 hiển thị trên 350.000 và 85.000.
+      final top450 = tester.getTopLeft(find.text('-450.000 đ'));
+      final top85 = tester.getTopLeft(find.text('-85.000 đ'));
+      expect(top450.dy, lessThan(top85.dy));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sort Ngày cũ nhất → nhóm ngày cũ nhất lên đầu (R4)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Lọc toàn tập (preset all), sort cũ nhất — nhóm 05/09 (cũ nhất) lên đầu.
+      final controller = await _pumpScreen(tester);
+      final all = TxnSearchFilter.defaults(now: _now)
+          .withDateRange(DatePreset.all)
+          .copyWith(sort: SortOption.dateOldest);
+      controller.setFilter(all);
+      await tester.pump();
+
+      expect(find.text('HÔM NAY - 10/09/2026'), findsOneWidget);
+      expect(find.text('05/09/2026'), findsOneWidget);
+      final oldestY = tester.getTopLeft(find.text('05/09/2026')).dy;
+      final todayY = tester.getTopLeft(find.text('HÔM NAY - 10/09/2026')).dy;
+      expect(oldestY, lessThan(todayY));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Bỏ lọc → về toàn bộ + card tháng hiện lại (FR-013)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = await _pumpScreen(tester);
+      controller.setFilter(eatFilter());
+      await tester.pump();
+      expect(find.text('Thu tháng này'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('clear-filter')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thu tháng này'), findsOneWidget);
+      expect(find.text('3 kết quả · Tổng: -885.000 đ'), findsNothing);
+      expect(find.text('+12.000.000 đ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('0 kết quả → thanh 0 + empty khớp có gợi ý, không lỗi (FR-016)',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(420, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = await _pumpScreen(tester);
+      final none = eatFilter().copyWith(keyword: 'xyz không có');
+      controller.setFilter(none);
+      await tester.pump();
+
+      expect(find.text('0 kết quả · Tổng: 0 đ'), findsOneWidget);
+      expect(find.text('Không có giao dịch khớp bộ lọc.'), findsOneWidget);
+      expect(find.text('Bỏ lọc để xem toàn bộ.'), findsOneWidget);
+      expect(find.text('Chưa có giao dịch nào.'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
