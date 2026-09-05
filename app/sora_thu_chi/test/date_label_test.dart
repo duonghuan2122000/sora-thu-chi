@@ -66,4 +66,34 @@ void main() {
       );
     });
   });
+
+  group('formatDayGroupHeader — tiêu đề nhóm ngày (FR-005)', () {
+    test('cùng ngày lịch → "HÔM NAY - dd/MM/yyyy"', () {
+      expect(
+        formatDayGroupHeader(DateTime(2026, 9, 4, 8, 0), now: now),
+        'HÔM NAY - 04/09/2026',
+      );
+    });
+
+    test('hôm trước → "HÔM QUA - dd/MM/yyyy"', () {
+      expect(
+        formatDayGroupHeader(DateTime(2026, 9, 3, 23, 0), now: now),
+        'HÔM QUA - 03/09/2026',
+      );
+    });
+
+    test('ngày khác → "dd/MM/yyyy"', () {
+      expect(
+        formatDayGroupHeader(DateTime(2026, 8, 30), now: now),
+        '30/08/2026',
+      );
+    });
+
+    test('ngày tương lai (đặt lịch) → "dd/MM/yyyy", không nhãn tương đối', () {
+      expect(
+        formatDayGroupHeader(DateTime(2026, 9, 10), now: now),
+        '10/09/2026',
+      );
+    });
+  });
 }

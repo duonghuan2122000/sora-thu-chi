@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/app_shell.dart';
 import 'package:sora_thu_chi/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sora_thu_chi/core/widgets/screen_header.dart';
+import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/fake_wallet_repository.dart';
+
 /// Shell giờ không còn là `home` mặc định (luồng boot bị PIN gate chiếm) —
-/// nhóm shell pump `AppShell` trực tiếp, tách khỏi luồng boot.
+/// nhóm shell pump `AppShell` trực tiếp, tách khỏi luồng boot. Tab Giao dịch
+/// nạp dữ liệu khi chọn (FR-011) → đăng ký fake repo để không mở drift DB thật.
 Future<void> pumpShell(WidgetTester tester) async {
+  Get.reset();
+  Get.put<WalletRepository>(FakeWalletRepository());
+  addTearDown(Get.reset);
   await tester.pumpWidget(
     MaterialApp(theme: AppTheme.themeData, home: const AppShell()),
   );

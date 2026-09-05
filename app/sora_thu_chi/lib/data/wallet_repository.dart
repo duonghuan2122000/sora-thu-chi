@@ -19,6 +19,11 @@ abstract class WalletRepository {
   /// Domain [Transaction] map 1-1 từ dòng `transactions` (không đổi model).
   Future<List<Transaction>> transactionsOf(int walletId);
 
+  /// Toàn bộ giao dịch của thiết bị — mọi ví kể cả ví ẩn (giữ lịch sử, FR-004),
+  /// sắp mới nhất lên đầu. Domain mang [Transaction.transferGroupId] để màn
+  /// danh sách gộp 2 vế chuyển khoản thành 1 dòng (FR-007).
+  Future<List<Transaction>> allTransactions();
+
   /// Ghi atomic một lần chuyển tiền (FR-012/015): trừ `balance` ví nguồn, cộng
   /// `balance` ví đích, ghi **2 dòng** `type=transfer` (vế nguồn `−amount`,
   /// vế đích `+amount`, cùng `date`/`note`) liên kết cùng `transfer_group_id`

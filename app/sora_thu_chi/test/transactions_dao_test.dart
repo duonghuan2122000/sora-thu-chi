@@ -120,5 +120,30 @@ void main() {
       expect(after.firstWhere((w) => w.id == 2).balance, beforeVcb);
       expect(after.firstWhere((w) => w.id == 4).balance, beforeMomo);
     });
+
+    test('allTransactions: đủ 11 dòng, cặp transfer map chung transferGroupId', () async {
+      final db = await _tryMemoryDb();
+      if (db == null) {
+        markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
+        return;
+      }
+      addTearDown(db.close);
+      final repo = DriftWalletRepository(db);
+
+      final all = await repo.allTransactions();
+      expect(all.length, 11);
+
+      final transfers = all
+          .where((t) => t.type == TxnType.transfer)
+          .toList()
+        ..sort((a, b) => a.amount.compareTo(b.amount));
+      expect(transfers.length, 2);
+      final src = transfers.first; // vế nguồn −700.000.
+      final dst = transfers.last; // vế đích +700.000.
+      expect(src.walletId, 2);
+      expect(dst.walletId, 4);
+      expect(src.transferGroupId, isNotNull);
+      expect(src.transferGroupId, dst.transferGroupId);
+    });
   });
 }

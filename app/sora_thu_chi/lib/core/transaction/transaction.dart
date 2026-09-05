@@ -23,6 +23,7 @@ class Transaction {
     this.note = '',
     required this.amount,
     required this.date,
+    this.transferGroupId,
   });
 
   final int id;
@@ -37,6 +38,11 @@ class Transaction {
 
   final int amount;
   final DateTime date;
+
+  /// id nhóm 2 vế của một khoản chuyển khoản (map từ `transfer_group_id`).
+  /// null = giao dịch thường hoặc vế chưa nối; dùng để gộp 2 vế transfer
+  /// thành 1 dòng trên màn danh sách (FR-007). Additive — màn ví không dùng.
+  final int? transferGroupId;
 
   String get typeLabel => type.label;
 }

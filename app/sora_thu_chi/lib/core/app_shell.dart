@@ -5,6 +5,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/transaction_screen.dart';
+import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
 import 'widgets/app_bottom_nav_bar.dart';
 
@@ -28,6 +29,12 @@ class _AppShellState extends State<AppShell> {
 
   void _onTabSelected(int index) {
     setState(() => _selectedIndex = index);
+    // Màn Giao dịch đã build sẵn (IndexedStack) từ boot — nạp dữ liệu ngay lúc
+    // chọn tab: lần đầu cũng là lần nạp đầu, mỗi lần quay lại tự làm mới
+    // (FR-011). Fire-and-forget — không chặn đổi tab (R6).
+    if (index == 1) {
+      ensureTransactionController().load();
+    }
   }
 
   void _openAddTransaction(BuildContext context) {

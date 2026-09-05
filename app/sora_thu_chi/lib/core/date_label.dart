@@ -13,6 +13,20 @@ String relativeDayLabel(DateTime date, {DateTime? now}) {
 
 String _two(int value) => value.toString().padLeft(2, '0');
 
+/// Tiêu đề nhóm ngày trên màn danh sách giao dịch (FR-005): cùng ngày lịch với
+/// [now] → `'HÔM NAY - dd/MM/yyyy'`, hôm trước → `'HÔM QUA - dd/MM/yyyy'`,
+/// còn lại → `'dd/MM/yyyy'`. [now] truyền vào để test deterministic.
+String formatDayGroupHeader(DateTime date, {DateTime? now}) {
+  final ref = now ?? DateTime.now();
+  final today = DateTime(ref.year, ref.month, ref.day);
+  final day = DateTime(date.year, date.month, date.day);
+  final full = '${_two(date.day)}/${_two(date.month)}/${date.year}';
+  final daysAgo = today.difference(day).inDays;
+  if (daysAgo == 0) return 'HÔM NAY - $full';
+  if (daysAgo == 1) return 'HÔM QUA - $full';
+  return full;
+}
+
 /// Định dạng ngày giờ đầy đủ `'dd/MM/yyyy HH:mm'` (mỗi số 2 chữ số) — dòng
 /// hiển thị ngày giờ người dùng chọn trên màn chuyển tiền (FR-006).
 String formatDateTimeLabel(DateTime d) =>

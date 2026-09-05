@@ -16,8 +16,8 @@ class TransactionSource {
   /// Bộ mẫu: Vietcombank (id 2) = 3 thu + 2 chi + 1 chuyển khoản đi, dàn
   /// `nền 1.200.000 + Σ signed = 14.800.000` (khớp [WalletSource] PBI 5);
   /// Tiền mặt/VIB vài chi; Momo 1 dòng chuyển khoản đến; Sổ tiết kiệm rỗng.
-  static List<Transaction> all() {
-    final now = DateTime.now();
+  static List<Transaction> all({DateTime? at}) {
+    final now = at ?? DateTime.now();
     Transaction txn(
       int id,
       int walletId,

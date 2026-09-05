@@ -8,28 +8,47 @@ import 'package:sora_thu_chi/data/wallet_repository.dart';
 /// (không cần sqlite native). Seed mặc định = [WalletSource.all()] + 11 dòng
 /// giao dịch [TransactionSource.all()] để khớp màn chi tiết (spec acceptance 7).
 class FakeWalletRepository implements WalletRepository {
-  FakeWalletRepository([List<Wallet>? seed]) {
+  FakeWalletRepository([
+    List<Wallet>? seed,
+    DateTime? seedNow,
+    List<Transaction>? seedTransactions,
+  ]) {
     for (final w in seed ?? WalletSource.all()) {
       _store[w.id] = w;
     }
     _nextId = (_store.keys.fold<int>(0, (max, id) => id > max ? id : max)) + 1;
 
-    // Dòng mẫu đánh lại id tăng dần theo thứ tự seed (giữ thứ tự ổn định).
-    var txnId = 1;
-    for (final t in TransactionSource.all()) {
-      _transactions.add(
-        Transaction(
-          id: txnId++,
-          walletId: t.walletId,
-          type: t.type,
-          category: t.category,
-          note: t.note,
-          amount: t.amount,
-          date: t.date,
-        ),
-      );
+    // Dòng mẫu giữ id (seed DB tự sinh 1..N cùng thứ tự). [seedNow] ấn định
+    // ngày seed (mặc định giờ thật) để test deterministic. Gán transferGroupId
+    // cho 2 vế transfer như seed DB (R7): group = id vế nguồn (ghi trước) —
+    // chỉ khi seed từ [TransactionSource] (custom list do caller tự đặt group).
+    final source = seedTransactions ?? TransactionSource.all(at: seedNow);
+    var maxId = 0;
+    for (final t in source) {
+      _transactions.add(t);
+      if (t.id > maxId) maxId = t.id;
     }
-    _nextTxnId = txnId;
+    if (seedTransactions == null) {
+      for (final entry in TransactionSource.transferGroupLegs.entries) {
+        final group = entry.key; // domain id vế nguồn == id fake (giữ id gốc).
+        for (var i = 0; i < _transactions.length; i++) {
+          final t = _transactions[i];
+          if (t.id == group || t.id == entry.value) {
+            _transactions[i] = Transaction(
+              id: t.id,
+              walletId: t.walletId,
+              type: t.type,
+              category: t.category,
+              note: t.note,
+              amount: t.amount,
+              date: t.date,
+              transferGroupId: group,
+            );
+          }
+        }
+      }
+    }
+    _nextTxnId = maxId + 1;
   }
 
   final Map<int, Wallet> _store = {};
@@ -54,6 +73,11 @@ class FakeWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<List<Transaction>> allTransactions() async {
+    return sortNewestFirst(_transactions.toList());
+  }
+
+  @override
   Future<void> performTransfer({
     required int fromWalletId,
     required int toWalletId,
@@ -69,8 +93,7 @@ class FakeWalletRepository implements WalletRepository {
     _store[fromWalletId] = src.copyWith(balance: src.balance - amount);
     _store[toWalletId] = dst.copyWith(balance: dst.balance + amount);
 
-    // 2 vế liên kết group = id vế ghi trước (R7). Domain không chứa group —
-    // màn chi tiết chỉ cần thấy 2 dòng; group được kiểm ở DAO drift (T015).
+    // 2 vế liên kết group = id vế ghi trước (R7) — như seed DB & drift thật.
     final groupId = _nextTxnId++;
     _transactions.add(
       Transaction(
@@ -80,6 +103,7 @@ class FakeWalletRepository implements WalletRepository {
         note: note,
         amount: -amount,
         date: date,
+        transferGroupId: groupId,
       ),
     );
     _transactions.add(
@@ -90,6 +114,7 @@ class FakeWalletRepository implements WalletRepository {
         note: note,
         amount: amount,
         date: date,
+        transferGroupId: groupId,
       ),
     );
   }

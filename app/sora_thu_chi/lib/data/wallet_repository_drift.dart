@@ -91,6 +91,12 @@ class DriftWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<List<Transaction>> allTransactions() async {
+    final rows = await _db.select(_db.transactions).get();
+    return sortNewestFirst(rows.map(_toTransaction).toList());
+  }
+
+  @override
   Future<void> performTransfer({
     required int fromWalletId,
     required int toWalletId,
@@ -146,6 +152,7 @@ class DriftWalletRepository implements WalletRepository {
     note: r.note,
     amount: r.amount,
     date: r.transactionDate,
+    transferGroupId: r.transferGroupId,
   );
 
   Wallet _toWallet(WalletsRow r) => Wallet(
