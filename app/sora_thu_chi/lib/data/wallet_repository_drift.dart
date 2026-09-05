@@ -176,6 +176,60 @@ class DriftWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<bool> categoryHasTransactions(int categoryId) async {
+    // Chỉ cần biết có ≥ 1 dòng — đếm gọn theo bảng nhỏ local (R3).
+    final rows = await (_db.select(_db.transactions)
+          ..where((t) => t.categoryId.equals(categoryId)))
+        .get();
+    return rows.isNotEmpty;
+  }
+
+  @override
+  Future<Category> insertCategory(Category category) async {
+    // Bỏ qua `category.id` — DB tự sinh (như insert ví). isSystem = false cho
+    // danh mục tự tạo; isHidden theo form. Không tự validate/tính sortOrder.
+    final id = await _db.into(_db.categories).insert(
+      CategoriesCompanion.insert(
+        name: category.name,
+        type: category.type,
+        icon: category.icon,
+        color: category.color,
+        parentId: Value(category.parentId),
+        sortOrder: Value(category.sortOrder),
+        isSystem: const Value(false),
+        isHidden: Value(category.isHidden),
+      ),
+    );
+    final row = await (_db.select(_db.categories)
+          ..where((t) => t.id.equals(id)))
+        .getSingle();
+    return _toCategory(row);
+  }
+
+  @override
+  Future<Category> updateCategory(Category category) async {
+    // Ghi đủ trường nghiệp vụ gồm isHidden (công tắc) + isSystem (giữ giá trị
+    // dòng đang sửa). parentId null → xóa cha (bỏ cha → danh mục gốc).
+    await (_db.update(_db.categories)..where((t) => t.id.equals(category.id)))
+        .write(
+          CategoriesCompanion(
+            name: Value(category.name),
+            type: Value(category.type),
+            icon: Value(category.icon),
+            color: Value(category.color),
+            parentId: Value(category.parentId),
+            sortOrder: Value(category.sortOrder),
+            isSystem: Value(category.isSystem),
+            isHidden: Value(category.isHidden),
+          ),
+        );
+    final row = await (_db.select(_db.categories)
+          ..where((t) => t.id.equals(category.id)))
+        .getSingle();
+    return _toCategory(row);
+  }
+
+  @override
   Future<void> addTransaction({
     required int walletId,
     required TxnType type,

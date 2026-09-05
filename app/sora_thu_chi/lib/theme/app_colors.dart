@@ -19,6 +19,18 @@ abstract final class AppColors {
   static const Color tealLightBg = Color(0xFFE1F5EE);
   static const Color softCardBg = Color(0xFFF1EFE8);
 
+  // Bảng màu danh mục (palette mockup `02` — R2). Chỉ token; dữ liệu bảng màu
+  // preset tập trung ở `category_presets.categoryPresetColors` (màu seed đã là
+  // token teal/avatarBg/listLabel/coral/tabInactive — không thêm bản trùng).
+  static const Color categoryOrange = Color(0xFFF2994A);
+  static const Color categoryBlue = Color(0xFF2F80ED);
+  static const Color categoryPurple = Color(0xFF9B59B6);
+  static const Color categoryYellow = Color(0xFFF2C94C);
+  static const Color categoryRed = Color(0xFFEB5757);
+  static const Color categoryCyan = Color(0xFF56CCF2);
+  static const Color categoryGreen = Color(0xFF27AE60);
+  static const Color categoryViolet = Color(0xFFBB6BD9);
+
   // Bảng màu ví (form thêm/sửa — preset chọn màu). Không dùng coral (dành cho
   // chi tiêu/cảnh báo); đủ tương phản với chữ trắng khi hiển thị trên nền màu.
   static const Color walletGreen = Color(0xFF0F6E56); // thương hiệu

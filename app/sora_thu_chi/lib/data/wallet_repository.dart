@@ -54,6 +54,23 @@ abstract class WalletRepository {
     required CategoryType type,
   });
 
+  /// Có ≥ 1 dòng `transactions.category_id == [categoryId]` không — nguồn khóa
+  /// đổi loại khi Sửa danh mục (FR-002/008). Giao dịch cũ nâng cấp `< v4` giữ
+  /// `category_id = null` → danh mục chỉ được text snapshot tham chiếu không tính.
+  Future<bool> categoryHasTransactions(int categoryId);
+
+  /// Ghi một danh mục **mới** — bỏ qua `category.id` (DB sinh), ghi
+  /// `name/type/icon/color/parentId/sortOrder/isHidden`, `isSystem = false`
+  /// (danh mục tự tạo). Trả [Category] đã lưu (id + đủ trường). Repository
+  /// **không** tự validate trùng tên/khóa loại/cây 2 cấp/tính sortOrder —
+  /// validation & sort thuộc module thuần + UI (bám seam `addTransaction`).
+  Future<Category> insertCategory(Category category);
+
+  /// Ghi **tất cả** trường nghiệp vụ của dòng `id == category.id` — gồm
+  /// `isHidden` (công tắc) và `isSystem` (giữ giá trị dòng đang sửa, không tự
+  /// đổi). Trả [Category] đã lưu. Không tự validate/tính sortOrder (xem trên).
+  Future<Category> updateCategory(Category category);
+
   /// Ghi atomic một giao dịch **thu/chi** mới (FR-012/SC-003): bù `balance` ví
   /// (`income` +, `expense` −) và insert 1 dòng `transactions` có dấu theo loại
   /// (`income` `+x`, `expense` `−x`), `category_id = category.id`,

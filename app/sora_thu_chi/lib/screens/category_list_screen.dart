@@ -7,6 +7,7 @@ import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import 'category_form_screen.dart';
 
 /// Màn quản lý danh mục (mockup `01`, PBI 13) — màn con từ Cài đặt: app bar
 /// "Danh mục" + back + icon sắp xếp (no-op); tab tự dựng Chi tiêu / Thu nhập
@@ -83,6 +84,39 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     setState(() => _tab = type);
   }
 
+  /// Mở form Thêm ([initialType]) / Sửa ([category]) rồi **refresh lặng** cả 2
+  /// loại khi về — dữ liệu mới phản ánh ngay (FR-009/SC-003/006), không spinner
+  /// (R1). FAB có thể đổi loại trước lưu → nạp lại cả 2 loại.
+  Future<void> _openForm({CategoryType? initialType, Category? category}) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CategoryFormScreen(
+          initialType: initialType,
+          category: category,
+          repository: _repository,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _reloadSilent();
+  }
+
+  Future<void> _reloadSilent() async {
+    try {
+      final results = await Future.wait([
+        _repository.categoriesIncludingHidden(type: CategoryType.expense),
+        _repository.categoriesIncludingHidden(type: CategoryType.income),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _expense = results[0];
+        _income = results[1];
+      });
+    } catch (_) {
+      // Giữ dữ liệu cũ — lỗi đọc nền không đáng ngắt màn.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
@@ -96,7 +130,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       ],
       floatingActionButton: FloatingActionButton(
         tooltip: 'Thêm danh mục',
-        onPressed: () {}, // điểm vào màn thêm `02` — PBI sau (no-op R8).
+        onPressed: () => _openForm(initialType: _tab),
         backgroundColor: AppColors.teal,
         elevation: 6,
         child: const Icon(Icons.add, color: AppColors.white),
@@ -225,7 +259,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     final iconColor = hidden ? AppColors.tabInactive : Color(c.color);
     return InkWell(
       key: ValueKey('category-row-${c.id}'),
-      onTap: () {}, // điểm vào con `03`/sửa `02` — PBI sau (no-op R8).
+      // Không con → sửa `02`; có con → màn con `03` PBI sau (giữ no-op — chốt
+      // PBI 13/spec). Refresh lặng sau khi form trả về.
+      onTap: children.isEmpty ? () => _openForm(category: c) : () {},
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(

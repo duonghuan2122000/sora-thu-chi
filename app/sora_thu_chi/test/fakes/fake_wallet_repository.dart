@@ -78,16 +78,24 @@ class FakeWalletRepository implements WalletRepository {
       }
     }
     _nextTxnId = maxId + 1;
-    _categorySeed = categoriesSeed ?? CategorySource.all;
+    // Bộ danh mục **biến đổi được** (PBI 14): bản sao seed để insert/update ghi
+    // vào store; mọi test cũ chỉ đọc nên hành vi giữ (data-model §Fake & test).
+    _categories.addAll(categoriesSeed ?? CategorySource.all);
+    _nextCategoryId =
+        _categories.fold<int>(1, (max, c) => c.id >= max ? c.id + 1 : max);
   }
 
   final Map<int, Wallet> _store = {};
   final List<Transaction> _transactions = [];
-  late final List<Category> _categorySeed;
+  final List<Category> _categories = [];
   late int _nextId;
   late int _nextTxnId;
+  late int _nextCategoryId;
 
   List<Wallet> get allStored => _store.values.toList();
+
+  /// Store danh mục hiện tại (chỉ đọc) — test assert sau insert/update.
+  List<Category> get categoriesStored => List.unmodifiable(_categories);
 
   @override
   Future<List<Wallet>> loadAll() async {
@@ -152,7 +160,7 @@ class FakeWalletRepository implements WalletRepository {
 
   @override
   Future<List<Category>> categories({required CategoryType type}) async {
-    final list = _categorySeed
+    final list = _categories
         .where((c) => !c.isHidden && c.type == type)
         .toList();
     list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
@@ -164,9 +172,41 @@ class FakeWalletRepository implements WalletRepository {
     required CategoryType type,
   }) async {
     // Màn quản lý danh mục (PBI 13): không lọc ẩn — trả cha + con gồm cả ẩn.
-    final list = _categorySeed.where((c) => c.type == type).toList();
+    final list = _categories.where((c) => c.type == type).toList();
     list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return list;
+  }
+
+  @override
+  Future<bool> categoryHasTransactions(int categoryId) async {
+    return _transactions.any((t) => t.categoryId == categoryId);
+  }
+
+  @override
+  Future<Category> insertCategory(Category category) async {
+    final created = Category(
+      id: _nextCategoryId++,
+      name: category.name,
+      type: category.type,
+      icon: category.icon,
+      color: category.color,
+      parentId: category.parentId,
+      sortOrder: category.sortOrder,
+      isHidden: category.isHidden,
+      isSystem: false,
+    );
+    _categories.add(created);
+    return created;
+  }
+
+  @override
+  Future<Category> updateCategory(Category category) async {
+    final i = _categories.indexWhere((c) => c.id == category.id);
+    if (i < 0) {
+      throw StateError('Không tìm thấy danh mục ${category.id} trong fake.');
+    }
+    _categories[i] = category;
+    return category;
   }
 
   @override

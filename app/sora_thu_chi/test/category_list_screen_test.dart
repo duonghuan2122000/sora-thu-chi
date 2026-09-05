@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/category_form_screen.dart';
 import 'package:sora_thu_chi/screens/category_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
@@ -57,6 +58,18 @@ Future<void> _openScreen(
   await tester.tap(find.text('mở danh mục'));
   await tester.pumpAndSettle();
 }
+
+/// Text [text] bên trong [CategoryFormScreen] — tránh trùng với màn list đè dưới
+/// (route dưới giữ state nên cùng tồn tại trong cây khi form mở).
+Finder _formText(String text) => find.descendant(
+  of: find.byType(CategoryFormScreen),
+  matching: find.text(text),
+);
+
+Finder _formBack() => find.descendant(
+  of: find.byType(CategoryFormScreen),
+  matching: find.byType(BackButton),
+);
 
 const _expenseParents = [
   'Ăn uống', 'Di chuyển', 'Nhà ở', 'Hóa đơn',
@@ -209,7 +222,7 @@ void main() {
     });
   });
 
-  group('CategoryListScreen — tab rỗng thật & điểm vào no-op', () {
+  group('CategoryListScreen — tab rỗng thật & điểm vào màn 02', () {
     testWidgets('Tab không còn cấp 1 nào → empty hướng dẫn, không lỗi (FR-009)', (tester) async {
       final repo = FakeWalletRepository.withCategories(
         categoriesSeed: [_cat(1, 'Ăn uống')],
@@ -224,20 +237,97 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Chạm dòng / FAB / icon sắp xếp → không crash, không rời màn (SC-008)', (
+    testWidgets('FAB (tab Chi tiêu) → mở Thêm loại Chi tiêu; tab Thu nhập → loại Thu nhập', (
       tester,
     ) async {
+      final repo = FakeWalletRepository();
+      await _openScreen(tester, repo);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoryFormScreen), findsOneWidget);
+      expect(find.text('Thêm danh mục'), findsOneWidget);
+      // Loại mặc định theo tab đang mở (Chi tiêu chọn sẵn — màn list bên dưới
+      // có tab cùng tên nên phải scope trong form).
+      expect(
+        tester.widget<Text>(_formText('Chi tiêu')).style!.color,
+        AppColors.white,
+      );
+      expect(
+        tester.widget<Text>(_formText('Thu nhập')).style!.color,
+        AppColors.tabInactive,
+      );
+
+      // Về list, sang tab Thu nhập → FAB mở loại Thu nhập.
+      await tester.tap(_formBack());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thu nhập'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Thêm danh mục'), findsOneWidget);
+      expect(
+        tester.widget<Text>(_formText('Thu nhập')).style!.color,
+        AppColors.white,
+      );
+      expect(
+        tester.widget<Text>(_formText('Chi tiêu')).style!.color,
+        AppColors.tabInactive,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Chạm dòng KHÔNG con ("Di chuyển") → mở Sửa prefill 100%', (tester) async {
+      final repo = FakeWalletRepository();
+      await _openScreen(tester, repo);
+
+      await tester.tap(find.text('Di chuyển'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryFormScreen), findsOneWidget);
+      expect(find.text('Sửa danh mục'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.byKey(const ValueKey('field-name')),
+            )
+            .controller!
+            .text,
+        'Di chuyển',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Chạm dòng CÓ con ("Ăn uống") → giữ no-op (màn 03 PBI sau)', (tester) async {
       await _openScreen(tester, FakeWalletRepository());
 
       await tester.tap(find.text('Ăn uống'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Sắp xếp'));
-      await tester.pumpAndSettle();
 
       expect(find.byType(CategoryListScreen), findsOneWidget);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byType(CategoryFormScreen), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Lưu qua form → list màn 01 phản ánh ngay không refresh tay (FR-009)', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      await _openScreen(tester, repo);
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('field-name')),
+        'Ăn vặt',
+      );
+      await tester.tap(find.byKey(const ValueKey('save-primary')));
+      await tester.pumpAndSettle();
+
+      // Về màn danh sách — danh mục mới xuất hiện ngay cuối nhóm chi.
+      expect(find.byType(CategoryFormScreen), findsNothing);
+      expect(find.byType(CategoryListScreen), findsOneWidget);
+      expect(find.text('Ăn vặt'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
