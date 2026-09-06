@@ -2,20 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../core/category/category.dart';
 import '../core/category/category_list.dart';
-import '../core/widgets/category_icon.dart';
+import '../core/widgets/category_row.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import 'category_child_list_screen.dart';
 import 'category_form_screen.dart';
 
-/// Màn quản lý danh mục (mockup `01`, PBI 13) — màn con từ Cài đặt: app bar
-/// "Danh mục" + back + icon sắp xếp (no-op); tab tự dựng Chi tiêu / Thu nhập
-/// (mặc định Chi tiêu); thân liệt kê danh mục **cấp 1** của tab (mỗi dòng
-/// bubble nhạt + icon màu `category.color`, tên, dòng phụ "N danh mục con",
-/// chevron); danh mục ẩn vẫn hiện đúng vị trí + nhãn "Đã ẩn"/mờ. Các điểm vào
-/// (dòng / FAB "+" / icon sắp xếp) là no-op có ripple — màn đích (thêm/sửa `02`,
-/// danh mục con `03`, sắp xếp `04`) ở PBI sau (FR-002/007, SC-008).
+/// Màn quản lý danh mục (mockup `01`, PBI 13/15) — màn con từ Cài đặt: app bar
+/// "Danh mục" + back + icon sắp xếp (no-op — màn `04` PBI sau); tab tự dựng Chi
+/// tiêu / Thu nhập (mặc định Chi tiêu); thân liệt kê danh mục **cấp 1** của tab
+/// (dòng dùng chung [CategoryRow]: bubble nhạt + icon màu `category.color`, tên,
+/// dòng phụ "N danh mục con" **chỉ khi có con**, chevron); danh mục ẩn vẫn hiện
+/// đúng vị trí + nhãn "Đã ẩn"/mờ. Chạm dòng: **không con** → form thêm/sửa `02`
+/// (PBI 14); **có con** → màn danh mục con `03` (PBI 15) rồi reload lặng khi về
+/// (FR-001/011). FAB "+" thêm danh mục gốc; icon sắp xếp no-op (màn `04` sau).
 ///
 /// StatefulWidget nạp **cả 2 loại một lần** khi mở (FR-004/SC-003 — chuyển tab
 /// lọc local, không đọc DB lại); mỗi lần vào từ Cài đặt đẩy route mới → reload
@@ -253,79 +255,29 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   }
 
   Widget _row(Category c) {
-    final children = childrenOf(_current, c.id);
-    final hidden = c.isHidden;
-    final labelColor = hidden ? AppColors.tabInactive : AppColors.textPrimary;
-    final iconColor = hidden ? AppColors.tabInactive : Color(c.color);
-    return InkWell(
-      key: ValueKey('category-row-${c.id}'),
-      // Không con → sửa `02`; có con → màn con `03` PBI sau (giữ no-op — chốt
-      // PBI 13/spec). Refresh lặng sau khi form trả về.
-      onTap: children.isEmpty ? () => _openForm(category: c) : () {},
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Row(
-          children: [
-            // Bubble nền nhạt phái sinh màu danh mục + icon màu đầy đủ (R5).
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Color(c.color).withValues(alpha: 0.14),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(categoryIcon(c.icon), color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          c.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: labelColor,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      if (hidden) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          'Đã ẩn',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (children.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '${children.length} danh mục con',
-                      style: const TextStyle(
-                        color: AppColors.tabInactive,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.tabInactive, size: 20),
-          ],
-        ),
+    final childCount = childrenOf(_current, c.id).length;
+    return CategoryRow(
+      category: c,
+      // Dòng phụ đếm con chỉ khi cha **có** con (FR-005) — trích dùng chung R4.
+      subtitle: childCount == 0 ? null : '$childCount danh mục con',
+      onTap: () => _onRowTap(c),
+    );
+  }
+
+  /// Chạm dòng cấp 1: **có con** → màn danh mục con `03` (R1/FR-001) rồi reload
+  /// lặng khi về (số con/tên cha phản ánh — FR-011/acceptance 8); **không con**
+  /// → form Sửa `02` (PBI 14, giữ).
+  Future<void> _onRowTap(Category c) async {
+    if (childrenOf(_current, c.id).isEmpty) {
+      await _openForm(category: c);
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CategoryChildListScreen(parent: c, repository: _repository),
       ),
     );
+    if (!mounted) return;
+    await _reloadSilent();
   }
 }

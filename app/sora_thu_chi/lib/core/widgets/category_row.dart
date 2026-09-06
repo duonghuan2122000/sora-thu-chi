@@ -1,0 +1,107 @@
+import 'package:flutter/material.dart';
+
+import '../../theme/app_colors.dart';
+import '../category/category.dart';
+import 'category_icon.dart';
+
+/// Dòng danh mục dùng chung màn danh sách `01` (PBI 13) & màn danh mục con `03`
+/// (PBI 15) — trích nguyên trạng `_row` của màn `01`: bubble tròn nền nhạt
+/// alpha [Category.color] chứa icon màu nhận diện (mờ khi ẩn), tên (ellipsis —
+/// không cắt chevron), nhãn "Đã ẩn" khi ẩn, dòng phụ tùy chọn [subtitle],
+/// chevron `›` phải. Trạng thái ẩn tự suy từ [category]; [subtitle] & hành động
+/// do caller quyết (màn `01` đếm con, màn `03` không truyền — con cấp 2 không
+/// có con). Không nhận trạng thái chọn-bật (chưa cần) — onTap do caller truyền.
+class CategoryRow extends StatelessWidget {
+  const CategoryRow({
+    super.key,
+    required this.category,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  final Category category;
+
+  /// Dòng phụ dưới tên (VD "N danh mục con" màn `01`); null = không render.
+  final String? subtitle;
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hidden = category.isHidden;
+    final labelColor = hidden ? AppColors.tabInactive : AppColors.textPrimary;
+    final iconColor = hidden ? AppColors.tabInactive : Color(category.color);
+    return InkWell(
+      key: ValueKey('category-row-${category.id}'),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Row(
+          children: [
+            // Bubble nền nhạt phái sinh màu danh mục + icon màu đầy đủ.
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Color(category.color).withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                categoryIcon(category.icon),
+                color: iconColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          category.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: labelColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (hidden) ...[
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Đã ẩn',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: const TextStyle(
+                        color: AppColors.tabInactive,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.tabInactive, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}

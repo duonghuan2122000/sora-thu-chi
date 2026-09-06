@@ -50,6 +50,7 @@ Future<void> _launch(
   WidgetTester tester,
   WalletRepository repository, {
   CategoryType? initialType,
+  int? initialParentId,
   Category? category,
   _Result? result,
 }) async {
@@ -67,6 +68,7 @@ Future<void> _launch(
                       MaterialPageRoute<Object?>(
                         builder: (_) => CategoryFormScreen(
                           initialType: initialType,
+                          initialParentId: initialParentId,
                           category: category,
                           repository: repository,
                         ),
@@ -547,6 +549,95 @@ void main() {
       await tester.tap(_parentField);
       await tester.pumpAndSettle();
       expect(find.text('Chọn danh mục cha'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('ADD — Thêm với initialParentId preset cha (PBI 15, acceptance 6/7)', () {
+    testWidgets('Ô cha hiện tên cha preset; lưu về cuối nhóm con của cha đó', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      final result = _Result();
+      await _launch(
+        tester,
+        repo,
+        initialType: CategoryType.expense,
+        initialParentId: 1,
+        result: result,
+      );
+
+      // Nhập tên trước khi cuộn (ô tên ở đầu form — ListView lười).
+      await tester.enterText(_nameField, 'Cà phê sữa');
+      await _reveal(tester, _parentField);
+      // Ô "Danh mục cha (tùy chọn)" hiển thị sẵn tên cha preset — không chọn lại.
+      expect(find.text('Ăn uống'), findsOneWidget);
+
+      await tester.tap(_savePrimary);
+      await tester.pumpAndSettle();
+
+      final saved = result.saved!;
+      expect(saved.type, CategoryType.expense);
+      expect(saved.parentId, 1);
+      // Cuối nhóm con của "Ăn uống": con seed sortOrder 0..2 → 3.
+      expect(saved.sortOrder, 3);
+      final stored = repo.categoriesStored.firstWhere((c) => c.name == 'Cà phê sữa');
+      expect(stored.parentId, 1);
+      expect(stored.type, CategoryType.expense);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('So trùng tên theo nhóm con của cha preset — trùng "Cà phê" bị chặn', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      final result = _Result();
+      await _launch(
+        tester,
+        repo,
+        initialType: CategoryType.expense,
+        initialParentId: 1,
+        result: result,
+      );
+
+      await tester.enterText(_nameField, 'Cà phê');
+      await tester.tap(_savePrimary);
+      await tester.pumpAndSettle();
+
+      expect(find.text(_errTrung), findsOneWidget);
+      expect(repo.categoriesStored.length, 15);
+      expect(find.byType(CategoryFormScreen), findsOneWidget);
+      expect(result.saved, isNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Sửa (category) vẫn thắng initialParentId — prefill cha thật của con', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      final caPhe = _seed(repo, 'Cà phê'); // con của "Ăn uống" (id 1).
+      await _launch(
+        tester,
+        repo,
+        initialType: CategoryType.expense,
+        initialParentId: 3, // "Nhà ở" — cố tình khác cha thật.
+        category: caPhe,
+      );
+
+      await _reveal(tester, _parentField);
+      expect(find.text('Ăn uống'), findsOneWidget); // cha thật của con.
+      expect(find.text('Nhà ở'), findsNothing); // preset không thắng.
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Không truyền initialParentId → mặc định "danh mục gốc" (không hồi quy PBI 14)', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      await _launch(tester, repo, initialType: CategoryType.expense);
+
+      await _reveal(tester, _parentField);
+      expect(find.text(_noParentLabel), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

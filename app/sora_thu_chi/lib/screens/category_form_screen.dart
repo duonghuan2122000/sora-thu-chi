@@ -23,12 +23,18 @@ class CategoryFormScreen extends StatefulWidget {
   const CategoryFormScreen({
     super.key,
     this.initialType,
+    this.initialParentId,
     this.category,
     this.repository,
   });
 
   /// Loại mặc định chế độ Thêm (lấy từ tab màn danh sách lúc chạm FAB).
   final CategoryType? initialType;
+
+  /// Cha preset chế độ Thêm (PBI 15 — thêm nhanh danh mục con từ màn `03`):
+  /// khởi tạo ô cha bằng id cha đang xem. Chỉ là giá trị khởi tạo — người dùng
+  /// vẫn đổi cha/loại theo ràng buộc form (đổi loại → cha về "Không có").
+  final int? initialParentId;
 
   /// Khác null = chế độ Sửa danh mục này.
   final Category? category;
@@ -75,7 +81,9 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     _nameCtrl = TextEditingController(text: widget.category?.name ?? '');
     _icon = widget.category?.icon ?? defaultIconFor(_type);
     _colorValue = widget.category?.color ?? defaultColorFor(_type);
-    _parentId = widget.category?.parentId;
+    // Sửa (`category.parentId`) thắng preset; Thêm dùng initialParentId (PBI 15);
+    // không truyền → null = danh mục gốc (hành vi cũ PBI 14).
+    _parentId = widget.category?.parentId ?? widget.initialParentId;
     _isHidden = widget.category?.isHidden ?? false;
     _load();
   }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/category_child_list_screen.dart';
 import 'package:sora_thu_chi/screens/category_form_screen.dart';
 import 'package:sora_thu_chi/screens/category_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
@@ -69,6 +70,12 @@ Finder _formText(String text) => find.descendant(
 Finder _formBack() => find.descendant(
   of: find.byType(CategoryFormScreen),
   matching: find.byType(BackButton),
+);
+
+/// Text trong màn danh mục con — màn `01` đè dưới giữ state khi mở màn `03`.
+Finder _childText(String text) => find.descendant(
+  of: find.byType(CategoryChildListScreen),
+  matching: find.text(text),
 );
 
 const _expenseParents = [
@@ -298,14 +305,64 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Chạm dòng CÓ con ("Ăn uống") → giữ no-op (màn 03 PBI sau)', (tester) async {
+    testWidgets('Chạm dòng CÓ con ("Ăn uống") → mở màn danh mục con của cha đó (acceptance 1)', (
+      tester,
+    ) async {
       await _openScreen(tester, FakeWalletRepository());
 
       await tester.tap(find.text('Ăn uống'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(CategoryListScreen), findsOneWidget);
+      expect(find.byType(CategoryChildListScreen), findsOneWidget);
       expect(find.byType(CategoryFormScreen), findsNothing);
+      // Màn con scope: 3 con của cha đó hiện (màn 01 đè dưới giữ state).
+      expect(_childText('Cà phê'), findsOneWidget);
+      expect(_childText('Ăn ngoài'), findsOneWidget);
+      expect(_childText('Đi chợ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Back từ màn con → màn 01 đúng tab + số con cha cập nhật (acceptance 8/FR-011)', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      await _openScreen(tester, repo);
+
+      await tester.tap(find.text('Ăn uống'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoryChildListScreen), findsOneWidget);
+
+      // Thêm 1 con trong màn con qua nút "+" (app bar màn con).
+      final addBtn = find.descendant(
+        of: find.descendant(
+          of: find.byType(CategoryChildListScreen),
+          matching: find.byType(AppBar),
+        ),
+        matching: find.byIcon(Icons.add),
+      );
+      await tester.tap(addBtn);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('field-name')), 'Cà phê sữa');
+      await tester.tap(find.byKey(const ValueKey('save-primary')));
+      await tester.pumpAndSettle();
+      expect(_childText('Cà phê sữa'), findsOneWidget);
+
+      // Back màn con → về màn 01 đúng tab + số con cha đã phản ánh.
+      final childBack = find.descendant(
+        of: find.byType(CategoryChildListScreen),
+        matching: find.byType(BackButton),
+      );
+      await tester.tap(childBack);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryListScreen), findsOneWidget);
+      expect(find.byType(CategoryChildListScreen), findsNothing);
+      expect(find.text('4 danh mục con'), findsOneWidget);
+      // Tab Chi tiêu vẫn đang chọn (không bị reset sau màn con).
+      expect(
+        tester.widget<Text>(find.text('Chi tiêu')).style!.color,
+        AppColors.teal,
+      );
       expect(tester.takeException(), isNull);
     });
 
