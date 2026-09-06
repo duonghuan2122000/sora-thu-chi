@@ -230,6 +230,18 @@ class DriftWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<void> reorderCategories({required List<int> orderedIds}) async {
+    // Một db.transaction() — n ghi `sort_order` đi cùng nhau (atomic, bám
+    // performTransfer): thả giữa chừng không bao giờ để nhóm cha lệch thứ tự.
+    await _db.transaction(() async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        await (_db.update(_db.categories)..where((t) => t.id.equals(orderedIds[i])))
+            .write(CategoriesCompanion(sortOrder: Value(i)));
+      }
+    });
+  }
+
+  @override
   Future<void> addTransaction({
     required int walletId,
     required TxnType type,

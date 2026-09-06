@@ -9,15 +9,17 @@ import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
 import 'category_child_list_screen.dart';
 import 'category_form_screen.dart';
+import 'category_sort_screen.dart';
 
-/// Màn quản lý danh mục (mockup `01`, PBI 13/15) — màn con từ Cài đặt: app bar
-/// "Danh mục" + back + icon sắp xếp (no-op — màn `04` PBI sau); tab tự dựng Chi
-/// tiêu / Thu nhập (mặc định Chi tiêu); thân liệt kê danh mục **cấp 1** của tab
-/// (dòng dùng chung [CategoryRow]: bubble nhạt + icon màu `category.color`, tên,
-/// dòng phụ "N danh mục con" **chỉ khi có con**, chevron); danh mục ẩn vẫn hiện
-/// đúng vị trí + nhãn "Đã ẩn"/mờ. Chạm dòng: **không con** → form thêm/sửa `02`
-/// (PBI 14); **có con** → màn danh mục con `03` (PBI 15) rồi reload lặng khi về
-/// (FR-001/011). FAB "+" thêm danh mục gốc; icon sắp xếp no-op (màn `04` sau).
+/// Màn quản lý danh mục (mockup `01`, PBI 13/15/16) — màn con từ Cài đặt: app
+/// bar "Danh mục" + back + icon sắp xếp (PBI 16: mở màn `04` theo tab đang mở);
+/// tab tự dựng Chi tiêu / Thu nhập (mặc định Chi tiêu); thân liệt kê danh mục
+/// **cấp 1** của tab (dòng dùng chung [CategoryRow]: bubble nhạt + icon màu
+/// `category.color`, tên, dòng phụ "N danh mục con" **chỉ khi có con**,
+/// chevron); danh mục ẩn vẫn hiện đúng vị trí + nhãn "Đã ẩn"/mờ. Chạm dòng:
+/// **không con** → form thêm/sửa `02` (PBI 14); **có con** → màn danh mục con
+/// `03` (PBI 15) rồi reload lặng khi về (FR-001/011). FAB "+" thêm danh mục
+/// gốc.
 ///
 /// StatefulWidget nạp **cả 2 loại một lần** khi mở (FR-004/SC-003 — chuyển tab
 /// lọc local, không đọc DB lại); mỗi lần vào từ Cài đặt đẩy route mới → reload
@@ -103,6 +105,22 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     await _reloadSilent();
   }
 
+  /// Mở màn sắp xếp `04` theo **đúng tab đang mở** (`_tab` — giả định spec,
+  /// không tab riêng trong màn sắp xếp); khi pop về reload lặng cả 2 loại →
+  /// thứ tự mới hiện ngay không làm mới tay (FR-007/008, giữ nguyên tab).
+  Future<void> _openSort() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CategorySortScreen(
+          initialType: _tab,
+          repository: _repository,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _reloadSilent();
+  }
+
   Future<void> _reloadSilent() async {
     try {
       final results = await Future.wait([
@@ -127,7 +145,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         IconButton(
           tooltip: 'Sắp xếp',
           icon: const Icon(Icons.sort, color: AppColors.white),
-          onPressed: () {}, // điểm vào màn sắp xếp `04` — PBI sau (no-op R8).
+          onPressed: _openSort, // mở màn sắp xếp `04` theo tab đang mở (PBI 16).
         ),
       ],
       floatingActionButton: FloatingActionButton(

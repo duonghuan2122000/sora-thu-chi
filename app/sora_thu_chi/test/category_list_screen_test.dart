@@ -6,6 +6,7 @@ import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/category_child_list_screen.dart';
 import 'package:sora_thu_chi/screens/category_form_screen.dart';
 import 'package:sora_thu_chi/screens/category_list_screen.dart';
+import 'package:sora_thu_chi/screens/category_sort_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
@@ -75,6 +76,12 @@ Finder _formBack() => find.descendant(
 /// Text trong màn danh mục con — màn `01` đè dưới giữ state khi mở màn `03`.
 Finder _childText(String text) => find.descendant(
   of: find.byType(CategoryChildListScreen),
+  matching: find.text(text),
+);
+
+/// Text trong màn sắp xếp `04` — màn `01` đè dưới giữ state khi mở (PBI 16).
+Finder _sortText(String text) => find.descendant(
+  of: find.byType(CategorySortScreen),
   matching: find.text(text),
 );
 
@@ -405,6 +412,74 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(FloatingActionButton), findsOneWidget);
       expect(find.text('Giáo dục'), findsOneWidget);
+    });
+  });
+
+  group('CategoryListScreen — điểm vào màn sắp xếp `04` (PBI 16, FR-001)', () {
+    testWidgets('chạm icon Sắp xếp tab Chi tiêu → mở màn sắp xếp đúng cha chi tiêu (acceptance 1)', (
+      tester,
+    ) async {
+      await _openScreen(tester, FakeWalletRepository());
+
+      await tester.tap(find.byTooltip('Sắp xếp'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategorySortScreen), findsOneWidget);
+      expect(_sortText('Di chuyển'), findsOneWidget);
+      expect(_sortText('Lương'), findsNothing); // không lẫn loại kia.
+      expect(_sortText('Cà phê'), findsNothing); // không lẫn con.
+    });
+
+    testWidgets('mở từ tab Thu nhập → màn sắp xếp đúng cha thu nhập (acceptance 3)', (
+      tester,
+    ) async {
+      await _openScreen(tester, FakeWalletRepository());
+
+      await tester.tap(find.text('Thu nhập'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Sắp xếp'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategorySortScreen), findsOneWidget);
+      expect(_sortText('Lương'), findsOneWidget);
+      expect(_sortText('Di chuyển'), findsNothing);
+    });
+
+    testWidgets('back từ màn sắp xếp → màn 01 đúng tab + thứ tự mới hiện ngay không refresh tay (FR-007/008)', (
+      tester,
+    ) async {
+      final repo = FakeWalletRepository();
+      await _openScreen(tester, repo);
+
+      await tester.tap(find.byTooltip('Sắp xếp'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategorySortScreen), findsOneWidget);
+
+      // Mô phỏng kéo–thả: ghi đảo toàn bộ cha chi tiêu qua seam (cùng repo)
+      // — màn sắp xếp đã ghi khi thả (FR-006); về list reload lặng phản ánh.
+      const reversed = [8, 7, 6, 5, 4, 3, 2, 1];
+      await repo.reorderCategories(orderedIds: reversed);
+
+      final sortBack = find.descendant(
+        of: find.byType(CategorySortScreen),
+        matching: find.byType(BackButton),
+      );
+      await tester.tap(sortBack);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategorySortScreen), findsNothing);
+      expect(find.byType(CategoryListScreen), findsOneWidget);
+      // Tab Chi tiêu vẫn đang chọn.
+      expect(
+        tester.widget<Text>(find.text('Chi tiêu')).style!.color,
+        AppColors.teal,
+      );
+      // Thứ tự mới hiện ngay: Giáo dục lên đầu, Ăn uống xuống cuối.
+      expect(
+        tester.getTopLeft(find.text('Giáo dục')).dy,
+        lessThan(tester.getTopLeft(find.text('Ăn uống')).dy),
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 }

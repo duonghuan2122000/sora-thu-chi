@@ -210,6 +210,30 @@ class FakeWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<void> reorderCategories({required List<int> orderedIds}) async {
+    // Với mỗi id theo thứ tự list gán sortOrder = index (0..n−1) cho phần tử
+    // tương ứng trong store; phần tử khác (con cấp 2, loại kia) bất biến.
+    for (var i = 0; i < orderedIds.length; i++) {
+      final idx = _categories.indexWhere((c) => c.id == orderedIds[i]);
+      if (idx < 0) {
+        throw StateError('Không tìm thấy danh mục ${orderedIds[i]} trong fake.');
+      }
+      final c = _categories[idx];
+      _categories[idx] = Category(
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        icon: c.icon,
+        color: c.color,
+        parentId: c.parentId,
+        sortOrder: i,
+        isHidden: c.isHidden,
+        isSystem: c.isSystem,
+      );
+    }
+  }
+
+  @override
   Future<void> addTransaction({
     required int walletId,
     required TxnType type,

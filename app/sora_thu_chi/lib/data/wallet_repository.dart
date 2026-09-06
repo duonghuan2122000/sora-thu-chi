@@ -71,6 +71,13 @@ abstract class WalletRepository {
   /// đổi). Trả [Category] đã lưu. Không tự validate/tính sortOrder (xem trên).
   Future<Category> updateCategory(Category category);
 
+  /// Ghi atomic thứ tự mới cho danh sách **đủ danh mục cha cấp 1 của đúng một
+  /// loại** (màn sắp xếp `04`): đặt `sort_order = 0..n−1` cho từng id theo thứ
+  /// tự [orderedIds] trong một transaction (bám mẫu `performTransfer`). Con cấp
+  /// 2 & cha loại kia bất biến — mọi consumer xếp theo từng nhóm con
+  /// (research R4). Không sửa tên/ẩn/hệ thống.
+  Future<void> reorderCategories({required List<int> orderedIds});
+
   /// Ghi atomic một giao dịch **thu/chi** mới (FR-012/SC-003): bù `balance` ví
   /// (`income` +, `expense` −) và insert 1 dòng `transactions` có dấu theo loại
   /// (`income` `+x`, `expense` `−x`), `category_id = category.id`,
