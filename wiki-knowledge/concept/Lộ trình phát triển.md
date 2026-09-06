@@ -21,7 +21,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 
 ### Ghi chú giai đoạn
 - **Khóa app = mã PIN bắt buộc lần đầu mở app** — quyết định chốt (lệch `docs/auth §2.1` vốn tùy chọn) và **đã triển khai xong (PBI 3)**. Sinh trắc (vân tay/FaceID) là lớp tiện lợi để sau, chưa thuộc đợt này — chi tiết rule tại [[Hồ sơ & Bảo mật]]. `docs/auth` chưa đồng bộ theo.
-- **Module Danh mục (MVP)** — màn danh sách `01` **đã triển khai (PBI 13)** + màn thêm/sửa `02` **đã triển khai (PBI 14)** qua điểm vào Cài đặt → "Danh mục" (mô tả tại [[Danh mục]]). Còn lại: danh sách con `03` (điểm vào dòng CÓ con — giữ no-op) và sắp xếp kéo-thả `04` (icon "Sắp xếp" app bar no-op). Xóa/gộp danh mục cũng là PBI sau.
+- **Module Danh mục (MVP)** — màn danh sách `01` **đã triển khai (PBI 13)** + màn thêm/sửa `02` **đã triển khai (PBI 14)** + màn danh sách con `03` **đã triển khai (PBI 15)** qua điểm vào Cài đặt → "Danh mục" (mô tả tại [[Danh mục]]). Còn lại: sắp xếp kéo-thả `04` (icon "Sắp xếp" app bar no-op) và xóa/gộp danh mục (PBI sau).
 - **Backup/Restore GĐ3 nhưng là "van an toàn"** cho mất PIN/gỡ app ([[Hồ sơ & Bảo mật]]) — cân nhắc sớm hơn; khuyến nghị nhắc user backup định kỳ từ sớm.
 - **Import CSV/Excel + OCR**: mô tả "tùy chọn mở rộng/nâng cao", **chưa gắn GĐ cụ thể** trong roadmap chính (transaction doc §1) — ⚠ cần định vị (GĐ2 hay GĐ3).
 - **Ngân sách GĐ2 chia nhỏ:** 2a (budget danh mục + tiến độ, chưa push) → 2b (budget tổng/theo ví, push, copy) → 2c (so sánh dự kiến–thực tế, tốc độ tiêu — cần ≥2 kỳ lịch sử). Xem [[Ngân sách]].
