@@ -84,6 +84,19 @@ class Transactions extends Table {
   TextColumn get location => text().withDefault(const Constant(''))();
 }
 
+/// Bảng cài đặt key-value chung (data-model §AppSettings, schema v5) — nguồn
+/// lưu mọi cài đặt tiện ích về sau (PBI 17: 2 công tắc; PBI sau chỉ thêm row,
+/// không thêm migration). Key vắng = chưa từng đổi → mặc định do tầng domain
+/// quyết định; row ghi khi người dùng bật/tắt.
+@DataClassName('AppSettingsRow')
+class AppSettings extends Table {
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}
+
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
 QueryExecutor _openConnection() {
   return LazyDatabase(() async {
@@ -93,12 +106,12 @@ QueryExecutor _openConnection() {
   });
 }
 
-@DriftDatabase(tables: [Wallets, Categories, Transactions])
+@DriftDatabase(tables: [Wallets, Categories, Transactions, AppSettings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -133,6 +146,12 @@ class AppDatabase extends _$AppDatabase {
       // sẵn) → bỏ qua; dòng cũ giữ category_id null — hiển thị text không đổi.
       if (from >= 2 && from < 4) {
         await m.addColumn(transactions, transactions.categoryId);
+      }
+      // from < 5 (PBI 17): mọi DB cũ hơn v5 chưa từng có bảng cài đặt → tạo
+      // bảng key-value AppSettings (thuần tạo, không seed — R8); không đụng
+      // nhánh migration/seed ví/danh mục/giao dịch hiện có.
+      if (from < 5) {
+        await m.createTable(appSettings);
       }
     },
   );

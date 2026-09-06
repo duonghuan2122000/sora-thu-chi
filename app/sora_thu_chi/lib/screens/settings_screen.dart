@@ -4,25 +4,29 @@ import '../core/profile/device_profile.dart';
 import '../core/widgets/screen_header.dart';
 import '../theme/app_colors.dart';
 import 'category_list_screen.dart';
+import 'utilities_screen.dart';
 import 'wallet_list_screen.dart';
 
 /// Màn trung tâm Cài đặt — khối hồ sơ + 2 nhóm mục. Các hàng còn lại là điểm
 /// vào chưa kích hoạt — chạm không mở luồng; riêng hàng "Quản lý ví" điều hướng
-/// sang [WalletListScreen] (FR-001 PBI 5) và hàng "Danh mục" sang
-/// [CategoryListScreen] (FR-001 PBI 13).
-/// [profile]/[onManageWalletTap]/[onManageCategoryTap] là seam để test bơm giá
-/// trị; shell dùng mặc định.
+/// sang [WalletListScreen] (FR-001 PBI 5), hàng "Danh mục" sang
+/// [CategoryListScreen] (FR-001 PBI 13) và hàng "Tiện ích & Cá nhân hóa" sang
+/// [UtilitiesScreen] (FR-001 PBI 17).
+/// [profile]/[onManageWalletTap]/[onManageCategoryTap]/[onManageUtilitiesTap]
+/// là seam để test bơm giá trị; shell dùng mặc định.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     this.profile = DeviceProfile.initial,
     this.onManageWalletTap,
     this.onManageCategoryTap,
+    this.onManageUtilitiesTap,
   });
 
   final DeviceProfile profile;
   final VoidCallback? onManageWalletTap;
   final VoidCallback? onManageCategoryTap;
+  final VoidCallback? onManageUtilitiesTap;
 
   /// Default đẩy màn list ví; khi test bơm callback → gọi callback không push.
   void _openManageWallet(BuildContext context) {
@@ -45,6 +49,18 @@ class SettingsScreen extends StatelessWidget {
     }
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => CategoryListScreen()),
+    );
+  }
+
+  /// Default đẩy màn Tiện ích & Cá nhân hóa; test bơm callback → không push.
+  void _openManageUtilities(BuildContext context) {
+    final callback = onManageUtilitiesTap;
+    if (callback != null) {
+      callback();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => UtilitiesScreen()),
     );
   }
 
@@ -92,6 +108,14 @@ class SettingsScreen extends StatelessWidget {
               _SettingsRow(
                 label: 'Danh mục',
                 onTap: () => _openManageCategory(context),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.tabInactive,
+                ),
+              ),
+              _SettingsRow(
+                label: 'Tiện ích & Cá nhân hóa',
+                onTap: () => _openManageUtilities(context),
                 trailing: const Icon(
                   Icons.chevron_right,
                   color: AppColors.tabInactive,

@@ -3,13 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/profile/device_profile.dart';
+import 'package:sora_thu_chi/core/utilities/utilities_store.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/category_list_screen.dart';
 import 'package:sora_thu_chi/screens/settings_screen.dart';
+import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/fake_utilities_store.dart';
 import 'fakes/fake_wallet_repository.dart';
 
 /// Danh sách ví giờ đọc [WalletController] — đăng ký controller fake để list
@@ -30,11 +33,20 @@ void _registerRepository() {
   addTearDown(Get.reset);
 }
 
+/// [UtilitiesScreen] mở qua SettingsScreen (store null) tự ensure store — đăng
+/// ký store fake để không khởi tạo drift (sqlite native) trong widget test.
+void _registerUtilitiesStore() {
+  Get.reset();
+  Get.put<UtilitiesStore>(FakeUtilitiesStore());
+  addTearDown(Get.reset);
+}
+
 Future<void> pumpSettings(
   WidgetTester tester, {
   DeviceProfile profile = DeviceProfile.initial,
   VoidCallback? onManageWalletTap,
   VoidCallback? onManageCategoryTap,
+  VoidCallback? onManageUtilitiesTap,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -44,6 +56,7 @@ Future<void> pumpSettings(
           profile: profile,
           onManageWalletTap: onManageWalletTap,
           onManageCategoryTap: onManageCategoryTap,
+          onManageUtilitiesTap: onManageUtilitiesTap,
         ),
       ),
     ),
@@ -52,7 +65,7 @@ Future<void> pumpSettings(
 
 void main() {
   group('SettingsScreen — hiển thị màn Cài đặt', () {
-    testWidgets('Profile mặc định → đủ khối hồ sơ + 2 nhóm/5 hàng đúng', (tester) async {
+    testWidgets('Profile mặc định → đủ khối hồ sơ + 2 nhóm/6 hàng đúng', (tester) async {
       await pumpSettings(tester);
 
       // Header + khối hồ sơ.
@@ -61,7 +74,7 @@ void main() {
       expect(find.text('Người dùng'), findsOneWidget);
       expect(find.text('Chạm để đổi ảnh đại diện'), findsOneWidget);
 
-      // 2 nhóm + 5 hàng.
+      // 2 nhóm + 6 hàng.
       expect(find.text('TÀI KHOẢN'), findsOneWidget);
       expect(find.text('Tiền tệ mặc định'), findsOneWidget);
       expect(find.text('Đổi mã PIN'), findsOneWidget);
@@ -69,6 +82,7 @@ void main() {
       expect(find.text('KHÁC'), findsOneWidget);
       expect(find.text('Quản lý ví'), findsOneWidget);
       expect(find.text('Danh mục'), findsOneWidget);
+      expect(find.text('Tiện ích & Cá nhân hóa'), findsOneWidget);
 
       // Giá trị tiền tệ + công tắc tắt.
       expect(find.text('VND'), findsOneWidget);
@@ -86,6 +100,7 @@ void main() {
         'Mở khóa sinh trắc học',
         'Quản lý ví',
         'Danh mục',
+        'Tiện ích & Cá nhân hóa',
       ];
       double prev = -1;
       for (final label in ordered) {
@@ -205,6 +220,38 @@ void main() {
 
       expect(tapped, isTrue);
       expect(find.byType(CategoryListScreen), findsNothing);
+      expect(find.byType(BackButton), findsNothing);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+    });
+
+    testWidgets('Tap "Tiện ích & Cá nhân hóa" → đẩy UtilitiesScreen, back về', (tester) async {
+      _registerUtilitiesStore();
+      await pumpSettings(tester);
+
+      await tester.tap(find.text('Tiện ích & Cá nhân hóa'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UtilitiesScreen), findsOneWidget);
+      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.text('Tiện ích & Cá nhân hóa'), findsOneWidget); // app bar màn con
+      expect(find.text('Giao diện'), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(find.byType(UtilitiesScreen), findsNothing);
+    });
+
+    testWidgets('Bơm onManageUtilitiesTap → gọi callback, không đẩy route', (tester) async {
+      var tapped = false;
+      await pumpSettings(tester, onManageUtilitiesTap: () => tapped = true);
+
+      await tester.tap(find.text('Tiện ích & Cá nhân hóa'));
+      await tester.pumpAndSettle();
+
+      expect(tapped, isTrue);
+      expect(find.byType(UtilitiesScreen), findsNothing);
       expect(find.byType(BackButton), findsNothing);
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
