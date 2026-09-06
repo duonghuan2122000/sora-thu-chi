@@ -5,8 +5,11 @@ tags: [module, auth, security, pin, entity]
 sources:
   - ../docs/auth/chi-tiet-quan-ly-tai-khoan-nguoi-dung.md
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
+  - ../docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md
   - ../../.specify/specs/3/spec.md
   - ../../.specify/specs/3/data-model.md
+  - ../../.specify/specs/17/spec.md
+  - ../../.specify/specs/17/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -48,6 +51,16 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 - **Đợt sau (PBI riêng)** — lớp "tiện lợi" thay thế trên nền PIN (PIN vẫn là lớp gốc). Numpad hiện **để trống** vị trí vân tay (hàng cuối trái).
 - Khi có: thu hồi quyền (OS) → tự tắt toggle, yêu cầu bật lại bằng PIN; đổi vân tay đăng ký → vô hiệu hóa sinh trắc tạm thời, xác thực lại bằng PIN.
 
+## Màn Tiện ích & Cá nhân hóa (danh sách) — đã triển khai PBI 17
+> **PBI 17 (2026-09-06)**: dựng **màn danh sách** gom điểm vào tùy chỉnh theo mockup `docs/tool/01-danh-sach-tien-ich.svg`. Entry: Cài đặt nhóm **KHÁC → "Tiện ích & Cá nhân hóa"** (ngay dưới "Danh mục"), `SubPageScaffold` app bar teal + back + tiêu đề, không bottom nav. Nguồn đặc tả `.specify/specs/17`.
+
+**Bố cục — 3 nhóm / 8 hàng**, mỗi hàng vòng nền nhạt (`tealLightBg`) + icon **teal** + tên + dòng phụ + phần cuối:
+- **HIỂN THỊ** — Giao diện (dòng phụ "Sáng / Tối / Theo hệ thống", trailing "Hệ thống" ▸), Ngôn ngữ (trailing "Tiếng Việt" ▸), Định dạng & Tiền tệ ▸.
+- **TRẢI NGHIỆM** — Widget màn hình chính (switch hiển thị **"bật" câm**, chạm toàn hàng → **dialog hướng dẫn ghim widget theo nền tảng** — ghim do OS quản lý, trạng thái **không lưu**); **Ẩn số dư (Privacy mode)** switch thật (mặc định **tắt**); **Máy tính khi nhập số tiền** switch thật (mặc định **bật**).
+- **DỮ LIỆU & TÌM KIẾM** — Tìm kiếm toàn cục ▸, Quản lý Tag ▸ (dòng phụ **mô tả** "Gắn nhãn cho giao dịch", **không** `#…`/số "12 tag" giả — SC-008).
+
+**2 công tắc thật nhớ trạng thái** qua bảng drift key-value **`AppSettings` (schema v5)** — key `hideBalance` / `amountCalculatorEnabled`; **key vắng = mặc định domain**, row chỉ ghi khi bật/tắt (write-through). Hiệu ứng chức năng **chưa kéo** (che số dư `••••••`, đổi bàn phím nhập tiền = PBI sau — xem [[Ví & Tài khoản]]). Cấu trúc: domain thuần `UtilitiesPrefs` (`toSettings`/`fromSettings` an toàn, không ném) + hằng khóa + seam `UtilitiesStore` (load/save) + `DriftUtilitiesStore` + `ensureUtilitiesStore()` (GetX singleton, bám `ensureWalletRepository`); test bơm `FakeUtilitiesStore`. **5 hàng điều hướng no-op** chờ màn con `02–07` (Giao diện, Ngôn ngữ, Định dạng & Tiền tệ, Tìm kiếm toàn cục, Quản lý Tag). PBI cài đặt sau **chỉ thêm row**, không thêm migration.
+
 ## Hồ sơ cá nhân
 | Trường | Chốt |
 |---|---|
@@ -67,7 +80,7 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 
 ## Bảo mật mở rộng (mục 13 tính năng tổng)
 - Mã hóa dữ liệu local (SQLite/Hive mã hóa); không lưu số thẻ/ngân hàng thật (chỉ nhãn tham chiếu).
-- Privacy mode: ẩn số dư màn chính (che `••••••`) — liên kết [[Ví & Tài khoản]].
+- Privacy mode: ẩn số dư màn chính (che `••••••`) — công tắc "Ẩn số dư" **đã lưu được** (PBI 17, `AppSettings` v5); hiệu ứng che ở các màn có số tiền là PBI sau — liên kết [[Ví & Tài khoản]].
 - Yêu cầu sinh trắc trước khi xem/sửa dữ liệu nhạy cảm (tùy chọn).
 
 ## Màn hình bảo mật (khác biệt với shell)

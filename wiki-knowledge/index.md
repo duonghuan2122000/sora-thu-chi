@@ -7,7 +7,7 @@ Wiki tri thức nghiệp vụ + thiết kế app **Sora Thu Chi** (Flutter, offl
 - [[Giao dịch]] — thu/chi/chuyển khoản, định kỳ, tìm/lọc, undo, màn hình
 - [[Danh mục]] — 2 cấp cha-con, schema drift v4, seed, màn quản lý `01` (PBI 13) + thêm/sửa `02` (PBI 14), luật gắn giao dịch
 - [[Ngân sách]] — budget + snapshot từng kỳ, cảnh báo, vòng đời
-- [[Hồ sơ & Bảo mật]] — device profile, khóa app = mã PIN bắt buộc lần đầu (PBI 3 đã triển khai) + chống dò, đổi/quên PIN
+- [[Hồ sơ & Bảo mật]] — device profile, khóa app = mã PIN bắt buộc lần đầu (PBI 3 đã triển khai) + chống dò, đổi/quên PIN; màn Tiện ích & Cá nhân hóa danh sách `01` (PBI 17 đã triển khai, bảng `AppSettings` schema v5)
 
 ## Concepts
 - [[Nguyên tắc nghiệp vụ]] — các rule xuyên module (số dư suy ra, ẩn-vs-xóa, không hồi tố lịch sử...)
