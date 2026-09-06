@@ -1,6 +1,6 @@
 ---
 title: "Danh mục"
-date: 2026-09-05
+date: 2026-09-06
 tags: [module, category, entity]
 sources:
   - ../docs/category/tinh-nang-nghiep-vu-quan-ly-danh-muc.md
@@ -8,6 +8,7 @@ sources:
   - ../../.specify/specs/11/spec.md
   - ../../.specify/specs/13/spec.md
   - ../../.specify/specs/14/spec.md
+  - ../../.specify/specs/16/spec.md
 ---
 
 # Danh mục
@@ -38,11 +39,11 @@ Khớp `CategorySource.all` (PBI 11): **8 cha chi** (Ăn uống, Di chuyển, Nh
 9. `is_hidden`: loại khỏi chọn nhanh khi nhập gd, **vẫn hiện** trong báo cáo/lịch sử cũ **và trên màn quản lý danh mục** (PBI 13: nhãn "Đã ẩn"/mờ, đúng vị trí — để còn đường bỏ ẩn/sửa; con ẩn vẫn đếm vào "N danh mục con").
 
 ## Sắp xếp & hiển thị
-- `sort_order` kéo-thả (drag handle — màn `04`, chưa làm), độc lập theo tab Thu/Chi và theo nhóm cha/con.
+- `sort_order` kéo-thả bằng tay (màn `04` — PBI 16 đã triển khai: `CategorySortScreen`), độc lập theo tab Thu/Chi và theo nhóm cha/con; **cha cấp 1 cùng loại** được đánh lại liên tục `0..n−1` mỗi lần thả (con cấp 2 & loại kia bất biến).
 - Thứ tự dùng cho: DS danh mục, chọn nhanh khi nhập gd, chú thích biểu đồ.
 - DS tách 2 tab **Chi tiêu / Thu nhập**; chạm danh mục **không con** → mở `02` Sửa (PBI 14); **có con** → màn DS con `03` (PBI 15 — CategoryChildListScreen).
 - **3 seam đọc** trong `WalletRepository` (phân vai, không đổi nhau): `categories({type})` = danh mục **đang hoạt động** (cha+con, `!isHidden`) cho picker giao dịch mới PBI 11; `categoriesIncludingHidden({type})` (thêm PBI 13) = **toàn bộ** cha+con **gồm cả ẩn**, cho màn quản lý — cần con ẩn để đếm dòng phụ; `categoryHasTransactions(id)` (thêm PBI 14) = có ≥1 dòng `transactions.category_id == id` — nguồn **khóa đổi loại** khi Sửa (dòng cũ nâng cấp `< v4` giữ `category_id` null → không tính, chấp nhận dev-DB). Tách cấp 1/đếm con là module **thuần** `core/category/category_list.dart` (`topLevelParents`/`childrenOf`, sắp sortOrder **ổn định**), màn con `03` tái dùng `childrenOf` (lọc con local).
-- **3 seam ghi** (PBI 14, drift v4 giữ nguyên — không `build_runner`): `insertCategory(Category)` (bỏ qua `id` — DB sinh, `isSystem = false`, `isHidden` theo form, trả dòng đã lưu) và `updateCategory(Category)` (`update where id`, ghi **đủ** trường nghiệp vụ gồm `isHidden` + `isSystem` giữ giá trị dòng). Repository **không tự validate** trùng tên/khóa loại/cây 2 cấp/tính `sortOrder` — validation & sort thuộc module thuần + UI (bám seam `addTransaction`).
+- **4 seam ghi** (PBI 14 + 16, drift v4 giữ nguyên — không `build_runner`): `insertCategory(Category)` (bỏ qua `id` — DB sinh, `isSystem = false`, `isHidden` theo form, trả dòng đã lưu) và `updateCategory(Category)` (`update where id`, ghi **đủ** trường nghiệp vụ gồm `isHidden` + `isSystem` giữ giá trị dòng) + `reorderCategories({required List<int> orderedIds})` (PBI 16 — ghi `sort_order = 0..n−1` cho từng id theo thứ tự list trong **1 transaction**, bám mẫu `performTransfer`; caller truyền **đủ cha cấp 1 đúng một loại**). Repository **không tự validate** trùng tên/khóa loại/cây 2 cấp/tính `sortOrder` — validation & sort thuộc module thuần + UI (bám seam `addTransaction`).
 - **Module thuần** cho màn `02`: `category_form.dart` (`categoryNameError` trim/trống/trùng nhóm gồm ẩn/bỏ `excludeId`, `endOfGroupSortOrder` = max+1 hay 0, `canChangeType` = `!hasTransactions && !hasChildren && isParent`, `parentsOfType` wrap `topLevelParents`) + `category_presets.dart` (`categoryIconChoices` 15 khóa, `defaultIconFor`/`defaultColorFor` theo type, `categoryPresetColors` **13 ARGB** = 5 màu seed + 8 token `AppColors.category*`). Bất biến test: mọi `CategorySource.all` có icon ∈ choices + color ∈ palette — Sửa luôn chọn lại được màu/icon cũ.
 
 ## Edge cases
@@ -65,14 +66,14 @@ Khớp `CategorySource.all` (PBI 11): **8 cha chi** (Ăn uống, Di chuyển, Nh
 | `01-danh-sach-danh-muc.svg` | DS, tab Chi tiêu / Thu nhập | ✅ **Đã triển khai** (PBI 13 — `CategoryListScreen`) |
 | `02-them-sua-danh-muc.svg` | Thêm/sửa danh mục (loại, icon, màu, cha, ẩn) | ✅ **Đã triển khai** (PBI 14 — `CategoryFormScreen`) |
 | `03-danh-muc-con.svg` | DS con của 1 cha | ✅ **Đã triển khai** (PBI 15 — `CategoryChildListScreen`) |
-| `04-sap-xep-danh-muc.svg` | Kéo-thả thứ tự | ⏳ PBI sau (icon "Sắp xếp" app bar no-op) |
+| `04-sap-xep-danh-muc.svg` | Kéo-thả thứ tự | ✅ **Đã triển khai** (PBI 16 — `CategorySortScreen`) |
 
 ### Màn `01` — danh sách danh mục (`CategoryListScreen`, PBI 13 — đã triển khai)
 - Điểm vào: hàng **"Danh mục"** nhóm KHÁC trong Cài đặt, ngay dưới "Quản lý ví" (`settings_screen.dart`).
-- Bố cục (khớp mockup): app bar teal "Danh mục" + back + icon "Sắp xếp" (điểm vào màn `04`); tab tự dựng **Chi tiêu / Thu nhập** (mặc định Chi tiêu — chọn teal + gạch chân, kia xám); thân liệt kê **danh mục cấp 1** của tab (dòng: bubble nền nhạt phái sinh `color` alpha ~0.14 + icon màu đầy đủ, tên, dòng phụ "N danh mục con" chỉ khi có con, chevron); FAB "+" teal (thêm mới).
+- Bố cục (khớp mockup): app bar teal "Danh mục" + back + icon "Sắp xếp" (điểm vào màn `04`); tab tự dựng **Chi tiêu / Thu nhập** (mặc định Chi tiêu — chọn teal + gạch chân, kia xám); thân liệt kê **danh mục cấp 1** của tab (dòng: bubble nền nhạt phái sinh `color` alpha ~0.14 + icon màu đầy đủ, tên, dòng phụ "N danh mục con" chỉ khi có con, chevron); FAB "+" teal (thêm mới); icon "Sắp xếp" (PBI 16) mở màn `04` theo tab.
 - Luật hiển thị: màn quản lý hiện **cả danh mục ẩn** đúng vị trí + nhãn "Đã ẩn"/mờ (không rút khỏi màn quản lý); "N danh mục con" **gồm con đang ẩn**; tab rỗng **thật** → empty hướng dẫn, còn **ẩn-toàn-bộ** → vẫn hiện dòng ẩn (không empty giả); 2 danh mục cùng tên khác loại/cha là dòng độc lập.
 - State: StatefulWidget nạp **2 loại 1 lần** khi mở (`Future.wait` 2× `categoriesIncludingHidden`), chuyển tab lọc local không đọc DB lại; mỗi lần vào từ Cài đặt push route mới → reload (dữ liệu mới phản ánh). Không GetX controller. Không số tiền trên màn.
-- Điểm vào (PBI 14/15 đã nối, khác no-op PBI 13): **FAB "+"** → mở `02` chế độ **Thêm** với `initialType = tab đang mở`; **chạm dòng KHÔNG con** → mở `02` chế độ **Sửa** (prefill danh mục đó); **chạm dòng CÓ con** → **push màn con `03`** (`CategoryChildListScreen(parent: c)` — PBI 15) rồi khi về **refresh lặng cả 2 loại** (`categoriesIncludingHidden` expense + income, không spinner) — số con/tên cha phản ánh; icon "Sắp xếp" → `04` no-op. Sau `await Navigator.push(form)` trả về (lưu hay back) → **refresh lặng cả 2 loại** — thêm/sửa phản ánh ngay. **Dòng cấp 1 dùng chung `CategoryRow`** (widget chia sẻ `core/widgets/category_row.dart`): bubble nền nhạt alpha `color` + icon (mờ khi ẩn) + tên (ellipsis) + nhãn "Đã ẩn" + dòng phụ `subtitle` (màn `01` = "N danh mục con" **chỉ khi có con**, truyền qua param) + chevron; màn `03` tái dùng không truyền subtitle.
+- Điểm vào (PBI 14/15 đã nối, khác no-op PBI 13): **FAB "+"** → mở `02` chế độ **Thêm** với `initialType = tab đang mở`; **chạm dòng KHÔNG con** → mở `02` chế độ **Sửa** (prefill danh mục đó); **chạm dòng CÓ con** → **push màn con `03`** (`CategoryChildListScreen(parent: c)` — PBI 15) rồi khi về **refresh lặng cả 2 loại** (`categoriesIncludingHidden` expense + income, không spinner) — số con/tên cha phản ánh; icon "Sắp xếp" (PBI 16) → push màn `04` với `initialType = tab đang mở`, sau pop **reload lặng cả 2 loại** → thứ tự mới hiện ngay. Sau `await Navigator.push(form)` trả về (lưu hay back) → **refresh lặng cả 2 loại** — thêm/sửa phản ánh ngay. **Dòng cấp 1 dùng chung `CategoryRow`** (widget chia sẻ `core/widgets/category_row.dart`): bubble nền nhạt alpha `color` + icon (mờ khi ẩn) + tên (ellipsis) + nhãn "Đã ẩn" + dòng phụ `subtitle` (màn `01` = "N danh mục con" **chỉ khi có con**, truyền qua param) + chevron; màn `03` tái dùng không truyền subtitle; màn `04` (PBI 16) truyền `leading` (tay cầm) + `showChevron: false`. `CategoryRow` có **2 param optional** `leading` + `showChevron` (default giữ chevron/không leading → màn `01`/`03` không đổi).
 - **Không đổi schema** (PBI 13 chỉ đọc, drift v4 giữ nguyên, không `build_runner`); không thêm dependency.
 
 ### Màn `02` — thêm/sửa danh mục (`CategoryFormScreen`, PBI 14 — đã triển khai)
@@ -89,3 +90,10 @@ Khớp `CategorySource.all` (PBI 11): **8 cha chi** (Ăn uống, Di chuyển, Nh
 - **Danh sách**: chỉ **con trực tiếp cùng loại** của cha đang xem theo `sortOrder` ổn định (dòng dùng chung `CategoryRow` — bubble icon+màu + tên + chevron; **không** dòng phụ đếm con vì con cấp 2 không có con); con **ẩn** vẫn hiện đúng vị trí + mờ + nhãn "Đã ẩn"; cuối list hàng **"+ Thêm danh mục con"** (icon + teal; text `Expanded` chống tràn cỡ chữ lớn). Empty phòng thủ khi cha hết con — vẫn giữ "+" và hàng Thêm.
 - **Điểm chạm**: chạm **con** → `02` Sửa con (prefill + loại khóa — con cùng loại cha, vẫn đổi cha/bỏ cha); chạm **vùng tiêu đề** → `02` **Sửa cha** (cha có con → loại khóa + ô cha không mở sheet — chính là điểm vào sửa danh mục có con mà `01` không mở được, PBI 14 để lại); **"+"** app bar hoặc hàng cuối → `02` Thêm **preset cha** (`initialType: type cha` + `initialParentId: id cha`) — người dùng chỉ nhập tên/icon/màu.
 - **State & refresh**: nạp **1 loại** `categoriesIncludingHidden(type: cha)` khi mở (SC — con cùng loại cha); cha hiển thị **derive** từ list theo id (không giữ object tĩnh) → đổi tên cha phản ánh tiêu đề; sau **mỗi pop form** (lưu hay back) **reload lặng** 1 loại + derive lại cha (thêm/sửa/ẩn phản ánh ngay; con **đổi cha rời nhóm cũ**; tên cha mới lên tiêu đề). Back màn con → màn `01` đúng tab + số con cha cập nhật (màn `01` reload lặng 2 loại sau pop). Không đổi schema drift v4, không `build_runner`.
+
+### Màn `04` — sắp xếp danh mục (`CategorySortScreen`, PBI 16 — đã triển khai)
+- **Entry**: màn `01` — icon **"Sắp xếp"** góc phải app bar (no-op PBI 13 → kích hoạt) mở theo **đúng tab đang mở** (`initialType` — chỉ sắp cha của loại đó, không tab riêng/bottom nav/số tiền); sau pop màn `01` **reload lặng** → thứ tự mới hiện ngay.
+- **Bố cục** (khớp mockup `04`): `SubPageScaffold` app bar teal — back (trái), tiêu đề "Sắp xếp danh mục", nút **"Xong"** (phải, `TextButton` trắng); body `ReorderableListView.builder` (`buildDefaultDragHandles: false`) liệt kê **cha cấp 1 đúng loại** theo `sortOrder`; dòng = `CategoryRow` + **tay cầm kéo–thả** trái (`ReorderableDragStartListener` bọc `Icons.drag_handle` — kéo **chỉ từ tay cầm**, không drag long-press cả dòng), `showChevron: false`, onTap no-op. Danh mục **ẩn/hệ thống vẫn hiện** đúng vị trí + nhãn "Đã ẩn" + kéo được bình thường. Nạp **1 loại** một lần khi mở → `topLevelParents` (SC-001).
+- **Ghi ngay khi thả** (FR-006): `onReorder` → helper thuần `moveCategoryAt` (`core/category/category_sort.dart`; index-math theo `ReorderableListView.onReorderItem` — SDK mới đã trừ `newIndex` khi kéo xuống) → setState → seam **`reorderCategories(orderedIds)`** đánh `sort_order = 0..n−1` cho **đủ cha cấp 1 đúng loại** trong **1 transaction** (con cấp 2 & cha loại kia **bất biến** — thứ tự theo nhóm con giữ nguyên, research R4). Thả đúng vị trí cũ → không ghi thừa; lỗi ghi (hiếm, DB local) → nạp lại về thứ tự DB, không dialog phức tạp.
+- **"Xong"/back** chỉ pop (đã ghi khi thả → không xác nhận/hủy — FR-008); về màn `01` **đúng tab** + thứ tự mới hiện ngay. Mở lại màn sau → đọc lại DB → thứ tự bền vững.
+- **Phạm vi & ngoài**: sắp **cha cấp 1** phẳng (đúng mockup); **không** sắp con trong nhóm cha–con (PBI sau), không kéo tạo cha-con/trộn loại, không sắp tự động, không xóa-gộp-ẩn-hiện ngay trong màn. Mọi nơi "tiêu thụ" thứ tự (DS danh mục, picker chọn nhanh giao dịch, chú thích biểu đồ sau) đọc cùng nguồn `sortOrder`. Schema v4 giữ nguyên, không `build_runner`.
