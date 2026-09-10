@@ -5,6 +5,8 @@ tags: [concept, ui, design]
 sources:
   - ../docs/design-system-app-thu-chi.md
   - ../docs/transaction/nghiep-vu-thiet-ke-quan-ly-giao-dich.md
+  - ../docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md
+  - ../../.specify/specs/18/spec.md
 ---
 
 # Design system
@@ -33,6 +35,34 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 | Đường kẻ phân cách | `#E0E0E0` / `#EFEFEF` |
 
 ⚠ QUYẾT ĐỊNH MỞ: mốc tiến độ budget 80–99% chưa có màu trong hệ — gợi ý coral nhạt (opacity) để giữ 2 màu gốc. Xem [[Ngân sách]] và [[Lộ trình phát triển]].
+
+## Giao diện Sáng / Tối / Theo hệ thống — đã triển khai PBI 18
+> Bộ đôi theme qua **`ThemeExtension<SoraColors>`** (không thêm dependency). Nguồn: `.specify/specs/18`, `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §1.2`.
+
+**Nguyên tắc phân đôi token:**
+- **Bất biến theo theme** (ở lại `AppColors`): teal thương hiệu `#0F6E56` (fill app bar/nút/FAB), **trắng on-brand** (icon/chữ đặt *trên* nền teal), coral `#D85A30` (fill chi/cảnh báo), bảng màu nhận diện danh mục/ví, avatar `#3D8C77`. Nền teal **luôn** đi kèm chữ trắng ở cả 2 giao diện.
+- **Đổi theo theme** (chuyển vào `SoraColors`, đọc qua `SoraColors.of(context)`): nền màn/card, chữ chính/phụ, nhãn mờ, kẻ ngang, chấm rỗng radio, vòng nền nhạt icon, và **glyph** teal/coral khi nằm trên nền trung tính. Bản `SoraColors.light` **giữ nguyên giá trị cũ** — nhờ vậy giao diện sáng không đổi một ly và toàn bộ test widget so màu hằng cũ vẫn xanh.
+
+| Vai trò | Light (= token cũ) | Dark |
+|---|---|---|
+| Nền màn / bottom nav | `#FFFFFF` | `#121212` |
+| Card surface | `#FFFFFF` | `#1E1E1E` |
+| Card beige / panel / ô nhập | `#F1EFE8` | `#242420` |
+| Chữ chính | `#1A1A1A` | `#F2F2F0` |
+| Chữ phụ | `#6B6B6B` | `#A8A8A3` |
+| Nhãn mờ / tab chưa chọn | `#9B9B9B` | `#A8A8A3` |
+| Label danh sách | `#5F5E5A` | `#B4B4AE` |
+| Kẻ ngang | `#E0E0E0` / `#EFEFEF` | `#3A3A36` / `#2E2E2A` |
+| Dot rỗng radio | `#B4B2A9` | `#6E6D66` |
+| Vòng nền icon teal nhạt | `#E1F5EE` | `#17332C` |
+| Vòng nền icon coral nhạt | `#FAECE7` | `#3A2518` |
+| **Glyph** teal trên nền trung tính | `#0F6E56` | `#3FA98A` (sáng hơn) |
+| **Glyph/chữ** coral trên nền trung tính | `#D85A30` | `#E8734C` (sáng hơn) |
+| Fill teal / trắng on-brand / coral fill | (giữ) | (giữ nguyên) |
+
+**Rule quan trọng — `white` có 2 vai trò** phải phân loại theo từng chỗ dùng, **không đổi tên máy móc**: làm **nền** → token nền (đổi ở dark); đặt **trên** teal/nền màu → giữ trắng. Ô tìm kiếm pill trên app bar teal (màn `05`) là "đảo sáng cố định" — giữ token light ở cả 2 giao diện.
+
+**Phạm vi:** mọi màn/chrome sau mở khóa **và** màn PIN/boot đều đọc `SoraColors.of(context)` (SC-007: không vùng "chìm"), trừ: ảnh hóa đơn/avatar, nội dung người dùng nhập, bảng màu nhận diện danh mục/ví — **không đổi theo theme**. Màn `02` "Giao diện" chi tiết ở [[Hồ sơ & Bảo mật]].
 
 ## App shell & layout
 - **Bottom nav 5 vị trí**: Tổng quan | Giao dịch | **FAB "Thêm giao dịch" nổi giữa** (nhô lên, hình tròn teal, icon + trắng — hành động lõi) | Báo cáo | Cài đặt.
@@ -72,6 +102,7 @@ Outline (line) mảnh, độ dày đồng nhất; màu ngữ cảnh (teal hành 
 ## Triển khai trong code (rule)
 - **Cấu hình style chung của app gom tại 1 nơi duy nhất** — file/class theme trung tâm (Flutter: `AppTheme` + `ThemeData`) + file hằng số token cho màu, kích thước (bo góc, cao nút, padding/spacing, cỡ icon, cỡ chữ), ánh xạ đúng bảng giá trị ở các mục trên (teal `#0F6E56` = token thương hiệu, nút cao `44px`/bo `8px` = token kích thước...).
 - Widget **không nhúng hex hoặc số cứng** rải rác; chỉ đọc token từ nơi tập trung. Muốn đổi style toàn app → sửa đúng 1 chỗ, không quét tìm từng widget.
+- **Token màu tách 2 file** (PBI 18): `AppColors` = màu **bất biến**; `SoraColors` (ThemeExtension, `.light`/`.dark` + `SoraColors.of(context)`) = màu **đổi theo theme**. `AppTheme.themeData`/`darkThemeData` đăng ký extension tương ứng.
 - Theme/token độc lập layer nghiệp vụ — đọc thêm [[Stack kỹ thuật]].
 
 ## Liên kết

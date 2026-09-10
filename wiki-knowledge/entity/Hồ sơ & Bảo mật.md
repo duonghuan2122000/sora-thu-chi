@@ -10,6 +10,8 @@ sources:
   - ../../.specify/specs/3/data-model.md
   - ../../.specify/specs/17/spec.md
   - ../../.specify/specs/17/data-model.md
+  - ../../.specify/specs/18/spec.md
+  - ../../.specify/specs/18/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -59,7 +61,18 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 - **TRẢI NGHIỆM** — Widget màn hình chính (switch hiển thị **"bật" câm**, chạm toàn hàng → **dialog hướng dẫn ghim widget theo nền tảng** — ghim do OS quản lý, trạng thái **không lưu**); **Ẩn số dư (Privacy mode)** switch thật (mặc định **tắt**); **Máy tính khi nhập số tiền** switch thật (mặc định **bật**).
 - **DỮ LIỆU & TÌM KIẾM** — Tìm kiếm toàn cục ▸, Quản lý Tag ▸ (dòng phụ **mô tả** "Gắn nhãn cho giao dịch", **không** `#…`/số "12 tag" giả — SC-008).
 
-**2 công tắc thật nhớ trạng thái** qua bảng drift key-value **`AppSettings` (schema v5)** — key `hideBalance` / `amountCalculatorEnabled`; **key vắng = mặc định domain**, row chỉ ghi khi bật/tắt (write-through). Hiệu ứng chức năng **chưa kéo** (che số dư `••••••`, đổi bàn phím nhập tiền = PBI sau — xem [[Ví & Tài khoản]]). Cấu trúc: domain thuần `UtilitiesPrefs` (`toSettings`/`fromSettings` an toàn, không ném) + hằng khóa + seam `UtilitiesStore` (load/save) + `DriftUtilitiesStore` + `ensureUtilitiesStore()` (GetX singleton, bám `ensureWalletRepository`); test bơm `FakeUtilitiesStore`. **5 hàng điều hướng no-op** chờ màn con `02–07` (Giao diện, Ngôn ngữ, Định dạng & Tiền tệ, Tìm kiếm toàn cục, Quản lý Tag). PBI cài đặt sau **chỉ thêm row**, không thêm migration.
+**2 công tắc thật nhớ trạng thái** qua bảng drift key-value **`AppSettings` (schema v5)** — key `hideBalance` / `amountCalculatorEnabled`; **key vắng = mặc định domain**, row chỉ ghi khi bật/tắt (write-through). Hiệu ứng chức năng **chưa kéo** (che số dư `••••••`, đổi bàn phím nhập tiền = PBI sau — xem [[Ví & Tài khoản]]). Cấu trúc: domain thuần `UtilitiesPrefs` (`toSettings`/`fromSettings` an toàn, không ném) + hằng khóa + seam `UtilitiesStore` (load/save) + `DriftUtilitiesStore` + `ensureUtilitiesStore()` (GetX singleton, bám `ensureWalletRepository`); test bơm `FakeUtilitiesStore`. ~~**5 hàng điều hướng no-op**~~ → **còn 4 hàng no-op** (`Ngôn ngữ`, `Định dạng & Tiền tệ`, `Tìm kiếm toàn cục`, `Quản lý Tag`) chờ màn con `03–07`; hàng **"Giao diện" đã kích hoạt ở PBI 18** (xem mục dưới). PBI cài đặt sau **chỉ thêm row**, không thêm migration.
+
+## Màn "Giao diện" (02) — đã triển khai PBI 18
+> **PBI 18 (2026-09-06)**: hàng "Giao diện" màn `01` bỏ no-op → **push màn con `02`**; chọn sáng/tối/theo hệ thống áp **ngay toàn app**, nhớ qua restart. Nguồn đặc tả `.specify/specs/18`, mockup `docs/tool/02-giao-dien.svg`.
+
+**Màn `02`** (`ThemeScreen`, màn con shell): `SubPageScaffold` app bar teal + back + tiêu đề "Giao diện", **không** bottom nav. Thân `ListView` gồm **3 card đúng thứ tự Sáng – Tối – Theo hệ thống** (mockup): mỗi hàng = vòng nền nhạt + icon minh họa (mặt trời / mặt trăng / thiết bị), tên đậm + dòng phụ mô tả (`Nền trắng, chữ tối` / `Nền tối, chữ sáng, đỡ mỏi mắt ban đêm` / `Tự đổi theo cài đặt điện thoại`), cuối hàng **radio tự dựng** (không `RadioListTile`). Hàng đang chọn **tô nền nhạt** + vòng icon **viền teal**; chân màn ghi chú "Thay đổi được áp dụng ngay lập tức, không cần khởi động lại ứng dụng.".
+
+**Trạng thái & lưu trữ:** 3 lựa chọn ánh xạ thẳng `ThemeMode` của Flutter (`light`/`dark`/`system`) — **không tạo enum riêng** (1 nguồn duy nhất xuyên suốt). Lưu **1 row `('themeMode', 'light'|'dark'|'system')`** trong bảng key-value **`AppSettings` v5** (không migration, không seed — row ghi write-through khi user chọn). **Key vắng = mặc định "Theo hệ thống"**; chuỗi ngoài 3 giá trị hợp lệ → cũng về `system` (parse an toàn, không ném). Tên hiển thị thống nhất: `light`→"Sáng", `dark`→"Tối", `system`→**"Theo hệ thống"** (màn `01` bỏ nhãn cũ "Hệ thống").
+
+**Hàng "Giao diện" màn `01`:** phần cuối **reactive** đọc controller → hiện đúng "Sáng"/"Tối"/"Theo hệ thống", cập nhật ngay kể cả khi vừa đổi ở màn `02` rồi back (màn `01` vẫn mounted dưới route).
+
+**Cơ chế dark mode toàn app:** `ThemeController` (GetX) giữ `Rx<ThemeMode>`, đăng ký ở gốc `SoraApp` (bám `PinController`) và nạp lựa chọn đã lưu lúc `initState`; `GetMaterialApp` nhận `theme` + `darkTheme` + `themeMode` → chọn một hàng là **cả cây rebuild tức thì**, không restart. Chi tiết token màu & rule light/dark ở [[Design system]]; seam/DI ở [[Stack kỹ thuật]]. "Theo hệ thống" tự đổi khi điện thoại đổi sáng/tối nhờ chính `ThemeMode.system` của Material (không tự viết observer `didChangePlatformBrightness` như doc §1.2 gợi ý).
 
 ## Hồ sơ cá nhân
 | Trường | Chốt |

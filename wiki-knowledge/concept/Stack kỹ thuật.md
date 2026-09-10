@@ -6,6 +6,7 @@ sources:
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
   - ../docs/budget/nghiep-vu-ngan-sach.md
   - ../docs/wallet/nghiep-vu-vi-tai-khoan.md
+  - ../../.specify/specs/18/research.md
 ---
 
 # Stack kỹ thuật
@@ -41,6 +42,16 @@ Cơ chế chốt: **GetX Translations** (gói `get`, sẵn trong pubspec). Rule 
 - **Không trộn i18n với định dạng số/tiền/ngày**: số tiền theo quy tắc [[Design system]] (dấu chấm nghìn, đơn vị theo tiền tệ ví) và format ngày là vấn đề riêng, **không đổi theo ngôn ngữ giao diện**.
 - Picker Material (date/time) đồng bộ locale → cần thêm `flutter_localizations` + `GlobalMaterialLocalizations` khi có ≥2 ngôn ngữ.
 
+## Giao diện Sáng/Tối — cơ chế (rule, PBI 18)
+Cơ chế chốt (quyết định user, lệch gợi ý `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §1.2` dùng `Get.changeThemeMode()`):
+- **`ThemeController` (GetxController) giữ `Rx<ThemeMode>`**, đăng ký Get singleton ở **gốc `SoraApp`** (bám pattern `PinController`) — không dựa vào `Get.changeThemeMode()` + `ThemeService` ngầm (khó bơm seam trong widget test).
+- `GetMaterialApp` nhận `theme` + `darkTheme` + `themeMode` đọc từ controller → đổi Rx là **toàn cây rebuild tức thì** (FR-005/SC-004), không restart. Controller cũng là nguồn cho radio màn `02` và giá trị hàng "Giao diện" màn `01`.
+- **"Theo hệ thống"** dựa sẵn `ThemeMode.system` của Material (tự nghe `platformBrightness`) — **không** tự viết `WidgetsBindingObserver.didChangePlatformBrightness`.
+- **Nạp lúc boot:** mặc định `system` trước khi `load()` xong; `home` là cổng boot nền trống + phải mở khóa PIN mới thấy nội dung → chấp nhận nháy nền khung đầu, không chặn frame.
+- **Seam & DI theo pattern PBI 17:** abstract `ThemeStore` (`load()→ThemeMode?`, `save`) + `DriftThemeStore` (1 row `themeMode` trong `AppSettings`) + `ensureThemeStore()`/`ensureThemeController()`; `SoraApp` thêm seam `themeStore?`; test bơm `FakeThemeStore` (không khởi tạo sqlite native). Ghi write-through **nối đuôi** để chọn nhanh liên tiếp không bị save cũ đè.
+- Bộ màu 2 theme: xem [[Design system]] §Giao diện Sáng / Tối.
+
 ## Liên kết
 - [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ chưa gắn GĐ.
 - [[Nguyên tắc nghiệp vụ]] — constraint thiết kế DB.
+- [[Design system]] — bảng token light/dark; [[Hồ sơ & Bảo mật]] — màn 02 + bảng `AppSettings`.
