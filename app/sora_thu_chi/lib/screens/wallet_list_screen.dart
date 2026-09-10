@@ -7,6 +7,7 @@ import '../core/wallet/wallet_controller.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'wallet_detail_screen.dart';
 import 'wallet_form_screen.dart';
 
@@ -85,22 +86,23 @@ class _TotalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
         decoration: BoxDecoration(
-          color: AppColors.softCardBg,
+          color: colors.softCardBg,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'TỔNG SỐ DƯ TẤT CẢ VÍ',
               style: TextStyle(
-                color: AppColors.tabInactive,
+                color: colors.tabInactive,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.4,
@@ -109,8 +111,8 @@ class _TotalCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               formatMoney(total),
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
               ),
@@ -118,8 +120,8 @@ class _TotalCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               '$count ví đang hoạt động',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: colors.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -138,12 +140,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: AppColors.tabInactive,
+        style: TextStyle(
+          color: colors.tabInactive,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -160,8 +163,9 @@ class _WalletRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final muted = wallet.isHidden;
-    final titleColor = muted ? AppColors.tabInactive : AppColors.textPrimary;
+    final titleColor = muted ? colors.tabInactive : colors.textPrimary;
     return InkWell(
       // FR-001 (PBI 6): chạm hàng mở màn chi tiết — mọi ví kể cả ví ẩn.
       onTap: () => Navigator.of(context).push(
@@ -171,8 +175,8 @@ class _WalletRow extends StatelessWidget {
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.listDivider)),
         ),
         child: Row(
           children: [
@@ -193,7 +197,7 @@ class _WalletRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  _buildSubtitle(muted),
+                  _buildSubtitle(muted, colors),
                 ],
               ),
             ),
@@ -202,7 +206,7 @@ class _WalletRow extends StatelessWidget {
             Flexible(
               child: Align(
                 alignment: Alignment.centerRight,
-                child: _buildTrailing(muted),
+                child: _buildTrailing(muted, colors),
               ),
             ),
           ],
@@ -211,13 +215,13 @@ class _WalletRow extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(bool muted) {
+  Widget _buildSubtitle(bool muted, SoraColors colors) {
     if (muted) {
-      return const Text(
+      return Text(
         'Không tính vào tổng',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 13, color: AppColors.tabInactive),
+        style: TextStyle(fontSize: 13, color: colors.tabInactive),
       );
     }
     if (wallet.type == WalletType.credit) {
@@ -225,9 +229,9 @@ class _WalletRow extends StatelessWidget {
         wallet.creditUsageLabel,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
-          color: AppColors.coral,
+          color: colors.coralOnNeutral,
           fontWeight: FontWeight.w500,
         ),
       );
@@ -236,10 +240,10 @@ class _WalletRow extends StatelessWidget {
       return Text.rich(
         TextSpan(
           children: [
-            const TextSpan(
+            TextSpan(
               text: 'Mặc định',
               style: TextStyle(
-                color: AppColors.teal,
+                color: colors.tealOnNeutral,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -249,26 +253,26 @@ class _WalletRow extends StatelessWidget {
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 13, color: AppColors.listLabel),
+        style: TextStyle(fontSize: 13, color: colors.listLabel),
       );
     }
     return Text(
       wallet.typeLabel,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 13, color: AppColors.listLabel),
+      style: TextStyle(fontSize: 13, color: colors.listLabel),
     );
   }
 
-  Widget _buildTrailing(bool muted) {
+  Widget _buildTrailing(bool muted, SoraColors colors) {
     if (wallet.type == WalletType.credit) {
       return Text(
         '${wallet.creditUsedPercent}%',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
-          color: AppColors.coral,
+          color: colors.coralOnNeutral,
           fontWeight: FontWeight.w700,
         ),
       );
@@ -280,7 +284,7 @@ class _WalletRow extends StatelessWidget {
       style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w600,
-        color: muted ? AppColors.tabInactive : AppColors.textPrimary,
+        color: muted ? colors.tabInactive : colors.textPrimary,
       ),
     );
   }
@@ -294,12 +298,13 @@ class _IconBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Container(
       width: 40,
       height: 40,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.tealLightBg,
+      decoration: BoxDecoration(
+        color: colors.tealLightBg,
         shape: BoxShape.circle,
       ),
       child: Text(emoji, style: const TextStyle(fontSize: 20)),
@@ -313,6 +318,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -321,10 +327,10 @@ class _EmptyState extends StatelessWidget {
           children: [
             const Text('🗂️', style: TextStyle(fontSize: 44)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Chưa có ví nào.',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -333,8 +339,8 @@ class _EmptyState extends StatelessWidget {
             Text(
               "Chạm '+ Thêm ví mới' để tạo ví đầu tiên.",
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.tabInactive,
+              style: TextStyle(
+                color: colors.tabInactive,
                 fontSize: 13,
               ),
             ),

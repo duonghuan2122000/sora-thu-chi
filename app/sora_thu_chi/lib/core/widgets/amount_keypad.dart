@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
+import '../../theme/sora_colors.dart';
 
 /// Numpad số tiền của màn thêm giao dịch (mockup `02`, R6) — VND số nguyên:
 /// 3×4 phím tròn viền; hàng cuối trái phím `,` (no-op — phần thập phân là
@@ -21,20 +21,21 @@ class AmountKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SizedBox(
       height: _rowHeight * 4,
       child: Column(
         children: [
-          _keyRow(['1', '2', '3']),
-          _keyRow(['4', '5', '6']),
-          _keyRow(['7', '8', '9']),
-          _keyRowCommaZeroBackspace(),
+          _keyRow(['1', '2', '3'], colors),
+          _keyRow(['4', '5', '6'], colors),
+          _keyRow(['7', '8', '9'], colors),
+          _keyRowCommaZeroBackspace(colors),
         ],
       ),
     );
   }
 
-  Widget _keyRow(List<String> labels) {
+  Widget _keyRow(List<String> labels, SoraColors colors) {
     return SizedBox(
       height: _rowHeight,
       child: Row(
@@ -42,7 +43,7 @@ class AmountKeypad extends StatelessWidget {
           for (final label in labels)
             Expanded(
               child: Center(
-                child: _digitKey(label, enabled: label != ','),
+                child: _digitKey(label, enabled: label != ',', colors: colors),
               ),
             ),
         ],
@@ -51,13 +52,17 @@ class AmountKeypad extends StatelessWidget {
   }
 
   /// Hàng cuối: `,` (no-op) | `0` | backspace.
-  Widget _keyRowCommaZeroBackspace() {
+  Widget _keyRowCommaZeroBackspace(SoraColors colors) {
     return SizedBox(
       height: _rowHeight,
       child: Row(
         children: [
-          Expanded(child: Center(child: _digitKey(',', enabled: false))),
-          Expanded(child: Center(child: _digitKey('0', enabled: true))),
+          Expanded(
+            child: Center(child: _digitKey(',', enabled: false, colors: colors)),
+          ),
+          Expanded(
+            child: Center(child: _digitKey('0', enabled: true, colors: colors)),
+          ),
           Expanded(
             child: Center(
               child: Material(
@@ -72,9 +77,9 @@ class AmountKeypad extends StatelessWidget {
                     height: _diameter,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: const Icon(
+                      child: Icon(
                         Icons.backspace_outlined,
-                        color: AppColors.textPrimary,
+                        color: colors.textPrimary,
                         size: 26,
                       ),
                     ),
@@ -89,7 +94,7 @@ class AmountKeypad extends StatelessWidget {
   }
 
   /// Phím tròn viền: số tô đậm; `,` màu nhạt **no-op** (số nguyên VND).
-  Widget _digitKey(String label, {required bool enabled}) {
+  Widget _digitKey(String label, {required bool enabled, required SoraColors colors}) {
     final digit = int.tryParse(label);
     return Material(
       color: Colors.transparent,
@@ -105,7 +110,7 @@ class AmountKeypad extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: enabled ? AppColors.divider : AppColors.tabInactive,
+              color: enabled ? colors.divider : colors.tabInactive,
             ),
           ),
           child: FittedBox(
@@ -116,8 +121,8 @@ class AmountKeypad extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: enabled ? FontWeight.w600 : FontWeight.w400,
                 color: enabled
-                    ? AppColors.textPrimary
-                    : AppColors.tabInactive.withValues(alpha: 0.6),
+                    ? colors.textPrimary
+                    : colors.tabInactive.withValues(alpha: 0.6),
               ),
             ),
           ),

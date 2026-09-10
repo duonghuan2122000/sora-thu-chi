@@ -9,6 +9,7 @@ import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Màn thêm/sửa danh mục (mockup `02`, PBI 14) — màn con: app bar teal tiêu đề
 /// theo chế độ + nút "Lưu" góc phải, nút chính "Lưu danh mục" cố định chân màn,
@@ -163,51 +164,54 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     final id = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 4),
-              child: Text(
-                'Chọn danh mục cha',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+      builder: (sheetContext) {
+        final colors = SoraColors.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                child: Text(
+                  'Chọn danh mục cha',
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(bottom: 12),
-                children: [
-                  _sheetParentRow(
-                    sheetContext,
-                    key: const ValueKey('parent-none'),
-                    icon: null,
-                    color: null,
-                    label: 'Không có — là danh mục gốc',
-                    value: _clearParent,
-                  ),
-                  for (final c in options)
-                    if (!_isEdit || c.id != _existing!.id)
-                      _sheetParentRow(
-                        sheetContext,
-                        key: ValueKey('parent-${c.id}'),
-                        icon: categoryIcon(c.icon),
-                        color: Color(c.color),
-                        label: c.name,
-                        value: c.id,
-                      ),
-                ],
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: 12),
+                  children: [
+                    _sheetParentRow(
+                      sheetContext,
+                      key: const ValueKey('parent-none'),
+                      icon: null,
+                      color: null,
+                      label: 'Không có — là danh mục gốc',
+                      value: _clearParent,
+                    ),
+                    for (final c in options)
+                      if (!_isEdit || c.id != _existing!.id)
+                        _sheetParentRow(
+                          sheetContext,
+                          key: ValueKey('parent-${c.id}'),
+                          icon: categoryIcon(c.icon),
+                          color: Color(c.color),
+                          label: c.name,
+                          value: c.id,
+                        ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
     if (!mounted || id == null) return; // Đóng/backdrop → giữ nguyên lựa chọn.
     setState(() => _parentId = id == _clearParent ? null : id);
@@ -221,6 +225,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     required String label,
     required int? value,
   }) {
+    final colors = SoraColors.of(sheetContext);
     return InkWell(
       key: key,
       onTap: () => Navigator.of(sheetContext).pop(value),
@@ -240,7 +245,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                 child: Icon(icon, color: color, size: 18),
               )
             else
-              const Icon(Icons.block, color: AppColors.tabInactive, size: 20),
+              Icon(Icons.block, color: colors.tabInactive, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -249,8 +254,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: value == null || value == _clearParent
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
+                      ? colors.textSecondary
+                      : colors.textPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -310,6 +315,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final title = _isEdit ? 'Sửa danh mục' : 'Thêm danh mục';
     return SubPageScaffold(
       title: title,
@@ -352,12 +358,12 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: _body(),
+        child: _body(colors),
       ),
     );
   }
 
-  Widget _body() {
+  Widget _body(SoraColors colors) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -366,7 +372,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -378,9 +384,9 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
-          _typeControl(),
+          _typeControl(colors),
           const SizedBox(height: 16),
-          _fieldLabel('Tên danh mục'),
+          _fieldLabel(colors, 'Tên danh mục'),
           TextFormField(
             key: const ValueKey('field-name'),
             controller: _nameCtrl,
@@ -401,16 +407,16 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _fieldLabel('Biểu tượng'),
+          _fieldLabel(colors, 'Biểu tượng'),
           _IconPicker(selected: _icon, onChanged: (v) => setState(() => _icon = v)),
           const SizedBox(height: 16),
-          _fieldLabel('Màu sắc'),
+          _fieldLabel(colors, 'Màu sắc'),
           _ColorPicker(
             selected: _colorValue,
             onChanged: (v) => setState(() => _colorValue = v),
           ),
           const SizedBox(height: 16),
-          _parentField(),
+          _parentField(colors),
           const SizedBox(height: 12),
           _HiddenSwitch(
             value: _isHidden,
@@ -421,13 +427,13 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     );
   }
 
-  Widget _typeControl() {
+  Widget _typeControl(SoraColors colors) {
     if (!_canSwitchType) {
       // Readonly box — loại không đổi được (khóa, FR-002/008), tỏ rõ không mồi.
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _fieldLabel('Loại danh mục'),
+          _fieldLabel(colors, 'Loại danh mục'),
           _ReadonlyBox(_typeNoun),
         ],
       );
@@ -436,18 +442,18 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         height: 44,
-        decoration: const BoxDecoration(color: AppColors.softCardBg),
+        decoration: BoxDecoration(color: colors.softCardBg),
         child: Row(
           children: [
-            _pillHalf('Chi tiêu', CategoryType.expense),
-            _pillHalf('Thu nhập', CategoryType.income),
+            _pillHalf('Chi tiêu', CategoryType.expense, colors),
+            _pillHalf('Thu nhập', CategoryType.income, colors),
           ],
         ),
       ),
     );
   }
 
-  Widget _pillHalf(String label, CategoryType type) {
+  Widget _pillHalf(String label, CategoryType type, SoraColors colors) {
     final selected = _type == type;
     return Expanded(
       child: InkWell(
@@ -459,7 +465,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? AppColors.white : AppColors.tabInactive,
+              color: selected ? AppColors.white : colors.tabInactive,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -469,7 +475,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     );
   }
 
-  Widget _parentField() {
+  Widget _parentField(SoraColors colors) {
     String valueText = 'Không có — là danh mục gốc';
     Category? parent;
     if (_parentId != null) {
@@ -481,11 +487,11 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       }
       if (parent != null) valueText = parent.name;
     }
-    final color = _canPickParent ? AppColors.teal : AppColors.tabInactive;
+    final color = _canPickParent ? colors.tealOnNeutral : colors.tabInactive;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _fieldLabel('Danh mục cha (tùy chọn)'),
+        _fieldLabel(colors, 'Danh mục cha (tùy chọn)'),
         InkWell(
           key: const ValueKey('parent-field'),
           onTap: _canPickParent ? _pickParent : null,
@@ -493,7 +499,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
             decoration: BoxDecoration(
-              color: AppColors.softCardBg,
+              color: colors.softCardBg,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -505,8 +511,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: parent == null
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
+                          ? colors.textSecondary
+                          : colors.textPrimary,
                       fontSize: 14,
                     ),
                   ),
@@ -522,12 +528,12 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 }
 
 /// Nhãn mục nhỏ xám (bên trên từng trường) — pattern form ví.
-Widget _fieldLabel(String text) => Padding(
+Widget _fieldLabel(SoraColors colors, String text) => Padding(
   padding: const EdgeInsets.only(bottom: 6),
   child: Text(
     text,
-    style: const TextStyle(
-      color: AppColors.listLabel,
+    style: TextStyle(
+      color: colors.listLabel,
       fontSize: 13,
       fontWeight: FontWeight.w600,
     ),
@@ -541,16 +547,17 @@ class _ReadonlyBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.softCardBg,
+        color: colors.softCardBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+        style: TextStyle(color: colors.textSecondary, fontSize: 15),
       ),
     );
   }
@@ -564,6 +571,7 @@ class _IconPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -579,15 +587,15 @@ class _IconPicker extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: key == selected
-                    ? AppColors.tealLightBg
-                    : AppColors.softCardBg,
+                    ? colors.tealLightBg
+                    : colors.softCardBg,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: key == selected ? AppColors.teal : Colors.transparent,
+                  color: key == selected ? colors.tealOnNeutral : Colors.transparent,
                   width: 2,
                 ),
               ),
-              child: Icon(categoryIcon(key), size: 20, color: AppColors.textPrimary),
+              child: Icon(categoryIcon(key), size: 20, color: colors.textPrimary),
             ),
           ),
       ],
@@ -603,6 +611,7 @@ class _ColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -622,7 +631,7 @@ class _ColorPicker extends StatelessWidget {
                   color: Color(color),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? AppColors.textPrimary : Colors.transparent,
+                    color: isSelected ? colors.textPrimary : Colors.transparent,
                     width: 2,
                   ),
                 ),
@@ -645,8 +654,9 @@ class _HiddenSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Material(
-      color: AppColors.softCardBg,
+      color: colors.softCardBg,
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: SwitchListTile(
@@ -654,17 +664,17 @@ class _HiddenSwitch extends StatelessWidget {
         value: value,
         onChanged: onChanged,
         activeTrackColor: AppColors.teal,
-        title: const Text(
+        title: Text(
           'Ẩn khỏi danh sách nhanh',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: colors.textPrimary,
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
         ),
-        subtitle: const Text(
+        subtitle: Text(
           'Vẫn giữ trên giao dịch lịch sử và màn danh mục.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          style: TextStyle(color: colors.textSecondary, fontSize: 12),
         ),
       ),
     );

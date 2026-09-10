@@ -10,6 +10,7 @@ import 'package:sora_thu_chi/screens/wallet_detail_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_form_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_transfer_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_wallet_repository.dart';
@@ -169,7 +170,7 @@ void main() {
         ); // chi (Siêu thị Coopmart)
         expect(_textColor(tester, '-450.000 đ'), AppColors.coral);
         expect(find.text('-700.000 đ'), findsOneWidget); // chuyển khoản đi
-        expect(_textColor(tester, '-700.000 đ'), AppColors.listLabel);
+        expect(_textColor(tester, '-700.000 đ'), SoraColors.light.listLabel);
 
         // Giao dịch ví khác (Tiền mặt/VIB) và vế đích Momo không xuất hiện.
         expect(find.text('Ăn trưa văn phòng'), findsNothing);
@@ -202,11 +203,11 @@ void main() {
 
         await _pump(tester, wallet: _bank, transactions: [sourceRow]);
         expect(find.text('-1.000.000 đ'), findsOneWidget);
-        expect(_textColor(tester, '-1.000.000 đ'), AppColors.listLabel);
+        expect(_textColor(tester, '-1.000.000 đ'), SoraColors.light.listLabel);
 
         await _pump(tester, wallet: _momo, transactions: [destRow]);
         expect(find.text('+1.000.000 đ'), findsOneWidget);
-        expect(_textColor(tester, '+1.000.000 đ'), AppColors.listLabel);
+        expect(_textColor(tester, '+1.000.000 đ'), SoraColors.light.listLabel);
         expect(tester.takeException(), isNull);
       },
     );

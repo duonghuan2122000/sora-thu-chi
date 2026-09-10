@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/security/pin_controller.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/sora_colors.dart';
 import 'widgets/pin_dots.dart';
 import 'widgets/pin_keypad.dart';
 
@@ -31,10 +31,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: AppColors.white,
+        backgroundColor: colors.background,
         body: SafeArea(
           child: Column(
             children: [
@@ -44,7 +45,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildLockIcon(),
+                      _buildLockIcon(colors),
                       const SizedBox(height: 24),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -53,8 +54,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                             Text(
                               _confirming ? 'Nhập lại mã PIN' : 'Thiết lập mã PIN',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -69,8 +70,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _error.isNotEmpty
-                                    ? AppColors.coral
-                                    : AppColors.textSecondary,
+                                    ? colors.coralOnNeutral
+                                    : colors.textSecondary,
                                 fontSize: 14,
                               ),
                             ),
@@ -100,15 +101,15 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
     );
   }
 
-  Widget _buildLockIcon() {
+  Widget _buildLockIcon(SoraColors colors) {
     return Container(
       width: 64,
       height: 64,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.tealLightText,
+        color: colors.tealLightBg,
       ),
-      child: const Icon(Icons.lock_outline, color: AppColors.teal, size: 30),
+      child: Icon(Icons.lock_outline, color: colors.tealOnNeutral, size: 30),
     );
   }
 

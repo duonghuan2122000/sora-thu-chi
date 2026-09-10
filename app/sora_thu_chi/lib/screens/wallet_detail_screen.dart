@@ -9,6 +9,7 @@ import '../core/wallet/wallet_controller.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'wallet_form_screen.dart';
 import 'wallet_transfer_screen.dart';
 
@@ -234,19 +235,25 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
       child: Row(
         children: [
-          _action(Icons.swap_horiz, 'Chuyển tiền', onTransfer),
-          _action(Icons.edit_outlined, 'Sửa ví', onEdit),
-          _action(Icons.visibility_off_outlined, 'Ẩn ví', onHide),
+          _action(Icons.swap_horiz, 'Chuyển tiền', onTransfer, colors),
+          _action(Icons.edit_outlined, 'Sửa ví', onEdit, colors),
+          _action(Icons.visibility_off_outlined, 'Ẩn ví', onHide, colors),
         ],
       ),
     );
   }
 
-  Widget _action(IconData icon, String label, VoidCallback onTap) {
+  Widget _action(
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+    SoraColors colors,
+  ) {
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -259,11 +266,11 @@ class _QuickActions extends StatelessWidget {
               Ink(
                 width: 48,
                 height: 48,
-                decoration: const BoxDecoration(
-                  color: AppColors.tealLightBg,
+                decoration: BoxDecoration(
+                  color: colors.tealLightBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.teal, size: 22),
+                child: Icon(icon, color: colors.tealOnNeutral, size: 22),
               ),
               const SizedBox(height: 6),
               Text(
@@ -271,8 +278,8 @@ class _QuickActions extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.listLabel,
+                style: TextStyle(
+                  color: colors.listLabel,
                   fontSize: 11,
                 ),
               ),
@@ -292,12 +299,13 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: AppColors.tabInactive,
+        style: TextStyle(
+          color: colors.tabInactive,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -315,6 +323,7 @@ class _TxnRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final t = transaction;
     final title = t.note.isNotEmpty
         ? t.note
@@ -322,18 +331,18 @@ class _TxnRow extends StatelessWidget {
     final subtitle = t.category.isNotEmpty ? t.category : t.typeLabel;
     final arrow = t.amount < 0 ? Icons.arrow_downward : Icons.arrow_upward;
     final (Color bubbleBg, Color fg) = switch (t.type) {
-      TxnType.income => (AppColors.tealLightBg, AppColors.teal),
-      TxnType.expense => (AppColors.coralLightBg, AppColors.coral),
+      TxnType.income => (colors.tealLightBg, colors.tealOnNeutral),
+      TxnType.expense => (colors.coralLightBg, colors.coralOnNeutral),
       TxnType.transfer ||
-      TxnType.adjustment => (AppColors.softCardBg, AppColors.listLabel),
+      TxnType.adjustment => (colors.softCardBg, colors.listLabel),
     };
 
     return InkWell(
       onTap: () {}, // FR-011: điểm vào PBI Giao dịch, chưa mở màn.
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.listDivider)),
         ),
         child: Row(
           children: [
@@ -356,8 +365,8 @@ class _TxnRow extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -367,8 +376,8 @@ class _TxnRow extends StatelessWidget {
                     '$subtitle · ${relativeDayLabel(t.date)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -404,6 +413,7 @@ class _EmptyTransactions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
@@ -412,10 +422,10 @@ class _EmptyTransactions extends StatelessWidget {
           children: [
             const Text('🧾', style: TextStyle(fontSize: 36)),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Chưa có giao dịch nào.',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -424,8 +434,8 @@ class _EmptyTransactions extends StatelessWidget {
             Text(
               'Giao dịch của ví sẽ xuất hiện tại đây.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.tabInactive,
+              style: TextStyle(
+                color: colors.tabInactive,
                 fontSize: 13,
               ),
             ),

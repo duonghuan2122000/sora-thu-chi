@@ -10,6 +10,7 @@ import '../core/transaction/transaction_list.dart';
 import '../core/widgets/screen_header.dart';
 import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'search_filter_screen.dart';
 import 'transaction_detail_screen.dart';
 
@@ -107,20 +108,21 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                color: AppColors.coral, size: 40),
+            Icon(Icons.error_outline,
+                color: colors.coralOnNeutral, size: 40),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Không đọc được dữ liệu giao dịch.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -245,19 +247,20 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 12, 4),
       child: Row(
         children: [
-          const Icon(Icons.filter_list, color: AppColors.teal, size: 18),
+          Icon(Icons.filter_list, color: colors.tealOnNeutral, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               '$count kết quả · Tổng: ${formatMoney(signedTotal)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -280,28 +283,29 @@ class _NoMatchState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off, color: AppColors.tabInactive, size: 44),
+            Icon(Icons.search_off, color: colors.tabInactive, size: 44),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Không có giao dịch khớp bộ lọc.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Bỏ lọc để xem toàn bộ.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.tabInactive, fontSize: 13),
+              style: TextStyle(color: colors.tabInactive, fontSize: 13),
             ),
           ],
         ),
@@ -318,12 +322,13 @@ class _DayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
       child: Text(
         header,
-        style: const TextStyle(
-          color: AppColors.textSecondary,
+        style: TextStyle(
+          color: colors.textSecondary,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -368,12 +373,13 @@ class _StatBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isIncome ? AppColors.teal : AppColors.coral;
-    final amountColor = isIncome ? AppColors.textPrimary : AppColors.coral;
+    final colors = SoraColors.of(context);
+    final accent = isIncome ? colors.tealOnNeutral : colors.coralOnNeutral;
+    final amountColor = isIncome ? colors.textPrimary : colors.coralOnNeutral;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: AppColors.softCardBg,
+        color: colors.softCardBg,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -429,14 +435,15 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final neutral =
         row.type == TxnType.transfer || row.type == TxnType.adjustment;
     final accent =
         row.type == TxnType.income
-            ? AppColors.teal
+            ? colors.tealOnNeutral
             : row.type == TxnType.expense
-            ? AppColors.coral
-            : AppColors.listLabel;
+            ? colors.coralOnNeutral
+            : colors.listLabel;
     return InkWell(
       // Mở màn chi tiết theo ref (R2): dòng transfer đã gộp → theo group tìm
       // đủ 2 vế; dòng thường → theo id bút toán. Detail là sub-page đè lên
@@ -453,8 +460,8 @@ class _TransactionRow extends StatelessWidget {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.listDivider)),
         ),
         child: Row(
           children: [
@@ -468,8 +475,8 @@ class _TransactionRow extends StatelessWidget {
                     row.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -479,8 +486,8 @@ class _TransactionRow extends StatelessWidget {
                     row.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.listLabel,
+                    style: TextStyle(
+                      color: colors.listLabel,
                       fontSize: 13,
                     ),
                   ),
@@ -526,6 +533,7 @@ class _RowBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final icon = neutral
         ? (row.type == TxnType.transfer ? Icons.swap_horiz : Icons.tune)
         : categoryGlyph(row.title);
@@ -533,7 +541,7 @@ class _RowBubble extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: neutral ? AppColors.softCardBg : AppColors.tealLightBg,
+        color: neutral ? colors.softCardBg : colors.tealLightBg,
         shape: BoxShape.circle,
       ),
       child: Icon(icon, size: 20, color: accent),
@@ -548,6 +556,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -556,10 +565,10 @@ class _EmptyState extends StatelessWidget {
           children: [
             const Text('🧾', style: TextStyle(fontSize: 44)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Chưa có giao dịch nào.',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -568,7 +577,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               "Chạm nút '+' giữa thanh dưới để ghi giao dịch đầu tiên.",
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.tabInactive, fontSize: 13),
+              style: TextStyle(color: colors.tabInactive, fontSize: 13),
             ),
           ],
         ),

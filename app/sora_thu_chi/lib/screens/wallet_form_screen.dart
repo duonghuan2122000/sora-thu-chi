@@ -7,6 +7,7 @@ import '../core/wallet/wallet_controller.dart';
 import '../core/wallet/wallet_presets.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Nhãn chip ngắn cho 5 loại ví (khác [WalletTypeLabelX.label] dài cho dòng phụ).
 const List<(WalletType, String)> _typeChipLabels = [
@@ -221,6 +222,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final title = _isAdd ? 'Thêm ví mới' : 'Sửa ví';
     return SubPageScaffold(
       title: title,
@@ -258,7 +260,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
               if (_locked) const _LockedNote(),
-              _fieldLabel('Tên ví'),
+              _fieldLabel(colors, 'Tên ví'),
               TextFormField(
                 key: const ValueKey('field-name'),
                 controller: _nameCtrl,
@@ -267,7 +269,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                 validator: _validateName,
               ),
               const SizedBox(height: 20),
-              _fieldLabel('Loại ví'),
+              _fieldLabel(colors, 'Loại ví'),
               if (_locked)
                 _ReadonlyValue(_typeChipLabel(_type))
               else
@@ -276,7 +278,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                   onChanged: _onTypeChanged,
                 ),
               const SizedBox(height: 20),
-              _fieldLabel(_isAdd ? 'Số dư ban đầu' : 'Số dư'),
+              _fieldLabel(colors, _isAdd ? 'Số dư ban đầu' : 'Số dư'),
               if (_locked)
                 _ReadonlyValue(formatMoney(_existing!.initialBalanceValue))
               else
@@ -289,12 +291,12 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                   validator: _validateInitialBalance,
                 ),
               const SizedBox(height: 4),
-              _currencyLine(),
+              _currencyLine(colors),
               const SizedBox(height: 20),
-              if (_isCredit) ..._creditFields(),
-              if (_isSavings) ..._savingsFields(),
-              if (_isBankOrEwallet) ..._bankFields(),
-              _fieldLabel('Biểu tượng & màu sắc'),
+              if (_isCredit) ..._creditFields(colors),
+              if (_isSavings) ..._savingsFields(colors),
+              if (_isBankOrEwallet) ..._bankFields(colors),
+              _fieldLabel(colors, 'Biểu tượng & màu sắc'),
               const SizedBox(height: 8),
               _IconPicker(selected: _icon, onChanged: (v) => setState(() => _icon = v)),
               const SizedBox(height: 12),
@@ -324,8 +326,8 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
       .firstWhere((e) => e.$1 == type)
       .$2;
 
-  List<Widget> _creditFields() => [
-    _fieldLabel('Hạn mức tín dụng'),
+  List<Widget> _creditFields(SoraColors colors) => [
+    _fieldLabel(colors, 'Hạn mức tín dụng'),
     TextFormField(
       key: const ValueKey('field-credit-limit'),
       controller: _creditLimitCtrl,
@@ -350,8 +352,8 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
     const SizedBox(height: 12),
   ];
 
-  List<Widget> _savingsFields() => [
-    _fieldLabel('Kỳ hạn (tháng, tùy chọn)'),
+  List<Widget> _savingsFields(SoraColors colors) => [
+    _fieldLabel(colors, 'Kỳ hạn (tháng, tùy chọn)'),
     TextFormField(
       key: const ValueKey('field-term'),
       controller: _termCtrl,
@@ -368,10 +370,10 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
     const SizedBox(height: 12),
   ];
 
-  List<Widget> _bankFields() {
+  List<Widget> _bankFields(SoraColors colors) {
     final orgLabel = _type == WalletType.eWallet ? 'Tổ chức' : 'Ngân hàng';
     return [
-      _fieldLabel('$orgLabel (tùy chọn)'),
+      _fieldLabel(colors, '$orgLabel (tùy chọn)'),
       TextFormField(
         key: const ValueKey('field-institution'),
         controller: _institutionCtrl,
@@ -382,7 +384,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
         ),
       ),
       const SizedBox(height: 12),
-      _fieldLabel('Số cuối tài khoản (tùy chọn)'),
+      _fieldLabel(colors, 'Số cuối tài khoản (tùy chọn)'),
       TextFormField(
         key: const ValueKey('field-last-digits'),
         controller: _lastDigitsCtrl,
@@ -414,12 +416,12 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
     };
   }
 
-  Widget _currencyLine() => const Row(
+  Widget _currencyLine(SoraColors colors) => Row(
     mainAxisAlignment: MainAxisAlignment.end,
     children: [
       Text(
         'Tiền tệ: VND',
-        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        style: TextStyle(color: colors.textSecondary, fontSize: 13),
       ),
     ],
   );
@@ -430,23 +432,24 @@ class _LockedNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.tealLightBg,
+        color: colors.tealLightBg,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 18, color: AppColors.teal),
-          SizedBox(width: 8),
+          Icon(Icons.info_outline, size: 18, color: colors.tealOnNeutral),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Ví đã có giao dịch nên không đổi được loại ví và số dư ban đầu. '
               'Muốn đổi số dư → tạo giao dịch Điều chỉnh số dư.',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              style: TextStyle(color: colors.textPrimary, fontSize: 13),
             ),
           ),
         ],
@@ -462,28 +465,29 @@ class _ReadonlyValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.softCardBg,
+        color: colors.softCardBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
+        style: TextStyle(color: colors.textSecondary, fontSize: 15),
       ),
     );
   }
 }
 
 /// Nhãn mục nhỏ xám (bên trên từng trường).
-Widget _fieldLabel(String text) => Padding(
+Widget _fieldLabel(SoraColors colors, String text) => Padding(
   padding: const EdgeInsets.only(bottom: 6),
   child: Text(
     text,
-    style: const TextStyle(
-      color: AppColors.listLabel,
+    style: TextStyle(
+      color: colors.listLabel,
       fontSize: 13,
       fontWeight: FontWeight.w600,
     ),
@@ -498,6 +502,7 @@ class _TypeChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -509,11 +514,11 @@ class _TypeChips extends StatelessWidget {
             onSelected: (_) => onChanged(type),
             selectedColor: AppColors.teal,
             labelStyle: TextStyle(
-              color: type == selected ? AppColors.white : AppColors.textPrimary,
+              color: type == selected ? AppColors.white : colors.textPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
-            backgroundColor: AppColors.softCardBg,
+            backgroundColor: colors.softCardBg,
             showCheckmark: false,
             side: const BorderSide(color: Colors.transparent),
           ),
@@ -530,6 +535,7 @@ class _IconPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -544,11 +550,13 @@ class _IconPicker extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: icon == selected
-                    ? AppColors.tealLightBg
-                    : AppColors.softCardBg,
+                    ? colors.tealLightBg
+                    : colors.softCardBg,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: icon == selected ? AppColors.teal : Colors.transparent,
+                  color: icon == selected
+                      ? colors.tealOnNeutral
+                      : Colors.transparent,
                   width: 2,
                 ),
               ),
@@ -568,6 +576,7 @@ class _ColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -584,7 +593,7 @@ class _ColorPicker extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: color.toARGB32() == selected
-                      ? AppColors.textPrimary
+                      ? colors.textPrimary
                       : Colors.transparent,
                   width: 2,
                 ),
@@ -621,6 +630,7 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -639,8 +649,8 @@ class _DateField extends StatelessWidget {
                   value == null ? 'Chọn ngày' : _fmt(value!),
                   style: TextStyle(
                     color: value == null
-                        ? AppColors.tabInactive
-                        : AppColors.textPrimary,
+                        ? colors.tabInactive
+                        : colors.textPrimary,
                     fontSize: 14,
                   ),
                 ),
@@ -648,17 +658,17 @@ class _DateField extends StatelessWidget {
               if (value != null)
                 InkWell(
                   onTap: onClear,
-                  child: const Icon(
+                  child: Icon(
                     Icons.close,
                     size: 18,
-                    color: AppColors.tabInactive,
+                    color: colors.tabInactive,
                   ),
                 )
               else
-                const Icon(
+                Icon(
                   Icons.calendar_today_outlined,
                   size: 16,
-                  color: AppColors.tabInactive,
+                  color: colors.tabInactive,
                 ),
             ],
           ),
@@ -683,10 +693,11 @@ class _DefaultSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     // Dùng Material (không phải Container/DecoratedBox màu) để ink của
     // ListTile không bị che — tránh debug exception của Flutter.
     return Material(
-      color: AppColors.softCardBg,
+      color: colors.softCardBg,
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -696,21 +707,21 @@ class _DefaultSwitch extends StatelessWidget {
             value: value,
             onChanged: disabled ? null : onChanged,
             activeTrackColor: AppColors.teal,
-            title: const Text(
+            title: Text(
               'Đặt làm ví mặc định',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           if (lockedHint)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: Text(
                 'Ví này là ví mặc định duy nhất đang hoạt động nên không thể tắt.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
             ),
         ],

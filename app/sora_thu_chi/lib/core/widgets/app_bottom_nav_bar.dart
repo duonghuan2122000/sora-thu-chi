@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
+import '../../theme/sora_colors.dart';
 
 /// Thanh điều hướng đáy 5 vị trí: Tổng quan | Giao dịch | (ô trống) | Báo cáo | Cài đặt.
 /// Ô giữa trống dành FAB của Scaffold. Widget thuần — nhận trạng thái, không tự quản.
@@ -17,13 +17,14 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       top: false,
       child: Container(
         height: 56,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          border: Border(top: BorderSide(color: AppColors.divider)),
+        decoration: BoxDecoration(
+          color: colors.background,
+          border: Border(top: BorderSide(color: colors.divider)),
         ),
         child: Row(
           children: [
@@ -44,8 +45,9 @@ class AppBottomNavBar extends StatelessWidget {
     required String label,
     required IconData icon,
   }) {
+    final colors = SoraColors.of(context);
     final selected = index == selectedIndex;
-    final color = selected ? AppColors.teal : AppColors.tabInactive;
+    final color = selected ? colors.tealOnNeutral : colors.tabInactive;
     return Expanded(
       child: InkWell(
         onTap: () => onTabSelected(index),

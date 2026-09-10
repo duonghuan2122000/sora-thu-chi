@@ -7,6 +7,7 @@ import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'category_child_list_screen.dart';
 import 'category_form_screen.dart';
 import 'category_sort_screen.dart';
@@ -139,6 +140,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SubPageScaffold(
       title: 'Danh mục',
       actions: [
@@ -157,12 +159,12 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: _body(),
+        child: _body(colors),
       ),
     );
   }
 
-  Widget _body() {
+  Widget _body(SoraColors colors) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -171,7 +173,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -181,9 +183,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _tabRow(),
-        const Divider(color: AppColors.listDivider, height: 1),
-        Expanded(child: _list()),
+        _tabRow(colors),
+        Divider(color: colors.listDivider, height: 1),
+        Expanded(child: _list(colors)),
       ],
     );
   }
@@ -191,7 +193,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   /// Hàng tab tự dựng (R6): 2 nhãn xếp trái từ lề — tab chọn teal + gạch chân,
   /// tab kia xám; vạch chia nằm dưới hàng tab (render ngoài [build]).
   /// Bọc [FittedBox] scaleDown để cỡ chữ lớn không tràn ngang (FR-011).
-  Widget _tabRow() {
+  Widget _tabRow(SoraColors colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: FittedBox(
@@ -200,16 +202,16 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _tabLabel('Chi tiêu', CategoryType.expense),
+            _tabLabel('Chi tiêu', CategoryType.expense, colors),
             const SizedBox(width: 48),
-            _tabLabel('Thu nhập', CategoryType.income),
+            _tabLabel('Thu nhập', CategoryType.income, colors),
           ],
         ),
       ),
     );
   }
 
-  Widget _tabLabel(String label, CategoryType type) {
+  Widget _tabLabel(String label, CategoryType type, SoraColors colors) {
     final selected = _tab == type;
     return InkWell(
       key: ValueKey('tab-$type'),
@@ -223,7 +225,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: selected ? AppColors.teal : AppColors.tabInactive,
+                color: selected ? colors.tealOnNeutral : colors.tabInactive,
                 fontSize: 14,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
               ),
@@ -246,7 +248,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   /// Danh sách cấp 1 của tab — danh mục ẩn vẫn hiện (FR-006); rỗng thật →
   /// empty hướng dẫn (FR-009). Không nhầm "ẩn-toàn-bộ" thành rỗng (topLevel
   /// gồm cha ẩn nên không empty giả).
-  Widget _list() {
+  Widget _list(SoraColors colors) {
     final parents = topLevelParents(_current);
     if (parents.isEmpty) {
       return Center(
@@ -256,7 +258,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             'Chưa có danh mục $_typeNoun nào.\n'
             'Bạn có thể thêm mới bằng nút "+" góc dưới.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
           ),
         ),
       );
@@ -266,7 +268,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       children: [
         for (final c in parents) ...[
           _row(c),
-          const Divider(color: AppColors.listDivider, height: 1),
+          Divider(color: colors.listDivider, height: 1),
         ],
       ],
     );

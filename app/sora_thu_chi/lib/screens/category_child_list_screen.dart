@@ -6,6 +6,7 @@ import '../core/widgets/category_row.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'category_form_screen.dart';
 
 /// Màn "Danh mục con" (mockup `03`, PBI 15) — liệt kê danh mục **con trực tiếp
@@ -145,6 +146,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Scaffold(
       appBar: AppBar(
         // Khối tiêu đề = điểm sửa danh mục cha (R3): nằm giữa back và "+",
@@ -189,11 +191,11 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
           ),
         ],
       ),
-      body: SafeArea(top: false, child: _body()),
+      body: SafeArea(top: false, child: _body(colors)),
     );
   }
 
-  Widget _body() {
+  Widget _body(SoraColors colors) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -202,7 +204,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -222,8 +224,8 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
               'Chưa có danh mục con nào.\n'
               'Thêm bằng nút "+" góc phải hoặc hàng bên dưới.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: colors.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -231,15 +233,15 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
         else
           for (final c in children) ...[
             CategoryRow(category: c, onTap: () => _editChild(c)),
-            const Divider(color: AppColors.listDivider, height: 1),
+            Divider(color: colors.listDivider, height: 1),
           ],
-        _addChildRow(),
+        _addChildRow(colors),
       ],
     );
   }
 
   /// Hàng cuối "Thêm danh mục con" (FR-008/acceptance 6) — điểm thêm trong list.
-  Widget _addChildRow() {
+  Widget _addChildRow(SoraColors colors) {
     return InkWell(
       key: const ValueKey('add-child-row'),
       onTap: _addChild,
@@ -255,16 +257,16 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
                 color: AppColors.teal.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, color: AppColors.teal, size: 20),
+              child: Icon(Icons.add, color: colors.tealOnNeutral, size: 20),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Thêm danh mục con',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: AppColors.teal,
+                  color: colors.tealOnNeutral,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),

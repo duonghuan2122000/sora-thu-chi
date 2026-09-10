@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../screens/pin/pin_lock_screen.dart';
 import '../screens/pin/pin_setup_screen.dart';
-import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'app_shell.dart';
 import 'security/pin_controller.dart';
 import 'security/pin_store.dart';
@@ -63,6 +63,9 @@ class _PinGateState extends State<PinGate> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(backgroundColor: AppColors.white, body: SizedBox.expand());
+    return Scaffold(
+      backgroundColor: SoraColors.of(context).background,
+      body: const SizedBox.expand(),
+    );
   }
 }

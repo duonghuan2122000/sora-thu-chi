@@ -1,15 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/utilities/utilities_store.dart';
+import 'package:sora_thu_chi/screens/theme_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/fake_theme_store.dart';
 import 'fakes/fake_utilities_store.dart';
 
+/// Đăng ký [ThemeController] cho GetX — hàng "Giao diện" đọc controller qua Obx
+/// (PBI 18) nên thiếu đăng ký sẽ `Get.find` ném. Trả về fake store để test
+/// assert/khởi tạo trạng thái giao diện.
+FakeThemeStore registerThemeController({ThemeMode? initialMode}) {
+  Get.reset();
+  final fake = FakeThemeStore(initialMode: initialMode);
+  Get.put<ThemeController>(ThemeController(fake));
+  addTearDown(Get.reset);
+  return fake;
+}
+
 /// Đẩy [UtilitiesScreen] qua route để có nút back; màn luôn nhận [store] bơm
-/// (fake) → không chạm drift/GetX (R7).
-Future<void> pumpUtilities(WidgetTester tester, {UtilitiesStore? store}) async {
+/// (fake) → không chạm drift (R7). [initialMode] đặt sẵn giao diện đã lưu,
+/// [loadTheme] gọi `load()` trước khi mở màn (mô phỏng mở lại app).
+Future<FakeThemeStore> pumpUtilities(
+  WidgetTester tester, {
+  UtilitiesStore? store,
+  ThemeMode? initialMode,
+  bool loadTheme = false,
+}) async {
+  final themeFake = registerThemeController(initialMode: initialMode);
+  if (loadTheme) await Get.find<ThemeController>().load();
   await tester.binding.setSurfaceSize(const Size(390, 1400));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
@@ -33,6 +56,7 @@ Future<void> pumpUtilities(WidgetTester tester, {UtilitiesStore? store}) async {
   );
   await tester.tap(find.text('mở'));
   await tester.pumpAndSettle();
+  return themeFake;
 }
 
 void main() {
@@ -90,10 +114,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Trailing mặc định: "Hệ thống"/"Tiếng Việt" + chevron 5 hàng nav', (tester) async {
+  testWidgets('Trailing mặc định: "Theo hệ thống"/"Tiếng Việt" + chevron 5 hàng nav', (tester) async {
     await pumpUtilities(tester, store: FakeUtilitiesStore());
 
-    expect(find.text('Hệ thống'), findsOneWidget);
+    // PBI 18 đổi nhãn hàng Giao diện sang tên đầy đủ "Theo hệ thống" (R10).
+    expect(find.text('Theo hệ thống'), findsOneWidget);
+    expect(find.text('Hệ thống'), findsNothing);
     expect(find.text('Tiếng Việt'), findsOneWidget);
     // 5 hàng điều hướng có chevron sang phải.
     expect(find.byIcon(Icons.chevron_right), findsNWidgets(5));
@@ -179,11 +205,11 @@ void main() {
     expect(find.text('Hướng dẫn ghim widget'), findsNothing);
   });
 
-  testWidgets('5 hàng điều hướng no-op: chạm không mở màn/dialog, không lỗi', (tester) async {
+  testWidgets('4 hàng điều hướng no-op: chạm không mở màn/dialog, không lỗi', (tester) async {
     await pumpUtilities(tester, store: FakeUtilitiesStore());
 
+    // "Giao diện" đã kích hoạt ở PBI 18 → không còn trong nhóm no-op (FR-001).
     for (final label in [
-      'Giao diện',
       'Ngôn ngữ',
       'Định dạng & Tiền tệ',
       'Tìm kiếm toàn cục',
@@ -194,13 +220,56 @@ void main() {
     }
 
     // Không route mới (chỉ 1 back duy nhất, không dialog), app không lỗi,
-    // giá trị "Hệ thống"/"Tiếng Việt" không đổi.
+    // giá trị "Theo hệ thống"/"Tiếng Việt" không đổi.
     expect(find.byType(BackButton), findsOneWidget);
     expect(find.text('Hướng dẫn ghim widget'), findsNothing);
-    expect(find.text('Hệ thống'), findsOneWidget);
+    expect(find.text('Theo hệ thống'), findsOneWidget);
     expect(find.text('Tiếng Việt'), findsOneWidget);
     expect(find.byType(UtilitiesScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Hàng "Giao diện": chạm mở màn 02, back về màn Tiện ích (FR-001)',
+      (tester) async {
+    await pumpUtilities(tester, store: FakeUtilitiesStore());
+
+    await tester.tap(find.text('Giao diện'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ThemeScreen), findsOneWidget);
+    expect(find.text('Giao diện'), findsNWidgets(1)); // chỉ còn app bar màn 02
+    expect(find.byType(BottomNavigationBar), findsNothing);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(UtilitiesScreen), findsOneWidget);
+    expect(find.byType(ThemeScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Trailing phản ánh lựa chọn đã lưu khi mở lại app (FR-007)', (tester) async {
+    await pumpUtilities(
+      tester,
+      store: FakeUtilitiesStore(),
+      initialMode: ThemeMode.dark,
+      loadTheme: true,
+    );
+
+    expect(find.text('Tối'), findsOneWidget);
+    expect(find.text('Theo hệ thống'), findsNothing);
+  });
+
+  testWidgets('Đổi giao diện khi màn 01 vẫn mounted → trailing cập nhật ngay',
+      (tester) async {
+    await pumpUtilities(tester, store: FakeUtilitiesStore());
+
+    expect(find.text('Theo hệ thống'), findsOneWidget);
+
+    Get.find<ThemeController>().setMode(ThemeMode.light);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sáng'), findsOneWidget);
+    expect(find.text('Theo hệ thống'), findsNothing);
   });
 
   testWidgets('Quản lý Tag không hiện số tag giả / nhãn # (FR-009/SC-008)', (tester) async {
@@ -212,6 +281,7 @@ void main() {
   });
 
   testWidgets('Cỡ chữ lớn + màn nhỏ: cuộn tới hàng cuối, không overflow', (tester) async {
+    registerThemeController();
     await tester.binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     tester.binding.platformDispatcher.textScaleFactorTestValue = 2.0;

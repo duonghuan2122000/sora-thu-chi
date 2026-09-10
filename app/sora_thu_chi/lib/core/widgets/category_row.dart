@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
+import '../../theme/sora_colors.dart';
 import '../category/category.dart';
 import 'category_icon.dart';
 
@@ -39,9 +39,10 @@ class CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final hidden = category.isHidden;
-    final labelColor = hidden ? AppColors.tabInactive : AppColors.textPrimary;
-    final iconColor = hidden ? AppColors.tabInactive : Color(category.color);
+    final labelColor = hidden ? colors.tabInactive : colors.textPrimary;
+    final iconColor = hidden ? colors.tabInactive : Color(category.color);
     return InkWell(
       key: ValueKey('category-row-${category.id}'),
       onTap: onTap,
@@ -89,10 +90,10 @@ class CategoryRow extends StatelessWidget {
                       ),
                       if (hidden) ...[
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'Đã ẩn',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -104,8 +105,8 @@ class CategoryRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: const TextStyle(
-                        color: AppColors.tabInactive,
+                      style: TextStyle(
+                        color: colors.tabInactive,
                         fontSize: 12,
                       ),
                     ),
@@ -114,7 +115,7 @@ class CategoryRow extends StatelessWidget {
               ),
             ),
             if (showChevron)
-              const Icon(Icons.chevron_right, color: AppColors.tabInactive, size: 20),
+              Icon(Icons.chevron_right, color: colors.tabInactive, size: 20),
           ],
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/category_form_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_wallet_repository.dart';
@@ -123,7 +124,7 @@ void main() {
       );
       expect(
         tester.widget<Text>(find.text('Thu nhập')).style!.color,
-        AppColors.tabInactive,
+        SoraColors.light.tabInactive,
       );
       expect(find.text('Chi tiêu'), findsOneWidget);
 
@@ -163,7 +164,7 @@ void main() {
       );
       expect(
         tester.widget<Text>(find.text('Chi tiêu')).style!.color,
-        AppColors.tabInactive,
+        SoraColors.light.tabInactive,
       );
     });
   });

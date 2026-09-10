@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// Token màu tập trung — nguồn duy nhất cho màu trong widget.
-/// Chỉ kê màu đang tiêu thụ; bổ sung khi module cần.
+/// Token màu **bất biến** — không đổi theo giao diện: fill thương hiệu teal,
+/// trắng on-brand (đặt trên nền teal/FAB), fill coral cho chi/cảnh báo, cùng
+/// bảng màu nhận diện danh mục/ví và avatar.
+///
+/// Token **đổi theo theme** (nền, chữ, kẻ ngang, vòng nền nhạt, glyph teal/coral
+/// trên nền trung tính…) nay sống ở `SoraColors.light`/`SoraColors.dark` và đọc
+/// qua `SoraColors.of(context)` — xem `theme/sora_colors.dart`.
 abstract final class AppColors {
   static const Color teal = Color(0xFF0F6E56);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color tealLightText = Color(0xFFCDE9DF);
-  static const Color tabInactive = Color(0xFF9B9B9B);
-  static const Color divider = Color(0xFFE0E0E0);
-  static const Color textPrimary = Color(0xFF1A1A1A);
-  static const Color textSecondary = Color(0xFF6B6B6B);
-  static const Color dotEmpty = Color(0xFFB4B2A9);
   static const Color coral = Color(0xFFD85A30);
   static const Color avatarBg = Color(0xFF3D8C77);
-  static const Color listLabel = Color(0xFF5F5E5A);
-  static const Color listDivider = Color(0xFFEFEFEF);
-  static const Color coralLightBg = Color(0xFFFAECE7);
-  static const Color tealLightBg = Color(0xFFE1F5EE);
-  static const Color softCardBg = Color(0xFFF1EFE8);
 
   // Bảng màu danh mục (palette mockup `02` — R2). Chỉ token; dữ liệu bảng màu
   // preset tập trung ở `category_presets.categoryPresetColors` (màu seed đã là
-  // token teal/avatarBg/listLabel/coral/tabInactive — không thêm bản trùng).
+  // token teal/avatarBg/coral + 2 token sáng của `SoraColors.light`).
   static const Color categoryOrange = Color(0xFFF2994A);
   static const Color categoryBlue = Color(0xFF2F80ED);
   static const Color categoryPurple = Color(0xFF9B59B6);

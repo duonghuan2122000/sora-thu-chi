@@ -1,4 +1,5 @@
 import '../../theme/app_colors.dart';
+import '../../theme/sora_colors.dart';
 import 'category.dart';
 
 /// Preset biểu tượng & bảng màu danh mục cho form thêm/sửa (màn `02`).
@@ -35,13 +36,15 @@ String defaultIconFor(CategoryType type) => switch (type) {
 int defaultColorFor(CategoryType type) => AppColors.teal.toARGB32();
 
 /// Bảng màu preset (13 ô): hợp 5 màu seed dữ liệu (danh mục hiện có luôn chọn
-/// lại được màu cũ) + 8 màu palette mockup `02`. ARGB int (dữ liệu).
+/// lại được màu cũ) + 8 màu palette mockup `02`. ARGB int (dữ liệu) — màu nhận
+/// diện, **không đổi theo giao diện** nên hai ô mượn token sáng dùng thẳng
+/// `SoraColors.light` (giá trị cố định, không theo theme đang bật).
 final List<int> categoryPresetColors = [
   AppColors.teal.toARGB32(),
   AppColors.avatarBg.toARGB32(),
-  AppColors.listLabel.toARGB32(),
+  SoraColors.light.listLabel.toARGB32(),
   AppColors.coral.toARGB32(),
-  AppColors.tabInactive.toARGB32(),
+  SoraColors.light.tabInactive.toARGB32(),
   AppColors.categoryOrange.toARGB32(),
   AppColors.categoryBlue.toARGB32(),
   AppColors.categoryPurple.toARGB32(),

@@ -8,11 +8,16 @@ import 'package:sora_thu_chi/screens/pin/pin_setup_screen.dart';
 import 'package:sora_thu_chi/screens/pin/widgets/pin_dots.dart';
 import 'package:sora_thu_chi/screens/pin/widgets/pin_keypad.dart';
 
+import 'fakes/fake_theme_store.dart';
 import 'fakes/pin_store_fake.dart';
 
 /// Pump cả app với store bơm được + chờ boot/route ổn định.
+/// Bơm luôn `FakeThemeStore` — `SoraApp.initState` tạo `ThemeController` + gọi
+/// `load()`; thiếu fake sẽ khởi tạo drift/sqlite native và vỡ test (R8).
 Future<void> pumpApp(WidgetTester tester, PinStore store) async {
-  await tester.pumpWidget(SoraApp(store: store));
+  await tester.pumpWidget(
+    SoraApp(store: store, themeStore: FakeThemeStore()),
+  );
   await tester.pumpAndSettle();
 }
 

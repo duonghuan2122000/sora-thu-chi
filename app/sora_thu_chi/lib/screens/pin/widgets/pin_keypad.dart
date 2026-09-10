@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_colors.dart';
+import '../../../theme/sora_colors.dart';
 
 /// Numpad 3×4 tự dựng theo mockup `02-khoa-pin.svg`: nút tròn viền `divider`,
 /// chữ số `textPrimary`. Hàng cuối: trái = ô trống (vị trí vân tay, chưa có
@@ -22,6 +22,7 @@ class PinKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         // Cạnh nút tròn = kích thước ô lưới; min để giữ hình tròn.
@@ -42,6 +43,7 @@ class PinKeypad extends StatelessWidget {
                       Expanded(
                         child: _buildCell(
                           side,
+                          colors: colors,
                           // Ô cuối hàng 4 bên phải = backspace.
                           back: row == rows.last && cell == null && row.indexOf(cell) == 2,
                           digit: cell,
@@ -56,7 +58,12 @@ class PinKeypad extends StatelessWidget {
     );
   }
 
-  Widget _buildCell(double side, {required int? digit, required bool back}) {
+  Widget _buildCell(
+    double side, {
+    required SoraColors colors,
+    required int? digit,
+    required bool back,
+  }) {
     if (digit == null && !back) return const SizedBox();
     final VoidCallback? onTap;
     Widget child;
@@ -64,7 +71,7 @@ class PinKeypad extends StatelessWidget {
       onTap = enabled ? onBackspace : null;
       child = Icon(
         Icons.backspace_outlined,
-        color: enabled ? AppColors.textSecondary : AppColors.divider,
+        color: enabled ? colors.textSecondary : colors.divider,
         size: math.min(side * 0.42, 26),
       );
     } else {
@@ -72,7 +79,7 @@ class PinKeypad extends StatelessWidget {
       child = Text(
         '$digit',
         style: TextStyle(
-          color: enabled ? AppColors.textPrimary : AppColors.divider,
+          color: enabled ? colors.textPrimary : colors.divider,
           fontSize: 22,
         ),
       );
@@ -82,7 +89,7 @@ class PinKeypad extends StatelessWidget {
         width: side,
         height: side,
         child: Material(
-          color: AppColors.white,
+          color: colors.surface,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
@@ -90,7 +97,7 @@ class PinKeypad extends StatelessWidget {
             child: Ink(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.divider, width: 1),
+                border: Border.all(color: colors.divider, width: 1),
               ),
               child: Center(child: child),
             ),

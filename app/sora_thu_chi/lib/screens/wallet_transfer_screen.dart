@@ -8,6 +8,7 @@ import '../core/wallet/wallet.dart';
 import '../core/wallet/wallet_controller.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Màn chuyển tiền giữa hai ví (spec PBI 8, FR-001…019) — bám mockup
 /// `docs/wallet/wallet-transfer-screen.svg`. Mở từ màn chi tiết ví nguồn;
@@ -159,6 +160,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SubPageScaffold(
       title: 'Chuyển tiền giữa ví',
       bottomNavigationBar: SafeArea(
@@ -196,7 +198,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            _fieldLabel('Từ ví'),
+            _fieldLabel('Từ ví', colors),
             _WalletCard(
               wallet: _source,
               trailing: null,
@@ -210,20 +212,20 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            _fieldLabel('Đến ví'),
+            _fieldLabel('Đến ví', colors),
             if (_destination == null)
               _ChooseDestinationCard(onTap: _pickDestination)
             else
               _WalletCard(
                 wallet: _destination!,
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.expand_more,
-                  color: AppColors.tabInactive,
+                  color: colors.tabInactive,
                 ),
                 onTap: _pickDestination,
               ),
             const SizedBox(height: 20),
-            _fieldLabel('Số tiền chuyển'),
+            _fieldLabel('Số tiền chuyển', colors),
             TextFormField(
               key: const ValueKey('amount-field'),
               controller: _amountCtrl,
@@ -246,7 +248,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _fieldLabel('Ngày giờ'),
+            _fieldLabel('Ngày giờ', colors),
             InkWell(
               key: const ValueKey('datetime-field'),
               onTap: _pickDateTime,
@@ -263,23 +265,23 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
                     Expanded(
                       child: Text(
                         formatDateTimeLabel(_date),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontSize: 15,
                         ),
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_outlined,
                       size: 16,
-                      color: AppColors.tabInactive,
+                      color: colors.tabInactive,
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            _fieldLabel('Ghi chú'),
+            _fieldLabel('Ghi chú', colors),
             TextField(
               key: const ValueKey('note-field'),
               controller: _noteCtrl,
@@ -315,8 +317,9 @@ class _WalletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Material(
-      color: AppColors.softCardBg,
+      color: colors.softCardBg,
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -329,8 +332,8 @@ class _WalletCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.tealLightBg,
+                decoration: BoxDecoration(
+                  color: colors.tealLightBg,
                   shape: BoxShape.circle,
                 ),
                 child: Text(wallet.icon, style: const TextStyle(fontSize: 20)),
@@ -344,8 +347,8 @@ class _WalletCard extends StatelessWidget {
                       wallet.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -355,8 +358,8 @@ class _WalletCard extends StatelessWidget {
                       'Số dư: ${formatMoney(wallet.balance)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -380,26 +383,27 @@ class _ChooseDestinationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Material(
-      color: AppColors.softCardBg,
+      color: colors.softCardBg,
       borderRadius: BorderRadius.circular(10),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   'Chọn ví',
                   style: TextStyle(
-                    color: AppColors.tabInactive,
+                    color: colors.tabInactive,
                     fontSize: 15,
                   ),
                 ),
               ),
-              Icon(Icons.expand_more, color: AppColors.tabInactive),
+              Icon(Icons.expand_more, color: colors.tabInactive),
             ],
           ),
         ),
@@ -417,6 +421,7 @@ class _SwapButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(20),
@@ -427,12 +432,12 @@ class _SwapButton extends StatelessWidget {
           height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: enabled ? AppColors.tealLightBg : AppColors.softCardBg,
+            color: enabled ? colors.tealLightBg : colors.softCardBg,
             shape: BoxShape.circle,
           ),
           child: Icon(
             Icons.swap_vert,
-            color: enabled ? AppColors.teal : AppColors.tabInactive,
+            color: enabled ? colors.tealOnNeutral : colors.tabInactive,
             size: 24,
           ),
         ),
@@ -450,17 +455,18 @@ class _DestinationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
               'Chọn ví đến',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -475,9 +481,9 @@ class _DestinationSheet extends StatelessWidget {
                   horizontal: 20,
                   vertical: 12,
                 ),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: AppColors.listDivider),
+                    bottom: BorderSide(color: colors.listDivider),
                   ),
                 ),
                 child: Row(
@@ -486,8 +492,8 @@ class _DestinationSheet extends StatelessWidget {
                       width: 40,
                       height: 40,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        color: AppColors.tealLightBg,
+                      decoration: BoxDecoration(
+                        color: colors.tealLightBg,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
@@ -504,8 +510,8 @@ class _DestinationSheet extends StatelessWidget {
                             w.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -515,8 +521,8 @@ class _DestinationSheet extends StatelessWidget {
                             w.typeLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: colors.textSecondary,
                               fontSize: 13,
                             ),
                           ),
@@ -529,8 +535,8 @@ class _DestinationSheet extends StatelessWidget {
                         formatMoney(w.balance),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -562,6 +568,7 @@ class _AfterBalancePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final dst = destination;
     final sourceAfter = source.balance - amount;
     final computable = dst != null && amount > 0;
@@ -574,16 +581,16 @@ class _AfterBalancePreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.softCardBg,
+        color: colors.softCardBg,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Số dư sau chuyển',
             style: TextStyle(
-              color: AppColors.tabInactive,
+              color: colors.tabInactive,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -592,16 +599,16 @@ class _AfterBalancePreview extends StatelessWidget {
           Text(
             preview,
             style: TextStyle(
-              color: negative ? AppColors.coral : AppColors.textPrimary,
+              color: negative ? colors.coralOnNeutral : colors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
           ),
           if (negative) ...[
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Số dư sau chuyển sẽ âm',
-              style: TextStyle(color: AppColors.coral, fontSize: 13),
+              style: TextStyle(color: colors.coralOnNeutral, fontSize: 13),
             ),
           ],
         ],
@@ -611,12 +618,12 @@ class _AfterBalancePreview extends StatelessWidget {
 }
 
 /// Nhãn mục nhỏ xám (bên trên từng trường) — cùng kiểu các màn quản lý ví.
-Widget _fieldLabel(String text) => Padding(
+Widget _fieldLabel(String text, SoraColors colors) => Padding(
   padding: const EdgeInsets.only(bottom: 6),
   child: Text(
     text,
-    style: const TextStyle(
-      color: AppColors.listLabel,
+    style: TextStyle(
+      color: colors.listLabel,
       fontSize: 13,
       fontWeight: FontWeight.w600,
     ),

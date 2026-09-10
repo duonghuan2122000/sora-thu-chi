@@ -14,6 +14,7 @@ import '../core/widgets/category_icon.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Màn con "Tìm kiếm & Lọc" (mockup `05`, PBI 12) — đè shell, toàn màn hình:
 /// app bar teal: back + ô tìm kiếm pill (bỏ dấu tiếng Việt); chip loại 4 nút;
@@ -295,12 +296,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
         title: _searchPill(),
       ),
-      body: _body(),
+      body: _body(colors),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
@@ -313,8 +315,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   child: OutlinedButton(
                     key: const ValueKey('reset-filter'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.divider),
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.divider),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -365,35 +367,38 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  /// Ô tìm kiếm pill trắng nằm ngay trên app bar (mockup `05`).
+  /// Ô tìm kiếm pill trắng nằm ngay trên app bar (mockup `05`) — đảo sáng cố
+  /// định trên nền teal thương hiệu, nên giữ token light ở cả 2 giao diện (đổi
+  /// theo theme sẽ thành pill tối trên app bar teal, chữ mờ khó đọc).
   Widget _searchPill() {
+    const light = SoraColors.light;
     return Container(
       height: 40,
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: light.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+          Icon(Icons.search, color: light.textSecondary, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
               key: const ValueKey('search-field'),
               controller: _keywordCtrl,
               onChanged: _onKeywordChanged,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: light.textPrimary,
                 fontSize: 14,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: 'Tìm kiếm giao dịch...',
                 hintStyle: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: light.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -404,13 +409,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  Widget _body() {
+  Widget _body(SoraColors colors) {
     if (_error != null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -424,9 +429,9 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       key: const ValueKey('filter-body-list'),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       children: [
-        _typeChips(),
+        _typeChips(colors),
         const SizedBox(height: 20),
-        _sectionLabel('BỘ LỌC NÂNG CAO'),
+        _sectionLabel('BỘ LỌC NÂNG CAO', colors),
         const SizedBox(height: 4),
         _filterRow(
           key: const ValueKey('filter-period'),
@@ -436,6 +441,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           valueKey: const ValueKey('filter-period-value'),
           onTap: _pickDatePreset,
           showChevron: true,
+          colors: colors,
         ),
         _filterRow(
           key: const ValueKey('filter-category'),
@@ -443,7 +449,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           label: 'Danh mục',
           enabled: _categoryEnabled(),
           onTap: _pickCategory,
-          child: _categoryValue(),
+          child: _categoryValue(colors),
+          colors: colors,
         ),
         _filterRow(
           key: const ValueKey('filter-wallet'),
@@ -453,8 +460,9 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           valueKey: const ValueKey('filter-wallet-value'),
           onTap: _pickWallet,
           showChevron: true,
+          colors: colors,
         ),
-        _amountSection(),
+        _amountSection(colors),
         _filterRow(
           key: const ValueKey('filter-sort'),
           icon: Icons.sort,
@@ -463,15 +471,16 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           valueKey: const ValueKey('filter-sort-value'),
           onTap: _pickSort,
           showChevron: true,
+          colors: colors,
         ),
         const SizedBox(height: 16),
-        _summaryLine(),
+        _summaryLine(colors),
       ],
     );
   }
 
   /// Hàng chip loại cuộn ngang — chọn teal, chưa chọn nền trắng viền (FR-004).
-  Widget _typeChips() {
+  Widget _typeChips(SoraColors colors) {
     final options = [
       TxnTypeFilter.all,
       TxnTypeFilter.income,
@@ -485,7 +494,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         scrollDirection: Axis.horizontal,
         children: [
           for (final type in options) ...[
-            _typeChip(type),
+            _typeChip(type, colors),
             if (type != options.last) const SizedBox(width: 8),
           ],
         ],
@@ -493,7 +502,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  Widget _typeChip(TxnTypeFilter type) {
+  Widget _typeChip(TxnTypeFilter type, SoraColors colors) {
     final selected = _draft.type == type;
     return GestureDetector(
       onTap: () => _setType(type),
@@ -501,16 +510,16 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.teal : AppColors.white,
+          color: selected ? AppColors.teal : colors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.teal : AppColors.divider,
+            color: selected ? AppColors.teal : colors.divider,
           ),
         ),
         child: Text(
           type.label,
           style: TextStyle(
-            color: selected ? AppColors.white : AppColors.textPrimary,
+            color: selected ? AppColors.white : colors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -519,11 +528,11 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  Widget _sectionLabel(String text) {
+  Widget _sectionLabel(String text, SoraColors colors) {
     return Text(
       text,
-      style: const TextStyle(
-        color: AppColors.tabInactive,
+      style: TextStyle(
+        color: colors.tabInactive,
         fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
@@ -531,19 +540,19 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   }
 
   /// Dòng tóm tắt "N kết quả · Tổng: X đ" — cập nhật live (FR-003/011).
-  Widget _summaryLine() {
+  Widget _summaryLine(SoraColors colors) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.softCardBg,
+        color: colors.softCardBg,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         _summaryText,
         key: const ValueKey('summary-line'),
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: colors.textPrimary,
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
@@ -551,13 +560,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  Widget _categoryValue() {
+  Widget _categoryValue(SoraColors colors) {
     if (!_categoryEnabled()) {
-      return const Text(
+      return Text(
         'Không áp dụng cho Chuyển khoản',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: AppColors.tabInactive, fontSize: 14),
+        style: TextStyle(color: colors.tabInactive, fontSize: 14),
       );
     }
     final byId = {for (final c in _categories) c.id: c};
@@ -571,12 +580,14 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: _amountInvalid ? AppColors.coral : AppColors.tabInactive,
+                color: _amountInvalid
+                    ? colors.coralOnNeutral
+                    : colors.tabInactive,
                 fontSize: 14,
               ),
             ),
           ),
-          _addMoreButton(),
+          _addMoreButton(colors),
         ],
       );
     }
@@ -588,8 +599,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             runSpacing: 6,
             children: [
               for (final id in selected)
-                _categoryChip(id, category: byId[id]),
-              _addMoreButton(),
+                _categoryChip(id, category: byId[id], colors: colors),
+              _addMoreButton(colors),
             ],
           ),
         ),
@@ -597,20 +608,20 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  Widget _categoryChip(int id, {Category? category}) {
+  Widget _categoryChip(int id, {Category? category, required SoraColors colors}) {
     final name = category?.name ?? 'id $id';
     return InputChip(
       key: ValueKey('category-chip-$name'),
       label: Text(name),
       visualDensity: VisualDensity.compact,
-      backgroundColor: AppColors.tealLightBg,
+      backgroundColor: colors.tealLightBg,
       side: BorderSide.none,
-      deleteIconColor: AppColors.teal,
+      deleteIconColor: colors.tealOnNeutral,
       onDeleted: () => _removeCategory(id),
     );
   }
 
-  Widget _addMoreButton() {
+  Widget _addMoreButton(SoraColors colors) {
     return InkWell(
       key: const ValueKey('category-add-more'),
       onTap: _categoryEnabled() ? _pickCategory : null,
@@ -619,13 +630,13 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.add, color: AppColors.teal, size: 18),
-            SizedBox(width: 2),
+          children: [
+            Icon(Icons.add, color: colors.tealOnNeutral, size: 18),
+            const SizedBox(width: 2),
             Text(
               'Thêm',
               style: TextStyle(
-                color: AppColors.teal,
+                color: colors.tealOnNeutral,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -636,7 +647,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
   }
 
-  Widget _amountSection() {
+  Widget _amountSection(SoraColors colors) {
     return Column(
       children: [
         _filterRow(
@@ -646,25 +657,26 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           onTap: () => _pickAmount(minSide: true),
           child: Row(
             children: [
-              Expanded(child: _amountPill(minSide: true)),
+              Expanded(child: _amountPill(minSide: true, colors: colors)),
               const SizedBox(width: 8),
-              Expanded(child: _amountPill(minSide: false)),
+              Expanded(child: _amountPill(minSide: false, colors: colors)),
             ],
           ),
+          colors: colors,
         ),
         if (_amountInvalid)
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Số tiền tối thiểu không được lớn hơn tối đa',
-              style: TextStyle(color: AppColors.coral, fontSize: 12),
+              style: TextStyle(color: colors.coralOnNeutral, fontSize: 12),
             ),
           ),
       ],
     );
   }
 
-  Widget _amountPill({required bool minSide}) {
+  Widget _amountPill({required bool minSide, required SoraColors colors}) {
     final value = minSide ? _draft.amountMin : _draft.amountMax;
     final prefix = minSide ? 'Từ' : 'Đến';
     return InkWell(
@@ -674,7 +686,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: colors.divider),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -682,7 +694,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           children: [
             Text(
               prefix,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
             ),
             const SizedBox(width: 6),
             Flexible(
@@ -690,8 +702,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                 value == null ? '…' : formatMoney(value),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -715,6 +727,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     required VoidCallback onTap,
     bool enabled = true,
     bool showChevron = false,
+    required SoraColors colors,
   }) {
     return Column(
       children: [
@@ -730,14 +743,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   height: 28,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: enabled
-                        ? AppColors.tealLightBg
-                        : AppColors.softCardBg,
+                    color: enabled ? colors.tealLightBg : colors.softCardBg,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
-                    color: enabled ? AppColors.teal : AppColors.tabInactive,
+                    color: enabled ? colors.tealOnNeutral : colors.tabInactive,
                     size: 15,
                   ),
                 ),
@@ -750,8 +761,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                         label,
                         style: TextStyle(
                           color: enabled
-                              ? AppColors.listLabel
-                              : AppColors.tabInactive,
+                              ? colors.listLabel
+                              : colors.tabInactive,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -765,8 +776,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                           key: valueKey,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -775,16 +786,16 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                   ),
                 ),
                 if (showChevron)
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
-                    color: AppColors.tabInactive,
+                    color: colors.tabInactive,
                     size: 20,
                   ),
               ],
             ),
           ),
         ),
-        const Divider(color: AppColors.listDivider, height: 1),
+        Divider(color: colors.listDivider, height: 1),
       ],
     );
   }
@@ -800,17 +811,18 @@ class _DatePresetSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
               'Khoảng thời gian',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -843,12 +855,13 @@ class _SheetOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.listDivider)),
         ),
         child: Row(
           children: [
@@ -857,14 +870,14 @@ class _SheetOption extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 15,
                 ),
               ),
             ),
             if (selected)
-              const Icon(Icons.check, color: AppColors.teal, size: 20),
+              Icon(Icons.check, color: colors.tealOnNeutral, size: 20),
           ],
         ),
       ),
@@ -895,18 +908,19 @@ class _CategorySheetState extends State<_CategorySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: SizedBox(
         height: 420,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
               child: Text(
                 'Chọn danh mục',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -918,7 +932,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                 padding: const EdgeInsets.only(bottom: 8),
                 children: [
                   for (final c in widget.categories)
-                    _categoryRow(c),
+                    _categoryRow(c, colors),
                 ],
               ),
             ),
@@ -951,7 +965,7 @@ class _CategorySheetState extends State<_CategorySheet> {
     );
   }
 
-  Widget _categoryRow(Category c) {
+  Widget _categoryRow(Category c, SoraColors colors) {
     final checked = _selected.contains(c.id);
     final isParentWithChildren = c.isParent &&
         widget.categories.any((o) => o.parentId == c.id);
@@ -984,15 +998,15 @@ class _CategorySheetState extends State<_CategorySheet> {
             Expanded(
               child: Text(
                 isParentWithChildren ? '${c.name} (gồm con)' : c.name,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 14,
                 ),
               ),
             ),
             Icon(
               checked ? Icons.check_box : Icons.check_box_outline_blank,
-              color: checked ? AppColors.teal : AppColors.tabInactive,
+              color: checked ? colors.tealOnNeutral : colors.tabInactive,
               size: 20,
             ),
           ],
@@ -1011,17 +1025,18 @@ class _WalletSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
               'Chọn ví',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -1054,17 +1069,18 @@ class _SortSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
               'Sắp xếp theo',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -1108,6 +1124,7 @@ class _AmountSheetState extends State<_AmountSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
@@ -1117,8 +1134,8 @@ class _AmountSheetState extends State<_AmountSheet> {
           children: [
             Text(
               _title,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: colors.textSecondary,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -1130,8 +1147,8 @@ class _AmountSheetState extends State<_AmountSheet> {
               child: Text(
                 formatMoney(_amount),
                 key: const ValueKey('amount-sheet-preview'),
-                style: const TextStyle(
-                  color: AppColors.teal,
+                style: TextStyle(
+                  color: colors.tealOnNeutral,
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1145,8 +1162,8 @@ class _AmountSheetState extends State<_AmountSheet> {
                   child: OutlinedButton(
                     key: const ValueKey('amount-clear'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.divider),
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.divider),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

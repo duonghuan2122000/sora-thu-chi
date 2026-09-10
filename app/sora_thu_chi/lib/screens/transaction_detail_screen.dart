@@ -9,6 +9,7 @@ import '../core/transaction/transaction_detail.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Màn "Chi tiết giao dịch" — sub-page đè lên shell (AppBar riêng, không bottom
 /// nav), theo mockup `04-chi-tiet-giao-dich.svg`. Nhận [ref] (R2); nạp lại dữ
@@ -76,6 +77,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SubPageScaffold(
       title: 'Chi tiết giao dịch',
       actions: [
@@ -86,7 +88,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           onPressed: () {},
         ),
       ],
-      bottomNavigationBar: _bottomActions(),
+      bottomNavigationBar: _bottomActions(colors),
       child: SafeArea(top: false, child: _buildBody()),
     );
   }
@@ -101,7 +103,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   /// Thanh 2 nút "Nhân bản" (phụ) / "Sửa" (chính) — chỉ hiện khi có view.
-  Widget? _bottomActions() {
+  Widget? _bottomActions(SoraColors colors) {
     if (_view == null) return null;
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -111,8 +113,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             child: OutlinedButton(
               onPressed: () {}, // no-op — FR-012.
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: const BorderSide(color: AppColors.divider),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: colors.divider),
                 minimumSize: const Size.fromHeight(44),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -157,19 +159,20 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.coral, size: 40),
+            Icon(Icons.error_outline, color: colors.coralOnNeutral, size: 40),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -199,6 +202,7 @@ class _NotFoundState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -207,10 +211,10 @@ class _NotFoundState extends StatelessWidget {
           children: [
             const Text('🧾', style: TextStyle(fontSize: 40)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Không tìm thấy giao dịch.',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -252,26 +256,27 @@ class _Summary extends StatelessWidget {
   bool get _neutral =>
       view.type == TxnType.transfer || view.type == TxnType.adjustment;
 
-  Color get _accent => switch (view.type) {
-    TxnType.income => AppColors.teal,
-    TxnType.expense => AppColors.coral,
-    TxnType.transfer || TxnType.adjustment => AppColors.listLabel,
+  Color _accent(SoraColors colors) => switch (view.type) {
+    TxnType.income => colors.tealOnNeutral,
+    TxnType.expense => colors.coralOnNeutral,
+    TxnType.transfer || TxnType.adjustment => colors.listLabel,
   };
 
-  Color get _bubbleBg =>
-      _neutral ? AppColors.softCardBg : AppColors.tealLightBg;
+  Color _bubbleBg(SoraColors colors) =>
+      _neutral ? colors.softCardBg : colors.tealLightBg;
 
   String get _amountText =>
       _neutral ? formatMoney(view.amount) : formatSignedMoney(view.amount);
 
-  Color get _amountColor =>
-      _neutral ? AppColors.textPrimary : _accent;
+  Color _amountColor(SoraColors colors) =>
+      _neutral ? colors.textPrimary : _accent(colors);
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Container(
       width: double.infinity,
-      color: AppColors.white,
+      color: colors.background,
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
       child: Column(
         children: [
@@ -279,15 +284,18 @@ class _Summary extends StatelessWidget {
             width: 56,
             height: 56,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: _bubbleBg, shape: BoxShape.circle),
-            child: Icon(view.summaryGlyph, color: _accent, size: 28),
+            decoration: BoxDecoration(
+              color: _bubbleBg(colors),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(view.summaryGlyph, color: _accent(colors), size: 28),
           ),
           const SizedBox(height: 12),
           Text(
             view.summaryTitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: TextStyle(
+              color: colors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -298,7 +306,7 @@ class _Summary extends StatelessWidget {
             child: Text(
               _amountText,
               style: TextStyle(
-                color: _amountColor,
+                color: _amountColor(colors),
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
               ),
@@ -311,7 +319,7 @@ class _Summary extends StatelessWidget {
 }
 
 /// Các hàng chi tiết — mỗi hàng icon dẫn đầu teal nhỏ + cột (nhãn / giá trị),
-/// ngăn cách bằng đường kẻ mảnh [AppColors.listDivider] giữa các hàng (FR-008).
+/// ngăn cách bằng đường kẻ mảnh `SoraColors.listDivider` giữa các hàng (FR-008).
 /// Hàng hiển thị có điều kiện: rỗng → ẩn hẳn, không dòng trống (FR-007).
 class _DetailRows extends StatelessWidget {
   const _DetailRows({required this.view});
@@ -320,6 +328,7 @@ class _DetailRows extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final v = view;
     final rows = <Widget>[];
     final hasPair =
@@ -329,30 +338,30 @@ class _DetailRows extends StatelessWidget {
       rows.add(_InfoRow(
         icon: Icons.account_balance_wallet_outlined,
         label: 'Ví nguồn',
-        value: _valueText(v.sourceWalletName!),
+        value: _valueText(v.sourceWalletName!, colors),
       ));
       rows.add(_InfoRow(
         icon: Icons.account_balance_wallet_outlined,
         label: 'Ví đích',
-        value: _valueText(v.destWalletName!),
+        value: _valueText(v.destWalletName!, colors),
       ));
     } else {
       rows.add(_InfoRow(
         icon: Icons.account_balance_wallet_outlined,
         label: 'Ví',
-        value: _valueText(v.singleWalletName ?? 'Ví'),
+        value: _valueText(v.singleWalletName ?? 'Ví', colors),
       ));
     }
     rows.add(_InfoRow(
       icon: Icons.schedule,
       label: 'Ngày giờ',
-      value: _valueText(formatDateTimeDetailLabel(v.date)),
+      value: _valueText(formatDateTimeDetailLabel(v.date), colors),
     ));
     if (v.note.isNotEmpty) {
       rows.add(_InfoRow(
         icon: Icons.notes,
         label: 'Ghi chú',
-        value: _valueText(v.note),
+        value: _valueText(v.note, colors),
       ));
     }
     if (v.tags.isNotEmpty) {
@@ -369,22 +378,22 @@ class _DetailRows extends StatelessWidget {
       rows.add(_InfoRow(
         icon: Icons.location_on_outlined,
         label: 'Vị trí',
-        value: _valueText(v.location),
+        value: _valueText(v.location, colors),
       ));
     }
     return Column(
       children: [
         for (var i = 0; i < rows.length; i++) ...[
-          if (i > 0) const Divider(height: 1, thickness: 1, color: AppColors.listDivider),
+          if (i > 0) Divider(height: 1, thickness: 1, color: colors.listDivider),
           rows[i],
         ],
       ],
     );
   }
 
-  Widget _valueText(String text) => Text(
+  Widget _valueText(String text, SoraColors colors) => Text(
     text,
-    style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+    style: TextStyle(color: colors.textPrimary, fontSize: 15),
   );
 }
 
@@ -402,6 +411,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -409,7 +419,7 @@ class _InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 24,
-            child: Icon(icon, size: 18, color: AppColors.teal),
+            child: Icon(icon, size: 18, color: colors.tealOnNeutral),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -418,8 +428,8 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.listLabel,
+                  style: TextStyle(
+                    color: colors.listLabel,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -444,6 +454,7 @@ class _TagRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -455,10 +466,10 @@ class _TagRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tag',
                   style: TextStyle(
-                    color: AppColors.listLabel,
+                    color: colors.listLabel,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -475,13 +486,13 @@ class _TagRow extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.softCardBg,
+                          color: colors.softCardBg,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           '#$tag',
-                          style: const TextStyle(
-                            color: AppColors.teal,
+                          style: TextStyle(
+                            color: colors.tealOnNeutral,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -507,6 +518,7 @@ class _ReceiptThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.file(
@@ -517,8 +529,8 @@ class _ReceiptThumb extends StatelessWidget {
         errorBuilder: (_, _, _) => Container(
           width: 56,
           height: 56,
-          color: AppColors.softCardBg,
-          child: const Icon(Icons.image_outlined, color: AppColors.listLabel),
+          color: colors.softCardBg,
+          child: Icon(Icons.image_outlined, color: colors.listLabel),
         ),
       ),
     );

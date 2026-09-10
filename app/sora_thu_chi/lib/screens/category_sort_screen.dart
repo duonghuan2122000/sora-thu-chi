@@ -8,6 +8,7 @@ import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Màn "Sắp xếp danh mục" (mockup `04`, PBI 16) — màn con từ màn danh sách danh
 /// mục `01` khi chạm icon Sắp xếp (no-op PBI 13 → kích hoạt): app bar teal back
@@ -104,6 +105,7 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SubPageScaffold(
       title: 'Sắp xếp danh mục',
       actions: [
@@ -114,11 +116,11 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
           child: const Text('Xong'),
         ),
       ],
-      child: SafeArea(top: false, child: _body()),
+      child: SafeArea(top: false, child: _body(colors)),
     );
   }
 
-  Widget _body() {
+  Widget _body(SoraColors colors) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -127,7 +129,7 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -143,8 +145,8 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
           child: Text(
             'Không có danh mục $_typeNoun nào để sắp xếp.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: colors.textSecondary,
               fontSize: 14,
             ),
           ),
@@ -169,7 +171,7 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Icon(
                     Icons.drag_handle,
-                    color: AppColors.tabInactive,
+                    color: colors.tabInactive,
                     size: 20,
                   ),
                 ),
@@ -177,7 +179,7 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
               showChevron: false,
               onTap: () {},
             ),
-            const Divider(color: AppColors.listDivider, height: 1),
+            Divider(color: colors.listDivider, height: 1),
           ],
         );
       },

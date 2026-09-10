@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/profile/device_profile.dart';
 import '../core/widgets/screen_header.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'category_list_screen.dart';
 import 'utilities_screen.dart';
 import 'wallet_list_screen.dart';
@@ -66,6 +67,7 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Column(
       children: [
         ScreenHeader(title: 'Cài đặt', bottom: _ProfileBlock(profile: profile)),
@@ -78,18 +80,18 @@ class SettingsScreen extends StatelessWidget {
                 label: 'Tiền tệ mặc định',
                 trailing: Text(
                   profile.currencyCode,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const _SettingsRow(
+              _SettingsRow(
                 label: 'Đổi mã PIN',
                 trailing: Icon(
                   Icons.chevron_right,
-                  color: AppColors.tabInactive,
+                  color: colors.tabInactive,
                 ),
               ),
               const _SettingsRow(
@@ -100,25 +102,25 @@ class SettingsScreen extends StatelessWidget {
               _SettingsRow(
                 label: 'Quản lý ví',
                 onTap: () => _openManageWallet(context),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right,
-                  color: AppColors.tabInactive,
+                  color: colors.tabInactive,
                 ),
               ),
               _SettingsRow(
                 label: 'Danh mục',
                 onTap: () => _openManageCategory(context),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right,
-                  color: AppColors.tabInactive,
+                  color: colors.tabInactive,
                 ),
               ),
               _SettingsRow(
                 label: 'Tiện ích & Cá nhân hóa',
                 onTap: () => _openManageUtilities(context),
-                trailing: const Icon(
+                trailing: Icon(
                   Icons.chevron_right,
-                  color: AppColors.tabInactive,
+                  color: colors.tabInactive,
                 ),
               ),
             ],
@@ -138,6 +140,7 @@ class _ProfileBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Row(
       children: [
         Container(
@@ -175,8 +178,8 @@ class _ProfileBlock extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 'Chạm để đổi ảnh đại diện',
-                style: const TextStyle(
-                  color: AppColors.tealLightText,
+                style: TextStyle(
+                  color: colors.tealLightText,
                   fontSize: 13,
                 ),
               ),
@@ -196,12 +199,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: AppColors.tabInactive,
+        style: TextStyle(
+          color: colors.tabInactive,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -221,18 +225,19 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     final row = Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.listDivider)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.listDivider)),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.listLabel,
+              style: TextStyle(
+                color: colors.listLabel,
                 fontSize: 15,
               ),
             ),

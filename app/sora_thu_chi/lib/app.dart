@@ -5,16 +5,22 @@ import 'core/boot_gate.dart';
 import 'core/security/pin_controller.dart';
 import 'core/security/pin_store.dart';
 import 'core/security/pin_store_secure.dart';
+import 'core/theme/theme_controller.dart';
+import 'core/theme/theme_store.dart';
+import 'data/theme_deps.dart';
 import 'screens/pin/pin_lock_screen.dart';
 import 'theme/app_theme.dart';
 
 /// Gốc app. `home` = BootGate nền trung tính; PIN controller được khởi tạo ở
 /// đây (qua PinGate) rồi dùng lại cho khóa khi resume (US2).
 class SoraApp extends StatefulWidget {
-  const SoraApp({super.key, this.store});
+  const SoraApp({super.key, this.store, this.themeStore});
 
   /// Bơm store để test; mặc định dùng secure storage thật.
   final PinStore? store;
+
+  /// Bơm store giao diện để test; mặc định dùng drift.
+  final ThemeStore? themeStore;
 
   @override
   State<SoraApp> createState() => _SoraAppState();
@@ -31,6 +37,11 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Giao diện: đăng ký controller ở gốc rồi nạp lựa chọn đã lưu (R3/R8).
+    if (!Get.isRegistered<ThemeController>()) {
+      Get.put(ThemeController(widget.themeStore ?? ensureThemeStore()));
+    }
+    Get.find<ThemeController>().load();
   }
 
   @override
@@ -74,12 +85,19 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Sora Thu Chi',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.themeData,
-      navigatorKey: _navigatorKey,
-      home: PinGate(store: _store),
+    final theme = Get.find<ThemeController>();
+    // Obx bọc cả MaterialApp: đổi Rx → themeMode mới → toàn cây rebuild ngay,
+    // không cần khởi động lại (FR-005/SC-004).
+    return Obx(
+      () => GetMaterialApp(
+        title: 'Sora Thu Chi',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.themeData,
+        darkTheme: AppTheme.darkThemeData,
+        themeMode: theme.mode.value,
+        navigatorKey: _navigatorKey,
+        home: PinGate(store: _store),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
+import '../../../theme/sora_colors.dart';
 
 /// Indicator 4 chấm — đặc teal cho ký tự đã nhập, rỗng `dotEmpty` cho còn lại.
 /// Widget thuần nhận `filledCount`, không tự quản state.
@@ -12,6 +13,7 @@ class PinDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(length, (i) {
@@ -22,10 +24,10 @@ class PinDots extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 9),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: filled ? AppColors.teal : AppColors.white,
+            color: filled ? AppColors.teal : colors.background,
             border: filled
                 ? null
-                : Border.all(color: AppColors.dotEmpty, width: 1.5),
+                : Border.all(color: colors.dotEmpty, width: 1.5),
           ),
         );
       }),

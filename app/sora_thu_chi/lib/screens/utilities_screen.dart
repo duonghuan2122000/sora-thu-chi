@@ -1,11 +1,15 @@
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../core/theme/theme_controller.dart';
+import '../core/theme/theme_mode.dart';
 import '../core/utilities/utilities.dart';
 import '../core/utilities/utilities_store.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/utilities_deps.dart';
-import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
+import 'theme_screen.dart';
 
 /// Màn "Tiện ích & Cá nhân hóa" (mockup `01`, PBI 17) — màn con từ Cài đặt: app
 /// bar "Tiện ích & Cá nhân hóa" + back, không bottom nav (FR-001). Thân liệt kê
@@ -14,7 +18,13 @@ import '../theme/app_colors.dart';
 /// Widget màn hình chính hiển thị switch "bật" câm, chạm toàn hàng mở hướng dẫn
 /// ghim widget theo nền tảng (R5); **2 công tắc thật** (Ẩn số dư tắt / Máy tính
 /// bật — FR-006) bật/tắt + nhớ qua [UtilitiesStore] (ghi-through), nhưng chưa
-/// kéo hiệu ứng màn khác (FR-007); 5 hàng điều hướng no-op chờ màn con 02–07.
+/// kéo hiệu ứng màn khác (FR-007); 4 hàng điều hướng no-op chờ màn con 03–07.
+///
+/// Hàng "Giao diện" **đã kích hoạt** (PBI 18): phần cuối đọc reactive
+/// [ThemeController] (Obx) nên hiện đúng lựa chọn hiện hành — kể cả khi người
+/// dùng vừa đổi ở màn 02 rồi quay lại (màn này vẫn mounted dưới route, FR-007);
+/// chạm hàng → push `ThemeScreen` (FR-001). Màu màn đọc theo theme qua
+/// [SoraColors] nên giao diện tối không còn vùng trắng chói.
 ///
 /// StatefulWidget (R6) đọc store 1 lần khi mở, không GetX controller; seam
 /// [store] để test bơm fake (R7). Ghi-through nối đuôi để bật/tắt nhanh không
@@ -114,18 +124,26 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
     );
   }
 
+  /// Mở màn con "Giao diện" (màn 02) — điểm vào no-op của PBI 17 nay kích hoạt.
+  void _openThemeScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ThemeScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
       title: 'Tiện ích & Cá nhân hóa',
       child: SafeArea(
         top: false,
-        child: _body(),
+        child: _body(context),
       ),
     );
   }
 
-  Widget _body() {
+  Widget _body(BuildContext context) {
+    final colors = SoraColors.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -134,7 +152,7 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -145,35 +163,46 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
       padding: const EdgeInsets.only(bottom: 48),
       children: [
         const _SectionLabel('HIỂN THỊ'),
-        ..._rows([
+        ..._rows(colors, [
           _navRow(
+            colors: colors,
             icon: Icons.wb_sunny_outlined,
             name: 'Giao diện',
             subtitle: 'Sáng / Tối / Theo hệ thống',
-            trailing: _trailingValue('Hệ thống'),
+            trailing: Obx(
+              () => _trailingValue(
+                colors,
+                themeModeLabel(Get.find<ThemeController>().mode.value),
+              ),
+            ),
+            onTap: _openThemeScreen,
           ),
           _navRow(
+            colors: colors,
             icon: Icons.language,
             name: 'Ngôn ngữ',
             subtitle: 'Ngôn ngữ hiển thị trong ứng dụng',
-            trailing: _trailingValue('Tiếng Việt'),
+            trailing: _trailingValue(colors, 'Tiếng Việt'),
           ),
           _navRow(
+            colors: colors,
             icon: Icons.tune,
             name: 'Định dạng & Tiền tệ',
             subtitle: 'Ngày, tiền tệ, tuần, kỳ tài chính',
-            trailing: const Icon(Icons.chevron_right, color: AppColors.tabInactive),
+            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
         ]),
         const _SectionLabel('TRẢI NGHIỆM'),
-        ..._rows([
+        ..._rows(colors, [
           _helpRow(
+            colors: colors,
             icon: Icons.widgets_outlined,
             name: 'Widget màn hình chính',
             subtitle: 'Hiện số dư & chi tiêu hôm nay',
             trailing: const Switch(value: true, onChanged: null),
           ),
           _switchRow(
+            colors: colors,
             icon: Icons.visibility_off_outlined,
             name: 'Ẩn số dư (Privacy mode)',
             subtitle: 'Che số tiền trên màn hình chính',
@@ -181,6 +210,7 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
             onChanged: _toggleHideBalance,
           ),
           _switchRow(
+            colors: colors,
             icon: Icons.calculate_outlined,
             name: 'Máy tính khi nhập số tiền',
             subtitle: 'Cho phép +, -, x, / khi nhập',
@@ -189,19 +219,21 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
           ),
         ]),
         const _SectionLabel('DỮ LIỆU & TÌM KIẾM'),
-        ..._rows([
+        ..._rows(colors, [
           _navRow(
+            colors: colors,
             icon: Icons.search,
             name: 'Tìm kiếm toàn cục',
             subtitle: 'Giao dịch, danh mục, ví',
-            trailing: const Icon(Icons.chevron_right, color: AppColors.tabInactive),
+            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
           // Dòng phụ mô tả sạch (không `#…`/số tag giả — R4/FR-009/SC-008).
           _navRow(
+            colors: colors,
             icon: Icons.sell_outlined,
             name: 'Quản lý Tag',
             subtitle: 'Gắn nhãn cho giao dịch',
-            trailing: const Icon(Icons.chevron_right, color: AppColors.tabInactive),
+            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
         ]),
       ],
@@ -209,42 +241,48 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
   }
 
   /// Chèn [Divider] giữa các hàng trong nhóm (không sau hàng cuối — mockup 01).
-  List<Widget> _rows(List<Widget> rows) {
+  List<Widget> _rows(SoraColors colors, List<Widget> rows) {
     final out = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
       out.add(rows[i]);
       if (i < rows.length - 1) {
-        out.add(const Divider(color: AppColors.listDivider, height: 1));
+        out.add(Divider(color: colors.listDivider, height: 1));
       }
     }
     return out;
   }
 
-  /// Hàng điều hướng (no-op — R3/FR-005): phản hồi chạm nhưng không mở màn.
+  /// Hàng điều hướng (mặc định no-op — R3/FR-005): phản hồi chạm nhưng không mở
+  /// màn; hàng "Giao diện" truyền [onTap] để mở màn 02.
   Widget _navRow({
+    required SoraColors colors,
     required IconData icon,
     required String name,
     String? subtitle,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
     return _itemRow(
+      colors: colors,
       icon: icon,
       name: name,
       subtitle: subtitle,
       trailing: trailing,
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 
   /// Hàng Widget màn hình chính (R5): chạm toàn hàng kể cả vùng switch → dialog
   /// hướng dẫn ghim; switch "bật" câm không đảo (onChanged null).
   Widget _helpRow({
+    required SoraColors colors,
     required IconData icon,
     required String name,
     required String subtitle,
     required Widget trailing,
   }) {
     return _itemRow(
+      colors: colors,
       icon: icon,
       name: name,
       subtitle: subtitle,
@@ -255,6 +293,7 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
 
   /// Hàng công tắc thật — toggle ghi-through store (write-through).
   Widget _switchRow({
+    required SoraColors colors,
     required IconData icon,
     required String name,
     required String subtitle,
@@ -262,6 +301,7 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return _itemRow(
+      colors: colors,
       icon: icon,
       name: name,
       subtitle: subtitle,
@@ -270,6 +310,7 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
   }
 
   Widget _itemRow({
+    required SoraColors colors,
     required IconData icon,
     required String name,
     String? subtitle,
@@ -284,11 +325,11 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
             width: 36,
             height: 36,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AppColors.tealLightBg,
+            decoration: BoxDecoration(
+              color: colors.tealLightBg,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.teal, size: 20),
+            child: Icon(icon, color: colors.tealOnNeutral, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -299,8 +340,8 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
@@ -309,8 +350,8 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: colors.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -330,7 +371,7 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
 
   /// Giá trị hiện hành + chevron (hàng Giao diện/Ngôn ngữ — FR-004). Text giá
   /// trị giới hạn width (chống tràn ngang cỡ chữ lớn — FR-010), tự cắt ellipsis.
-  Widget _trailingValue(String value) {
+  Widget _trailingValue(SoraColors colors, String value) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -340,11 +381,11 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.tabInactive, fontSize: 12),
+            style: TextStyle(color: colors.tabInactive, fontSize: 12),
           ),
         ),
         const SizedBox(width: 4),
-        const Icon(Icons.chevron_right, color: AppColors.tabInactive, size: 20),
+        Icon(Icons.chevron_right, color: colors.tabInactive, size: 20),
       ],
     );
   }
@@ -362,8 +403,8 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: AppColors.tabInactive,
+        style: TextStyle(
+          color: SoraColors.of(context).tabInactive,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),

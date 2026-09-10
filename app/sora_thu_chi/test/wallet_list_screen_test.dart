@@ -8,6 +8,7 @@ import 'package:sora_thu_chi/screens/wallet_detail_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_form_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_wallet_repository.dart';
@@ -102,7 +103,7 @@ void main() {
         expect(hiddenName, findsOneWidget);
         expect(
           _textColor(tester, 'Sổ tiết kiệm (đã ẩn)'),
-          AppColors.tabInactive,
+          SoraColors.light.tabInactive,
         );
         expect(find.text('Không tính vào tổng'), findsOneWidget);
         expect(find.text('9.000.000 đ'), findsOneWidget); // số dư vẫn hiển thị

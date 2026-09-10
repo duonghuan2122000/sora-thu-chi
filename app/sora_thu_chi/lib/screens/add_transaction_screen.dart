@@ -11,6 +11,7 @@ import '../core/widgets/amount_keypad.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'category_picker_screen.dart';
 import 'wallet_transfer_screen.dart';
 
@@ -58,8 +59,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     now: _openedAt,
   );
 
-  Color get _amountAccent =>
-      _type == TxnType.income ? AppColors.teal : AppColors.coral;
+  Color _amountAccent(SoraColors colors) =>
+      _type == TxnType.income ? colors.tealOnNeutral : colors.coralOnNeutral;
 
   @override
   void initState() {
@@ -272,6 +273,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -297,7 +299,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ),
         body: Column(
           children: [
-            Expanded(child: _scrollableBody()),
+            Expanded(child: _scrollableBody(colors)),
             AmountKeypad(onDigit: _appendDigit, onBackspace: _backspace),
           ],
         ),
@@ -336,17 +338,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _scrollableBody() {
+  Widget _scrollableBody(SoraColors colors) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       children: [
-        _segmented(),
+        _segmented(colors),
         const SizedBox(height: 20),
-        _amountSection(),
-        if (_missing.contains('amount')) _fieldError('Vui lòng nhập số tiền lớn hơn 0'),
+        _amountSection(colors),
+        if (_missing.contains('amount'))
+          _fieldError('Vui lòng nhập số tiền lớn hơn 0', colors),
         const SizedBox(height: 12),
         if (_noActiveWallet)
-          _emptyWalletBanner()
+          _emptyWalletBanner(colors)
         else ...[
           _fieldRow(
             key: const ValueKey('field-category'),
@@ -356,6 +359,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             hint: 'Chọn danh mục',
             onTap: _pickCategory,
             error: _missing.contains('category') ? 'Chưa chọn danh mục' : null,
+            colors: colors,
           ),
           _fieldRow(
             key: const ValueKey('field-wallet'),
@@ -365,6 +369,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             hint: 'Chọn ví',
             onTap: _pickWallet,
             error: _missing.contains('wallet') ? 'Chưa chọn ví' : null,
+            colors: colors,
           ),
           _fieldRow(
             key: const ValueKey('field-datetime'),
@@ -373,8 +378,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             value: formatDateTimeDetailLabel(_date),
             onTap: _pickDateTime,
             error: _missing.contains('date') ? 'Chưa chọn ngày giờ' : null,
+            colors: colors,
           ),
-          _noteRow(),
+          _noteRow(colors),
         ],
         const SizedBox(height: 8),
       ],
@@ -382,25 +388,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   /// Segmented Chi | Thu | Chuyển khoản — chosen teal pill, unchosen viền trắng.
-  Widget _segmented() {
+  Widget _segmented(SoraColors colors) {
     return Container(
       height: 40,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: AppColors.softCardBg,
+        color: colors.softCardBg,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          _segment('Chi', TxnType.expense),
-          _segment('Thu', TxnType.income),
-          _transferSegment(),
+          _segment('Chi', TxnType.expense, colors),
+          _segment('Thu', TxnType.income, colors),
+          _transferSegment(colors),
         ],
       ),
     );
   }
 
-  Widget _segment(String label, TxnType type) {
+  Widget _segment(String label, TxnType type, SoraColors colors) {
     final selected = _type == type;
     return Expanded(
       child: GestureDetector(
@@ -414,7 +420,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? AppColors.white : AppColors.listLabel,
+              color: selected ? AppColors.white : colors.listLabel,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -424,16 +430,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _transferSegment() {
+  Widget _transferSegment(SoraColors colors) {
     return Expanded(
       child: GestureDetector(
         onTap: _openTransferFlow,
         child: Container(
           alignment: Alignment.center,
-          child: const Text(
+          child: Text(
             'Chuyển khoản',
             style: TextStyle(
-              color: AppColors.listLabel,
+              color: colors.listLabel,
               fontSize: 13,
             ),
           ),
@@ -442,7 +448,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  Widget _amountSection() {
+  Widget _amountSection(SoraColors colors) {
     return Column(
       children: [
         FittedBox(
@@ -450,8 +456,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           child: Text(
             formatMoney(_amount),
             key: const ValueKey('amount-text'),
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: TextStyle(
+              color: colors.textPrimary,
               fontSize: 30,
               fontWeight: FontWeight.w600,
             ),
@@ -462,31 +468,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           key: const ValueKey('amount-underline'),
           width: 110,
           height: 2,
-          decoration: BoxDecoration(color: _amountAccent),
+          decoration: BoxDecoration(color: _amountAccent(colors)),
         ),
       ],
     );
   }
 
-  Widget _fieldError(String message) => Padding(
+  Widget _fieldError(String message, SoraColors colors) => Padding(
     padding: const EdgeInsets.only(top: 6),
     child: Text(
       message,
-      style: const TextStyle(color: AppColors.coral, fontSize: 12),
+      style: TextStyle(color: colors.coralOnNeutral, fontSize: 12),
     ),
   );
 
-  Widget _emptyWalletBanner() {
+  Widget _emptyWalletBanner(SoraColors colors) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.coralLightBg,
+        color: colors.coralLightBg,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
+      child: Text(
         'Chưa có ví hoạt động — hãy tạo ví trong Quản lý ví.',
-        style: TextStyle(color: AppColors.coral, fontSize: 13),
+        style: TextStyle(color: colors.coralOnNeutral, fontSize: 13),
       ),
     );
   }
@@ -500,6 +506,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     String? hint,
     required VoidCallback onTap,
     String? error,
+    required SoraColors colors,
   }) {
     return Column(
       children: [
@@ -514,11 +521,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   width: 28,
                   height: 28,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: AppColors.tealLightBg,
+                  decoration: BoxDecoration(
+                    color: colors.tealLightBg,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: AppColors.teal, size: 15),
+                  child: Icon(icon, color: colors.tealOnNeutral, size: 15),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -527,8 +534,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     children: [
                       Text(
                         label,
-                        style: const TextStyle(
-                          color: AppColors.listLabel,
+                        style: TextStyle(
+                          color: colors.listLabel,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -540,8 +547,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: value != null
-                              ? AppColors.textPrimary
-                              : AppColors.tabInactive,
+                              ? colors.textPrimary
+                              : colors.tabInactive,
                           fontSize: 14,
                           fontWeight: value != null ? FontWeight.w500 : FontWeight.w400,
                         ),
@@ -549,20 +556,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right,
-                    color: AppColors.tabInactive, size: 20),
+                Icon(Icons.chevron_right, color: colors.tabInactive, size: 20),
               ],
             ),
           ),
         ),
-        const Divider(color: AppColors.listDivider, height: 1),
-        if (error != null) _fieldError(error),
+        Divider(color: colors.listDivider, height: 1),
+        if (error != null) _fieldError(error, colors),
       ],
     );
   }
 
   /// Dòng Ghi chú — TextField tùy chọn, nhập trực tiếp (FR-010).
-  Widget _noteRow() {
+  Widget _noteRow(SoraColors colors) {
     return Column(
       children: [
         Row(
@@ -571,19 +577,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               width: 28,
               height: 28,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: AppColors.tealLightBg,
+              decoration: BoxDecoration(
+                color: colors.tealLightBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.edit_note, color: AppColors.teal, size: 15),
+              child: Icon(Icons.edit_note, color: colors.tealOnNeutral, size: 15),
             ),
             const SizedBox(width: 12),
-            const SizedBox(
+            SizedBox(
               width: 40,
               child: Text(
                 'Ghi chú',
                 style: TextStyle(
-                  color: AppColors.listLabel,
+                  color: colors.listLabel,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
@@ -597,13 +603,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   controller: _noteCtrl,
                   minLines: 1,
                   maxLines: 3,
-                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
+                  style: TextStyle(fontSize: 14, color: colors.textPrimary),
+                  decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
                     hintText: 'Thêm ghi chú (tùy chọn)',
                     hintStyle: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: colors.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -612,7 +618,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             ),
           ],
         ),
-        const Divider(color: AppColors.listDivider, height: 1),
+        Divider(color: colors.listDivider, height: 1),
       ],
     );
   }
@@ -626,17 +632,18 @@ class _WalletSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
               'Chọn ví',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: colors.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -648,9 +655,9 @@ class _WalletSheet extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(w),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: AppColors.listDivider),
+                    bottom: BorderSide(color: colors.listDivider),
                   ),
                 ),
                 child: Row(
@@ -659,8 +666,8 @@ class _WalletSheet extends StatelessWidget {
                       width: 40,
                       height: 40,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        color: AppColors.tealLightBg,
+                      decoration: BoxDecoration(
+                        color: colors.tealLightBg,
                         shape: BoxShape.circle,
                       ),
                       child: Text(w.icon, style: const TextStyle(fontSize: 20)),
@@ -674,8 +681,8 @@ class _WalletSheet extends StatelessWidget {
                             w.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -685,8 +692,8 @@ class _WalletSheet extends StatelessWidget {
                             w.typeLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: colors.textSecondary,
                               fontSize: 13,
                             ),
                           ),
@@ -699,8 +706,8 @@ class _WalletSheet extends StatelessWidget {
                         formatMoney(w.balance),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),

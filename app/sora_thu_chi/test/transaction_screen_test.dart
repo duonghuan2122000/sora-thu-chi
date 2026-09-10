@@ -11,6 +11,7 @@ import 'package:sora_thu_chi/core/wallet/wallet_source.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/transaction_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_wallet_repository.dart';
@@ -129,7 +130,7 @@ void main() {
         expect(find.text('Chuyển khoản'), findsOneWidget);
         expect(find.text('Vietcombank → Momo'), findsOneWidget);
         expect(find.text('700.000 đ'), findsOneWidget);
-        expect(_textColor(tester, '700.000 đ'), AppColors.listLabel);
+        expect(_textColor(tester, '700.000 đ'), SoraColors.light.listLabel);
         expect(find.text('-700.000 đ'), findsNothing);
         expect(find.text('+700.000 đ'), findsNothing);
         expect(tester.takeException(), isNull);
@@ -332,7 +333,7 @@ void main() {
       expect(find.text('Chi tiết giao dịch'), findsOneWidget);
       // Khối tóm tắt trung tính: không dấu +/-, màu trung tính.
       expect(find.text('700.000 đ'), findsOneWidget);
-      expect(_textColor(tester, '700.000 đ'), AppColors.textPrimary);
+      expect(_textColor(tester, '700.000 đ'), SoraColors.light.textPrimary);
       expect(find.text('+700.000 đ'), findsNothing);
       // Vùng chi tiết: đúng chiều nguồn → đích.
       expect(find.text('Ví nguồn'), findsOneWidget);

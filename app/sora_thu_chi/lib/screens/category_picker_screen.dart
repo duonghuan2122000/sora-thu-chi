@@ -5,6 +5,7 @@ import '../core/widgets/category_icon.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 
 /// Màn chọn danh mục (mockup `03`, R5) — lưới 4 cột danh mục **cha** đang hoạt
 /// động của [type]; chạm cha có con → bật vùng "DANH MỤC CON: TÊN_CHA" ngay dưới
@@ -87,16 +88,17 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Chọn danh mục')),
       body: SafeArea(
         top: false,
-        child: _body(),
+        child: _body(colors),
       ),
     );
   }
 
-  Widget _body() {
+  Widget _body(SoraColors colors) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -105,7 +107,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: const TextStyle(color: AppColors.textPrimary)),
+            Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
           ],
@@ -117,26 +119,26 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       children: [
         if (parents.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Text(
               'Chưa có danh mục cho loại này.\n'
               'Bạn có thể thêm mới từ màn danh mục.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),
           )
         else
-          _grid(parents),
+          _grid(colors, parents),
         if (_selectedParent case final parent?)
-          _childSection(parent),
+          _childSection(colors, parent),
         const SizedBox(height: 8),
       ],
     );
   }
 
   /// Lưới danh mục cha 4 cột (Wrap — không cắt ô khi cỡ chữ lớn) + ô "Thêm mới".
-  Widget _grid(List<Category> parents) {
+  Widget _grid(SoraColors colors, List<Category> parents) {
     const spacing = 8.0;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -147,6 +149,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
           children: [
             for (final c in parents)
               _gridCell(
+                colors,
                 width: cellWidth,
                 onTap: () => _onTapCategory(c),
                 icon: categoryIcon(c.icon),
@@ -154,6 +157,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                 label: c.name,
               ),
             _gridCell(
+              colors,
               width: cellWidth,
               onTap: () {}, // "Thêm mới" — module Danh mục sau, no-op (R5).
               addNew: true,
@@ -164,7 +168,8 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
     );
   }
 
-  Widget _gridCell({
+  Widget _gridCell(
+    SoraColors colors, {
     required double width,
     required VoidCallback onTap,
     IconData? icon,
@@ -188,7 +193,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                   ? BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.dotEmpty,
+                        color: colors.dotEmpty,
                         width: 1.5,
                       ),
                     )
@@ -197,7 +202,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                       shape: BoxShape.circle,
                     ),
               child: addNew
-                  ? const Icon(Icons.add, color: AppColors.teal, size: 24)
+                  ? Icon(Icons.add, color: colors.tealOnNeutral, size: 24)
                   : Icon(icon, color: AppColors.white, size: 26),
             ),
             const SizedBox(height: 6),
@@ -209,7 +214,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: addNew ? FontWeight.w600 : FontWeight.w400,
-                color: addNew ? AppColors.listLabel : AppColors.textPrimary,
+                color: addNew ? colors.listLabel : colors.textPrimary,
               ),
             ),
           ],
@@ -219,20 +224,20 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   }
 
   /// Vùng "DANH MỤC CON: TÊN_CHA" (mockup `03`) — các con chọn được ngay dưới.
-  Widget _childSection(Category parent) {
+  Widget _childSection(SoraColors colors, Category parent) {
     final children = _childrenOf(parent);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
-        const Divider(color: AppColors.listDivider, height: 1),
+        Divider(color: colors.listDivider, height: 1),
         const SizedBox(height: 14),
         Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: Text(
             'DANH MỤC CON: ${parent.name.toUpperCase()}',
-            style: const TextStyle(
-              color: AppColors.tabInactive,
+            style: TextStyle(
+              color: colors.tabInactive,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -263,8 +268,8 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                   const SizedBox(width: 12),
                   Text(
                     child.name,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 14,
                     ),
                   ),

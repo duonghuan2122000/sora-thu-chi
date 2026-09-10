@@ -5,6 +5,7 @@ import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_detail.dart';
 import 'package:sora_thu_chi/screens/transaction_detail_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 /// Mở [screen] như một route đẩy lên trên màn host (có back button) — bơm seam
@@ -136,7 +137,7 @@ void main() {
 
       expect(find.text('Chuyển khoản'), findsOneWidget);
       expect(find.text('700.000 đ'), findsOneWidget);
-      expect(_textColor(tester, '700.000 đ'), AppColors.textPrimary);
+      expect(_textColor(tester, '700.000 đ'), SoraColors.light.textPrimary);
       expect(find.text('+700.000 đ'), findsNothing);
       expect(find.text('-700.000 đ'), findsNothing);
       expect(find.text('Ví nguồn'), findsOneWidget);
@@ -163,7 +164,7 @@ void main() {
 
       expect(find.text('Điều chỉnh số dư'), findsOneWidget);
       expect(find.text('3.000 đ'), findsOneWidget);
-      expect(_textColor(tester, '3.000 đ'), AppColors.textPrimary);
+      expect(_textColor(tester, '3.000 đ'), SoraColors.light.textPrimary);
       expect(find.byIcon(Icons.tune), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

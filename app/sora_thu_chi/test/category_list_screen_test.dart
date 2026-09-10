@@ -8,6 +8,7 @@ import 'package:sora_thu_chi/screens/category_form_screen.dart';
 import 'package:sora_thu_chi/screens/category_list_screen.dart';
 import 'package:sora_thu_chi/screens/category_sort_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_wallet_repository.dart';
@@ -111,7 +112,7 @@ void main() {
       );
       expect(
         tester.widget<Text>(find.text('Thu nhập')).style!.color,
-        AppColors.tabInactive,
+        SoraColors.light.tabInactive,
       );
 
       // FAB "+" teal phải dưới.
@@ -269,7 +270,7 @@ void main() {
       );
       expect(
         tester.widget<Text>(_formText('Thu nhập')).style!.color,
-        AppColors.tabInactive,
+        SoraColors.light.tabInactive,
       );
 
       // Về list, sang tab Thu nhập → FAB mở loại Thu nhập.
@@ -286,7 +287,7 @@ void main() {
       );
       expect(
         tester.widget<Text>(_formText('Chi tiêu')).style!.color,
-        AppColors.tabInactive,
+        SoraColors.light.tabInactive,
       );
       expect(tester.takeException(), isNull);
     });
