@@ -12,6 +12,8 @@ sources:
   - ../../.specify/specs/17/data-model.md
   - ../../.specify/specs/18/spec.md
   - ../../.specify/specs/18/data-model.md
+  - ../../.specify/specs/19/spec.md
+  - ../../.specify/specs/19/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -57,11 +59,11 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 > **PBI 17 (2026-09-06)**: dựng **màn danh sách** gom điểm vào tùy chỉnh theo mockup `docs/tool/01-danh-sach-tien-ich.svg`. Entry: Cài đặt nhóm **KHÁC → "Tiện ích & Cá nhân hóa"** (ngay dưới "Danh mục"), `SubPageScaffold` app bar teal + back + tiêu đề, không bottom nav. Nguồn đặc tả `.specify/specs/17`.
 
 **Bố cục — 3 nhóm / 8 hàng**, mỗi hàng vòng nền nhạt (`tealLightBg`) + icon **teal** + tên + dòng phụ + phần cuối:
-- **HIỂN THỊ** — Giao diện (dòng phụ "Sáng / Tối / Theo hệ thống", trailing "Hệ thống" ▸), Ngôn ngữ (trailing "Tiếng Việt" ▸), Định dạng & Tiền tệ ▸.
+- **HIỂN THỊ** — Giao diện (dòng phụ "Sáng / Tối / Theo hệ thống", trailing "Sáng/Tối/Theo hệ thống" ▸), Ngôn ngữ (trailing endonym hiện hành "Tiếng Việt"/"English" ▸), Định dạng & Tiền tệ ▸.
 - **TRẢI NGHIỆM** — Widget màn hình chính (switch hiển thị **"bật" câm**, chạm toàn hàng → **dialog hướng dẫn ghim widget theo nền tảng** — ghim do OS quản lý, trạng thái **không lưu**); **Ẩn số dư (Privacy mode)** switch thật (mặc định **tắt**); **Máy tính khi nhập số tiền** switch thật (mặc định **bật**).
 - **DỮ LIỆU & TÌM KIẾM** — Tìm kiếm toàn cục ▸, Quản lý Tag ▸ (dòng phụ **mô tả** "Gắn nhãn cho giao dịch", **không** `#…`/số "12 tag" giả — SC-008).
 
-**2 công tắc thật nhớ trạng thái** qua bảng drift key-value **`AppSettings` (schema v5)** — key `hideBalance` / `amountCalculatorEnabled`; **key vắng = mặc định domain**, row chỉ ghi khi bật/tắt (write-through). Hiệu ứng chức năng **chưa kéo** (che số dư `••••••`, đổi bàn phím nhập tiền = PBI sau — xem [[Ví & Tài khoản]]). Cấu trúc: domain thuần `UtilitiesPrefs` (`toSettings`/`fromSettings` an toàn, không ném) + hằng khóa + seam `UtilitiesStore` (load/save) + `DriftUtilitiesStore` + `ensureUtilitiesStore()` (GetX singleton, bám `ensureWalletRepository`); test bơm `FakeUtilitiesStore`. ~~**5 hàng điều hướng no-op**~~ → **còn 4 hàng no-op** (`Ngôn ngữ`, `Định dạng & Tiền tệ`, `Tìm kiếm toàn cục`, `Quản lý Tag`) chờ màn con `03–07`; hàng **"Giao diện" đã kích hoạt ở PBI 18** (xem mục dưới). PBI cài đặt sau **chỉ thêm row**, không thêm migration.
+**2 công tắc thật nhớ trạng thái** qua bảng drift key-value **`AppSettings` (schema v5)** — key `hideBalance` / `amountCalculatorEnabled`; **key vắng = mặc định domain**, row chỉ ghi khi bật/tắt (write-through). Hiệu ứng chức năng **chưa kéo** (che số dư `••••••`, đổi bàn phím nhập tiền = PBI sau — xem [[Ví & Tài khoản]]). Cấu trúc: domain thuần `UtilitiesPrefs` (`toSettings`/`fromSettings` an toàn, không ném) + hằng khóa + seam `UtilitiesStore` (load/save) + `DriftUtilitiesStore` + `ensureUtilitiesStore()` (GetX singleton, bám `ensureWalletRepository`); test bơm `FakeUtilitiesStore`. ~~**5 hàng điều hướng no-op**~~ → **còn 3 hàng no-op** (`Định dạng & Tiền tệ`, `Tìm kiếm toàn cục`, `Quản lý Tag`) chờ màn con `04–07`; hàng **"Giao diện" đã kích hoạt ở PBI 18** và hàng **"Ngôn ngữ" đã kích hoạt ở PBI 19** (xem 2 mục dưới). PBI cài đặt sau **chỉ thêm row**, không thêm migration.
 
 ## Màn "Giao diện" (02) — đã triển khai PBI 18
 > **PBI 18 (2026-09-06)**: hàng "Giao diện" màn `01` bỏ no-op → **push màn con `02`**; chọn sáng/tối/theo hệ thống áp **ngay toàn app**, nhớ qua restart. Nguồn đặc tả `.specify/specs/18`, mockup `docs/tool/02-giao-dien.svg`.
@@ -73,6 +75,21 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 **Hàng "Giao diện" màn `01`:** phần cuối **reactive** đọc controller → hiện đúng "Sáng"/"Tối"/"Theo hệ thống", cập nhật ngay kể cả khi vừa đổi ở màn `02` rồi back (màn `01` vẫn mounted dưới route).
 
 **Cơ chế dark mode toàn app:** `ThemeController` (GetX) giữ `Rx<ThemeMode>`, đăng ký ở gốc `SoraApp` (bám `PinController`) và nạp lựa chọn đã lưu lúc `initState`; `GetMaterialApp` nhận `theme` + `darkTheme` + `themeMode` → chọn một hàng là **cả cây rebuild tức thì**, không restart. Chi tiết token màu & rule light/dark ở [[Design system]]; seam/DI ở [[Stack kỹ thuật]]. "Theo hệ thống" tự đổi khi điện thoại đổi sáng/tối nhờ chính `ThemeMode.system` của Material (không tự viết observer `didChangePlatformBrightness` như doc §1.2 gợi ý).
+
+## Màn "Ngôn ngữ" (03) — đã triển khai PBI 19
+> **PBI 19 (2026-09-10)**: hàng "Ngôn ngữ" màn `01` bỏ no-op → **push màn con `03`**; chọn ngôn ngữ áp **ngay toàn app** (không restart), nhớ qua lần mở sau. Nguồn đặc tả `.specify/specs/19`, mockup `docs/tool/03-ngon-ngu.svg`, tài liệu giải pháp `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §2`.
+
+**Phạm vi đợt này = dịch toàn bộ nhãn giao diện tĩnh của mọi màn hiện có** (không dịch dần từng đợt). 2 ngôn ngữ: **Tiếng Việt (mặc định)** và **English** — *không* có lựa chọn "theo ngôn ngữ hệ thống" (khác theme PBI 18).
+
+**Màn `03`** (`LanguageScreen`, màn con shell): `SubPageScaffold` app bar teal + back + tiêu đề "Ngôn ngữ", **không** bottom nav. Thân `ListView` **2 card đúng thứ tự Tiếng Việt → English**: vòng tròn mã `VI`/`EN` + **tên ngôn ngữ (endonym)** đậm + **dòng phụ là tên ngôn ngữ kia** (`Tiếng Việt`/`Vietnamese`, `English`/`Tiếng Anh`) + **radio tự dựng**; hàng đang chọn nền nhạt + viền teal; chân màn ghi chú "Áp dụng ngay cho toàn bộ giao diện, nhãn danh mục mặc định và định dạng ngày/số vẫn giữ theo cài đặt Định dạng & Tiền tệ.". **4 chuỗi tên/dòng phụ là hằng số cố định** (tên riêng của ngôn ngữ, không đi qua bản đồ dịch — chốt theo mockup); chỉ tiêu đề app bar + ghi chú mới dịch.
+
+**Hàng "Ngôn ngữ" màn `01`:** phần cuối **reactive** (Obx) hiện endonym đúng lựa chọn hiện hành, cập nhật ngay kể cả khi vừa đổi ở màn `03` rồi back (màn `01` vẫn mounted dưới route).
+
+**Lưu trữ:** **1 row `('locale', 'vi'|'en')`** trong bảng key-value **`AppSettings` v5** (không migration, không seed — ghi write-through khi user chọn); **row vắng = mặc định `vi`**; chuỗi lạ → cũng về `vi` (parse an toàn, không ném). **Độc lập** với `themeMode`/2 công tắc: ghi chỉ upsert đúng key `locale`, không xoá row khác.
+
+**Cơ chế i18n & đổi ngôn ngữ tức thì:** xem [[Stack kỹ thuật]] §Đa ngôn ngữ — tóm tắt: **khóa dịch = chính chuỗi tiếng Việt đang hiển thị**, bản đồ chỉ có nhánh `'en'`; thiếu nhánh/thiếu khóa/`Get.locale == null` ⇒ `.tr` trả lại khóa. **Chỉ đổi `locale:` trên `GetMaterialApp` là KHÔNG đủ** — route đang mở không tự rebuild (đo thực nghiệm), nên `LocaleController.setLocale` gọi thêm `Get.updateLocale()` (reassemble toàn cây, giữ state + stack điều hướng); chỉ gọi khi giá trị thật sự đổi. Thêm `flutter_localizations` (chỉ SDK, không package bên thứ ba) + 3 delegate chuẩn để hộp thoại/date picker hệ thống theo ngôn ngữ.
+
+**Không đổi theo ngôn ngữ** (tách bạch, §2.2 tài liệu): **định dạng ngày (`dd/MM/yyyy`) và số tiền (`42.500.000 đ`)** — vẫn theo cài đặt Định dạng & Tiền tệ (PBI sau). **Không dịch dữ liệu người dùng**: tên giao dịch, ghi chú, tag, **tên ví** (kể cả ví mẫu `Tiền mặt`/`Vietcombank`/`Thẻ tín dụng VIB`/`Sổ tiết kiệm` — **chốt: coi là dữ liệu, KHÔNG dịch**), tên danh mục tự tạo/đã đổi tên. Riêng **tên danh mục mặc định chưa đổi tên** *có* dịch — quy tắc ở [[Danh mục]]. DB **không đổi** bất kỳ bản ghi nào khi đổi ngôn ngữ.
 
 ## Hồ sơ cá nhân
 | Trường | Chốt |
@@ -102,6 +119,8 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 
 ## Liên kết
 - [[Design system]] — màn bảo mật tách shell; numpad & dot PIN dùng lại cho màn nhập tiền ([[Giao dịch]]).
-- [[Ví & Tài khoản]] — tiền tệ mặc định cấp ví mới; Privacy mode.
+- [[Ví & Tài khoản]] — tiền tệ mặc định cấp ví mới; Privacy mode; tên ví **không** dịch theo ngôn ngữ.
 - [[Ngân sách]] — tiền tệ mặc định & kỳ tài chính lệch bắt nguồn từ hồ sơ.
+- [[Stack kỹ thuật]] — cơ chế i18n GetX Translations + `flutter_localizations` (PBI 19).
+- [[Danh mục]] — quy tắc dịch **tên danh mục mặc định** ở tầng hiển thị.
 - [[Lộ trình phát triển]] — phụ thuộc backup GĐ3; PIN khóa app thuộc MVP.

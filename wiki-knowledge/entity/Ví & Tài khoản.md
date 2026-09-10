@@ -43,6 +43,9 @@ Thùng chứa tiền; mỗi ví gắn **1 loại** + **1 tiền tệ**. Giao d�
 - Xóa/ẩn ví đang default → auto chuyển default sang ví khác (ưu tiên ví dương gần nhất được dùng).
 - Sort thủ công kéo-thả (`sort_order`); ví default pre-select khi nhập nhanh.
 
+## Ngôn ngữ hiển thị (rule, PBI 19)
+**Tên ví KHÔNG dịch** theo ngôn ngữ giao diện — kể cả **ví mẫu do app seed** (`Tiền mặt`, `Vietcombank`, `Thẻ tín dụng VIB`, `Momo`, `Sổ tiết kiệm`): coi là **dữ liệu người dùng**, giữ nguyên văn (chốt PBI 19, khác cách xử lý tên **danh mục** mặc định — xem [[Danh mục]]; bảng ví không có cờ "do app tạo" và bộ ví mẫu sẽ bị gỡ khi có dữ liệu thật). Nhãn **loại ví** (`Tiền mặt`/`Tài khoản ngân hàng`/`Thẻ tín dụng`/`Ví điện tử`/`Sổ tiết kiệm`) là chuỗi hệ thống ⇒ **có** dịch. Hậu tố `(đã ẩn)` cũng dịch riêng rồi ghép với tên ví giữ nguyên. Định dạng số dư `42.500.000 đ` **không đổi** theo ngôn ngữ.
+
 ## Màn hình (sub-page từ Cài đặt — xem [[Design system]])
 | File | Mô tả |
 |---|---|
@@ -54,4 +57,5 @@ Thùng chứa tiền; mỗi ví gắn **1 loại** + **1 tiền tệ**. Giao d�
 ## Liên kết
 - [[Giao dịch]] — ghi nhận lên ví; Transfer thuộc cả 2 module.
 - [[Ngân sách]] — lọc theo `walletIds`; ví bị xóa → gỡ khỏi ngân sách.
-- [[Hồ sơ & Bảo mật]] — tiền tệ mặc định cấp ví khi tạo; Privacy mode.
+- [[Hồ sơ & Bảo mật]] — tiền tệ mặc định cấp ví khi tạo; Privacy mode; màn chọn ngôn ngữ (PBI 19).
+- [[Stack kỹ thuật]] — cơ chế i18n (khóa = chuỗi tiếng Việt, `.tr`), rule tên ví không dịch.

@@ -9,6 +9,7 @@ sources:
   - ../../.specify/specs/13/spec.md
   - ../../.specify/specs/14/spec.md
   - ../../.specify/specs/16/spec.md
+  - ../../.specify/specs/19/spec.md
 ---
 
 # Danh mục
@@ -26,6 +27,13 @@ Ràng buộc cấu trúc (nghiệp vụ):
 ## Seed data (`is_system = true`, không xóa vĩnh viễn, chỉ ẩn)
 Khớp `CategorySource.all` (PBI 11): **8 cha chi** (Ăn uống, Di chuyển, Nhà ở, Hóa đơn, Mua sắm, Giải trí, Sức khỏe, Giáo dục), **4 cha thu** (Lương, Thưởng, Đầu tư, **Khác**), **3 con** của Ăn uống (Cà phê, Ăn ngoài, Đi chợ). Seed chưa có danh mục ẩn — từ PBI 14 màn `02` đã bật/tắt ẩn được (danh mục tự tạo/ẩn giữ trên màn quản lý + gd lịch sử). Bộ icon/màu form chọn là hằng dữ liệu **preset** (dưới), đảm bảo mọi seed chọn lại được icon/màu cũ.
 - ⚠ QUYẾT ĐỊNH MỞ: nghiệp vụ phí transfer cần danh mục "Phí giao dịch" ([[Ví & Tài khoản]]) nhưng **không có trong seed** — cần bổ sung hay để người dùng tự tạo?
+
+## Tên danh mục theo ngôn ngữ (PBI 19 — rule)
+> **Chốt PBI 19 (2026-09-10)**: ở chế độ **English**, tên **danh mục mặc định chưa bị đổi tên** hiển thị bằng tiếng Anh; danh mục **người dùng tự tạo** hoặc **đã đổi tên** giữ nguyên văn. Cơ chế: **dịch ở tầng hiển thị** — 15 tên trong `CategorySource` được thêm làm khóa trong bản đồ `'en'` (`Ăn uống`→`Food & Drink`, `Khác`→`Other`, `Cà phê`→`Coffee`, …), chỗ render gọi `category.name.tr`. Tên khớp khóa ⇒ dịch; không khớp (đã đổi tên/tự tạo) ⇒ `.tr` trả lại nguyên văn ⇒ tự động thoả "không dịch dữ liệu người dùng".
+
+- **DB không đổi**: đổi ngôn ngữ KHÔNG ghi/sửa/xoá bất kỳ dòng `categories` nào, không thêm cột `slug`, **không migration** (schema v4 giữ nguyên). Cột `transactions.category` (snapshot tên) cũng dùng **cùng khóa** ⇒ dòng giao dịch lịch sử hiển thị nhất quán.
+- **Không dịch** tại chỗ dùng làm `ValueKey` (`category-child-…`, `category-option-…`, `category-chip-…`) — chỉ nhãn hiển thị.
+- ⚠ Đối chiếu: **tên VÍ mẫu thì KHÔNG dịch** (chốt cùng PBI 19 — ví là dữ liệu, bảng ví không có cờ "do app tạo"; xem [[Ví & Tài khoản]], [[Hồ sơ & Bảo mật]]). Hai thực thể xử lý khác nhau có lý do: danh mục mặc định có `is_system = true` + tên seed ổn định, ví mẫu thì không.
 
 ## Quy tắc nghiệp vụ (tổng hợp)
 1. Giao dịch gắn **đúng 1** danh mục, **cùng type** (thu↔income, chi↔expense).
