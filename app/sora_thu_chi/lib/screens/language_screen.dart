@@ -1,66 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../core/theme/theme_controller.dart';
-import '../core/theme/theme_mode.dart';
+import '../core/locale/locale_controller.dart';
+import '../core/locale/locale_prefs.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 
-/// Màn con "Giao diện" (mockup `02-giao-dien.svg`, PBI 18) — màn con shell: app
-/// bar "Giao diện" + back, không bottom nav (FR-001). Thân liệt kê **3 lựa
-/// chọn** đúng thứ tự Sáng – Tối – Theo hệ thống: vòng nền nhạt + icon minh
-/// họa, tên đậm + dòng phụ mô tả, radio tự dựng cuối hàng (R6 — không dùng
-/// `RadioListTile`). Hàng đang chọn tô nền nhạt + vòng icon viền teal; chân màn
-/// ghi chú lấy nguyên văn svg.
+/// Màn con "Ngôn ngữ" (mockup `docs/tool/03-ngon-ngu.svg`, PBI 19) — màn con
+/// shell: app bar "Ngôn ngữ" + back, không bottom nav (FR-001). Thân liệt kê
+/// **2 lựa chọn** đúng thứ tự Tiếng Việt – English: vòng tròn mã `VI`/`EN`, tên
+/// ngôn ngữ đậm + dòng phụ là tên ngôn ngữ kia, radio tự dựng cuối hàng (bám
+/// màn `02`, không dùng `RadioListTile`). 4 chuỗi tên/dòng phụ là **hằng số**
+/// (R8 — tên riêng của ngôn ngữ, không dịch); chỉ tiêu đề app bar và ghi chú
+/// chân màn đi qua `.tr`.
 ///
-/// Chạm một hàng → [ThemeController.setMode] → `Rx<ThemeMode>` đổi → `SoraApp`
-/// dựng lại theme **ngay** cho toàn app (FR-005), card đang chọn tự đọc lại
-/// token theo theme mới. Trạng thái chọn đọc qua `Obx` nên lần đầu chưa đổi =
-/// "Theo hệ thống" chọn sẵn (FR-004) và mở lại app đọc đúng giá trị đã lưu
-/// (FR-006).
-class ThemeScreen extends StatelessWidget {
-  const ThemeScreen({super.key, this.controller});
+/// Chạm một hàng → [LocaleController.setLocale] → `Rx<Locale>` đổi + reassemble
+/// toàn app (FR-005), nên nhãn màn đang mở, chrome và mọi màn khác đổi ngay
+/// không cần khởi động lại. Trạng thái chọn đọc qua `Obx`; lựa chọn được ghi
+/// xuống `AppSettings` nên mở lại app vẫn đúng (FR-006).
+class LanguageScreen extends StatelessWidget {
+  const LanguageScreen({super.key, this.controller});
 
   /// Seam test: mặc định lấy controller đã đăng ký ở gốc app.
-  final ThemeController? controller;
+  final LocaleController? controller;
 
-  static const _options = <({ThemeMode mode, IconData icon, String name, String subtitle})>[
-    (
-      mode: ThemeMode.light,
-      icon: Icons.wb_sunny,
-      name: 'Sáng',
-      subtitle: 'Nền trắng, chữ tối',
-    ),
-    (
-      mode: ThemeMode.dark,
-      icon: Icons.dark_mode,
-      name: 'Tối',
-      subtitle: 'Nền tối, chữ sáng, đỡ mỏi mắt ban đêm',
-    ),
-    (
-      mode: ThemeMode.system,
-      icon: Icons.devices,
-      name: 'Theo hệ thống',
-      subtitle: 'Tự đổi theo cài đặt điện thoại',
-    ),
-  ];
+  LocaleController get _controller => controller ?? Get.find<LocaleController>();
 
   @override
   Widget build(BuildContext context) {
-    final theme = controller ?? Get.find<ThemeController>();
     return SubPageScaffold(
-      title: 'Giao diện'.tr,
+      title: 'Ngôn ngữ'.tr,
       child: SafeArea(
         top: false,
         child: Obx(() {
-          final selected = theme.mode.value;
+          final selected = _controller.locale.value;
           return ListView(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
             children: [
-              for (final option in _options) ...[
-                _optionCard(context, option, selected: selected == option.mode),
-                if (option != _options.last) const SizedBox(height: 12),
+              for (final option in kLanguageOptions) ...[
+                _optionCard(context, option, selected: selected == option.locale),
+                if (option != kLanguageOptions.last) const SizedBox(height: 12),
               ],
               const SizedBox(height: 24),
               _note(context),
@@ -73,14 +53,14 @@ class ThemeScreen extends StatelessWidget {
 
   Widget _optionCard(
     BuildContext context,
-    ({ThemeMode mode, IconData icon, String name, String subtitle}) option, {
+    LanguageOption option, {
     required bool selected,
   }) {
     final colors = SoraColors.of(context);
     return InkWell(
-      key: ValueKey('theme-option-${themeModeToStorage(option.mode)}'),
+      key: ValueKey('language-option-${option.locale.languageCode}'),
       borderRadius: BorderRadius.circular(10),
-      onTap: () => (controller ?? Get.find<ThemeController>()).setMode(option.mode),
+      onTap: () => _controller.setLocale(option.locale),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
@@ -96,12 +76,16 @@ class ThemeScreen extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? colors.surface : colors.softCardBg,
-                border: selected
-                    ? Border.all(color: AppColors.teal, width: 1.5)
-                    : null,
+                color: selected ? AppColors.teal : colors.softCardBg,
               ),
-              child: Icon(option.icon, color: colors.tealOnNeutral, size: 18),
+              child: Text(
+                option.code,
+                style: TextStyle(
+                  color: selected ? AppColors.white : colors.tealOnNeutral,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -109,7 +93,7 @@ class ThemeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    option.name.tr,
+                    option.endonym,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -120,7 +104,9 @@ class ThemeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    option.subtitle.tr,
+                    option.otherName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                 ],
@@ -134,7 +120,7 @@ class ThemeScreen extends StatelessWidget {
     );
   }
 
-  /// Radio tự dựng (R6): chấm teal + tích trắng khi chọn, vòng viền mờ khi chưa.
+  /// Radio tự dựng: chấm teal + tích trắng khi chọn, vòng viền mờ khi chưa.
   Widget _radio(SoraColors colors, {required bool selected}) {
     if (!selected) {
       return Container(
@@ -160,7 +146,7 @@ class ThemeScreen extends StatelessWidget {
 
   Widget _note(BuildContext context) {
     return Text(
-      'Thay đổi được áp dụng ngay lập tức, không cần khởi động lại ứng dụng.'.tr,
+      'Áp dụng ngay cho toàn bộ giao diện, nhãn danh mục mặc định và định dạng ngày/số vẫn giữ theo cài đặt Định dạng & Tiền tệ.'.tr,
       style: TextStyle(color: SoraColors.of(context).textSecondary, fontSize: 11),
     );
   }

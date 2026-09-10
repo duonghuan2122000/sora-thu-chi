@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/widgets/screen_header.dart';
 
@@ -8,10 +9,10 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
-        ScreenHeader(title: 'Tổng quan'),
-        Expanded(child: SizedBox()),
+        ScreenHeader(title: 'Tổng quan'.tr),
+        const Expanded(child: SizedBox()),
       ],
     );
   }

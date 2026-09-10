@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../date_label.dart';
 import 'transaction.dart';
@@ -102,9 +103,9 @@ List<TxnRow> buildDisplayRows(
     rows.add(
       TxnRow(
         type: TxnType.transfer,
-        title: 'Chuyển khoản',
-        subtitle: '${walletName[source.walletId] ?? 'Ví'}'
-            ' → ${walletName[dest.walletId] ?? 'Ví'}',
+        title: 'Chuyển khoản'.tr,
+        subtitle: '${walletName[source.walletId] ?? 'Ví'.tr}'
+            ' → ${walletName[dest.walletId] ?? 'Ví'.tr}',
         amount: source.amount.abs(),
         date: source.date,
         sortId: source.id < dest.id ? source.id : dest.id,
@@ -131,7 +132,7 @@ TxnRow _plainRow(Transaction t, Map<int, String> walletName) {
   final neutral = t.type == TxnType.transfer || t.type == TxnType.adjustment;
   return TxnRow(
     type: t.type,
-    title: t.category.isEmpty ? t.typeLabel : t.category,
+    title: t.category.isEmpty ? t.typeLabel.tr : t.category.tr,
     subtitle: subtitle,
     amount: neutral ? t.amount.abs() : t.amount,
     date: t.date,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/security/pin_controller.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
@@ -12,6 +13,7 @@ import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 
+import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_theme_store.dart';
 import 'fakes/fake_utilities_store.dart';
 import 'fakes/fake_wallet_repository.dart';
@@ -31,6 +33,8 @@ Widget darkApp(Widget home) => MaterialApp(
 void registerTheme() {
   Get.reset();
   Get.put<ThemeController>(ThemeController(FakeThemeStore()));
+  // Hàng "Ngôn ngữ" màn Tiện ích đọc [LocaleController] qua Obx (PBI 19).
+  Get.put<LocaleController>(LocaleController(FakeLocaleStore()));
   addTearDown(Get.reset);
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/date_label.dart';
@@ -93,8 +94,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không đọc được danh sách ví.'),
+        SnackBar(
+          content: Text('Không đọc được danh sách ví.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -122,8 +123,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final source = _wallet;
     if (source == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Chưa có ví hoạt động để chuyển tiền.'),
+        SnackBar(
+          content: Text('Chưa có ví hoạt động để chuyển tiền.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -232,8 +233,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không lưu được giao dịch. Vui lòng thử lại.'),
+        SnackBar(
+          content: Text('Không lưu được giao dịch. Vui lòng thử lại.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -243,16 +244,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   Future<bool?> _confirmDiscard() => showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Hủy giao dịch?'),
-      content: const Text('Dữ liệu đã nhập sẽ bị mất.'),
+      title: Text('Hủy giao dịch?'.tr),
+      content: Text('Dữ liệu đã nhập sẽ bị mất.'.tr),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Hủy'),
+          child: Text('Hủy'.tr),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Thoát'),
+          child: Text('Thoát'.tr),
         ),
       ],
     ),
@@ -281,17 +282,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Thêm giao dịch'),
+          title: Text('Thêm giao dịch'.tr),
           leading: IconButton(
             key: const ValueKey('close-add'),
-            tooltip: 'Đóng',
+            tooltip: 'Đóng'.tr,
             icon: const Icon(Icons.close),
             onPressed: _saving ? null : _requestClose,
           ),
           actions: [
             IconButton(
               key: const ValueKey('save-check'),
-              tooltip: 'Lưu giao dịch',
+              tooltip: 'Lưu giao dịch'.tr,
               icon: const Icon(Icons.check),
               onPressed: _saving || !_hasActiveWallets ? null : _save,
             ),
@@ -326,9 +327,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   ),
                 ),
                 onPressed: _saving || !_hasActiveWallets ? null : _save,
-                child: const FittedBox(
+                child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text('Lưu giao dịch'),
+                  child: Text('Lưu giao dịch'.tr),
                 ),
               ),
             ),
@@ -346,7 +347,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         const SizedBox(height: 20),
         _amountSection(colors),
         if (_missing.contains('amount'))
-          _fieldError('Vui lòng nhập số tiền lớn hơn 0', colors),
+          _fieldError('Vui lòng nhập số tiền lớn hơn 0'.tr, colors),
         const SizedBox(height: 12),
         if (_noActiveWallet)
           _emptyWalletBanner(colors)
@@ -354,30 +355,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           _fieldRow(
             key: const ValueKey('field-category'),
             icon: Icons.category_outlined,
-            label: 'Danh mục',
-            value: _category?.name,
-            hint: 'Chọn danh mục',
+            label: 'Danh mục'.tr,
+            value: _category?.name.tr,
+            hint: 'Chọn danh mục'.tr,
             onTap: _pickCategory,
-            error: _missing.contains('category') ? 'Chưa chọn danh mục' : null,
+            error: _missing.contains('category') ? 'Chưa chọn danh mục'.tr : null,
             colors: colors,
           ),
           _fieldRow(
             key: const ValueKey('field-wallet'),
             icon: Icons.account_balance_wallet_outlined,
-            label: 'Ví',
+            label: 'Ví'.tr,
             value: _wallet?.name,
-            hint: 'Chọn ví',
+            hint: 'Chọn ví'.tr,
             onTap: _pickWallet,
-            error: _missing.contains('wallet') ? 'Chưa chọn ví' : null,
+            error: _missing.contains('wallet') ? 'Chưa chọn ví'.tr : null,
             colors: colors,
           ),
           _fieldRow(
             key: const ValueKey('field-datetime'),
             icon: Icons.calendar_today_outlined,
-            label: 'Ngày giờ',
+            label: 'Ngày giờ'.tr,
             value: formatDateTimeDetailLabel(_date),
             onTap: _pickDateTime,
-            error: _missing.contains('date') ? 'Chưa chọn ngày giờ' : null,
+            error: _missing.contains('date') ? 'Chưa chọn ngày giờ'.tr : null,
             colors: colors,
           ),
           _noteRow(colors),
@@ -398,8 +399,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       ),
       child: Row(
         children: [
-          _segment('Chi', TxnType.expense, colors),
-          _segment('Thu', TxnType.income, colors),
+          _segment('Chi'.tr, TxnType.expense, colors),
+          _segment('Thu'.tr, TxnType.income, colors),
           _transferSegment(colors),
         ],
       ),
@@ -437,7 +438,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         child: Container(
           alignment: Alignment.center,
           child: Text(
-            'Chuyển khoản',
+            'Chuyển khoản'.tr,
             style: TextStyle(
               color: colors.listLabel,
               fontSize: 13,
@@ -491,7 +492,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        'Chưa có ví hoạt động — hãy tạo ví trong Quản lý ví.',
+        'Chưa có ví hoạt động — hãy tạo ví trong Quản lý ví.'.tr,
         style: TextStyle(color: colors.coralOnNeutral, fontSize: 13),
       ),
     );
@@ -587,7 +588,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             SizedBox(
               width: 40,
               child: Text(
-                'Ghi chú',
+                'Ghi chú'.tr,
                 style: TextStyle(
                   color: colors.listLabel,
                   fontSize: 10,
@@ -607,7 +608,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
-                    hintText: 'Thêm ghi chú (tùy chọn)',
+                    hintText: 'Thêm ghi chú (tùy chọn)'.tr,
                     hintStyle: TextStyle(
                       color: colors.textSecondary,
                       fontSize: 13,
@@ -641,7 +642,7 @@ class _WalletSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
-              'Chọn ví',
+              'Chọn ví'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,

@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import 'category.dart';
 import 'category_list.dart';
 
@@ -14,9 +16,9 @@ String? categoryNameError({
   int? excludeId,
 }) {
   final name = raw.trim();
-  if (name.isEmpty) return 'Tên danh mục không được để trống';
+  if (name.isEmpty) return 'Tên danh mục không được để trống'.tr;
   final trung = siblings.any((c) => c.id != excludeId && c.name == name);
-  if (trung) return 'Tên danh mục đã tồn tại trong nhóm này';
+  if (trung) return 'Tên danh mục đã tồn tại trong nhóm này'.tr;
   return null;
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../core/date_label.dart';
 import '../core/money_format.dart';
@@ -132,7 +133,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
     if (dest == null || _saving) return;
     final amount = _amount;
     if (amount <= 0) {
-      setState(() => _amountError = 'Vui lòng nhập số tiền lớn hơn 0');
+      setState(() => _amountError = 'Vui lòng nhập số tiền lớn hơn 0'.tr);
       return;
     }
     setState(() => _saving = true);
@@ -150,8 +151,8 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không chuyển được tiền. Vui lòng thử lại.'),
+        SnackBar(
+          content: Text('Không chuyển được tiền. Vui lòng thử lại.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -162,7 +163,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
     return SubPageScaffold(
-      title: 'Chuyển tiền giữa ví',
+      title: 'Chuyển tiền giữa ví'.tr,
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
@@ -185,9 +186,9 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
                 ),
               ),
               onPressed: _canConfirm ? _confirm : null,
-              child: const FittedBox(
+              child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text('Xác nhận chuyển tiền'),
+                child: Text('Xác nhận chuyển tiền'.tr),
               ),
             ),
           ),
@@ -198,7 +199,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            _fieldLabel('Từ ví', colors),
+            _fieldLabel('Từ ví'.tr, colors),
             _WalletCard(
               wallet: _source,
               trailing: null,
@@ -212,7 +213,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            _fieldLabel('Đến ví', colors),
+            _fieldLabel('Đến ví'.tr, colors),
             if (_destination == null)
               _ChooseDestinationCard(onTap: _pickDestination)
             else
@@ -225,7 +226,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
                 onTap: _pickDestination,
               ),
             const SizedBox(height: 20),
-            _fieldLabel('Số tiền chuyển', colors),
+            _fieldLabel('Số tiền chuyển'.tr, colors),
             TextFormField(
               key: const ValueKey('amount-field'),
               controller: _amountCtrl,
@@ -248,7 +249,7 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _fieldLabel('Ngày giờ', colors),
+            _fieldLabel('Ngày giờ'.tr, colors),
             InkWell(
               key: const ValueKey('datetime-field'),
               onTap: _pickDateTime,
@@ -281,12 +282,12 @@ class _WalletTransferScreenState extends State<WalletTransferScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _fieldLabel('Ghi chú', colors),
+            _fieldLabel('Ghi chú'.tr, colors),
             TextField(
               key: const ValueKey('note-field'),
               controller: _noteCtrl,
               decoration: InputDecoration(
-                hintText: 'Ghi chú (không bắt buộc)',
+                hintText: 'Ghi chú (không bắt buộc)'.tr,
                 isDense: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -355,7 +356,9 @@ class _WalletCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Số dư: ${formatMoney(wallet.balance)}',
+                      'Số dư: @amount'.trParams({
+                        'amount': formatMoney(wallet.balance),
+                      }),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -396,7 +399,7 @@ class _ChooseDestinationCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Chọn ví',
+                  'Chọn ví'.tr,
                   style: TextStyle(
                     color: colors.tabInactive,
                     fontSize: 15,
@@ -464,7 +467,7 @@ class _DestinationSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
-              'Chọn ví đến',
+              'Chọn ví đến'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,
@@ -588,7 +591,7 @@ class _AfterBalancePreview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Số dư sau chuyển',
+            'Số dư sau chuyển'.tr,
             style: TextStyle(
               color: colors.tabInactive,
               fontSize: 13,
@@ -607,7 +610,7 @@ class _AfterBalancePreview extends StatelessWidget {
           if (negative) ...[
             const SizedBox(height: 6),
             Text(
-              'Số dư sau chuyển sẽ âm',
+              'Số dư sau chuyển sẽ âm'.tr,
               style: TextStyle(color: colors.coralOnNeutral, fontSize: 13),
             ),
           ],

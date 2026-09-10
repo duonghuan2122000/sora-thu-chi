@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/category/category_form.dart';
@@ -122,7 +123,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được danh mục.';
+        _error = 'Không đọc được danh mục.'.tr;
         _loading = false;
       });
     }
@@ -174,7 +175,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
                 child: Text(
-                  'Chọn danh mục cha',
+                  'Chọn danh mục cha'.tr,
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 16,
@@ -192,7 +193,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                       key: const ValueKey('parent-none'),
                       icon: null,
                       color: null,
-                      label: 'Không có — là danh mục gốc',
+                      label: 'Không có — là danh mục gốc'.tr,
                       value: _clearParent,
                     ),
                     for (final c in options)
@@ -305,8 +306,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       // FR-011: báo lỗi, giữ nguyên dữ liệu đã nhập.
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không lưu được danh mục. Vui lòng thử lại.'),
+        SnackBar(
+          content: Text('Không lưu được danh mục. Vui lòng thử lại.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -316,16 +317,19 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
-    final title = _isEdit ? 'Sửa danh mục' : 'Thêm danh mục';
+    final title = _isEdit ? 'Sửa danh mục'.tr : 'Thêm danh mục'.tr;
     return SubPageScaffold(
       title: title,
       actions: [
         TextButton(
           key: const ValueKey('save-appbar'),
           onPressed: _saving ? null : _save,
-          child: const Text(
-            'Lưu',
-            style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
+          child: Text(
+            'Lưu'.tr,
+            style: const TextStyle(
+              color: AppColors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -351,7 +355,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                 ),
               ),
               onPressed: _saving ? null : _save,
-              child: const Text('Lưu danh mục'),
+              child: Text('Lưu danh mục'.tr),
             ),
           ),
         ),
@@ -374,7 +378,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
           children: [
             Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -386,13 +390,13 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         children: [
           _typeControl(colors),
           const SizedBox(height: 16),
-          _fieldLabel(colors, 'Tên danh mục'),
+          _fieldLabel(colors, 'Tên danh mục'.tr),
           TextFormField(
             key: const ValueKey('field-name'),
             controller: _nameCtrl,
             maxLength: 30,
             decoration: InputDecoration(
-              hintText: 'VD: Ăn sáng, Xăng xe…',
+              hintText: 'VD: Ăn sáng, Xăng xe…'.tr,
               counterText: '',
               isDense: true,
               border: OutlineInputBorder(
@@ -407,10 +411,10 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _fieldLabel(colors, 'Biểu tượng'),
+          _fieldLabel(colors, 'Biểu tượng'.tr),
           _IconPicker(selected: _icon, onChanged: (v) => setState(() => _icon = v)),
           const SizedBox(height: 16),
-          _fieldLabel(colors, 'Màu sắc'),
+          _fieldLabel(colors, 'Màu sắc'.tr),
           _ColorPicker(
             selected: _colorValue,
             onChanged: (v) => setState(() => _colorValue = v),
@@ -433,8 +437,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _fieldLabel(colors, 'Loại danh mục'),
-          _ReadonlyBox(_typeNoun),
+          _fieldLabel(colors, 'Loại danh mục'.tr),
+          _ReadonlyBox(_typeNoun.tr),
         ],
       );
     }
@@ -445,8 +449,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         decoration: BoxDecoration(color: colors.softCardBg),
         child: Row(
           children: [
-            _pillHalf('Chi tiêu', CategoryType.expense, colors),
-            _pillHalf('Thu nhập', CategoryType.income, colors),
+            _pillHalf('Chi tiêu'.tr, CategoryType.expense, colors),
+            _pillHalf('Thu nhập'.tr, CategoryType.income, colors),
           ],
         ),
       ),
@@ -476,7 +480,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   }
 
   Widget _parentField(SoraColors colors) {
-    String valueText = 'Không có — là danh mục gốc';
+    String valueText = 'Không có — là danh mục gốc'.tr;
     Category? parent;
     if (_parentId != null) {
       for (final c in _listOf(_type)) {
@@ -491,7 +495,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _fieldLabel(colors, 'Danh mục cha (tùy chọn)'),
+        _fieldLabel(colors, 'Danh mục cha (tùy chọn)'.tr),
         InkWell(
           key: const ValueKey('parent-field'),
           onTap: _canPickParent ? _pickParent : null,
@@ -665,7 +669,7 @@ class _HiddenSwitch extends StatelessWidget {
         onChanged: onChanged,
         activeTrackColor: AppColors.teal,
         title: Text(
-          'Ẩn khỏi danh sách nhanh',
+          'Ẩn khỏi danh sách nhanh'.tr,
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: 15,
@@ -673,7 +677,7 @@ class _HiddenSwitch extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          'Vẫn giữ trên giao dịch lịch sử và màn danh mục.',
+          'Vẫn giữ trên giao dịch lịch sử và màn danh mục.'.tr,
           style: TextStyle(color: colors.textSecondary, fontSize: 12),
         ),
       ),

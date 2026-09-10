@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/widgets/category_icon.dart';
@@ -62,7 +63,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được danh mục.';
+        _error = 'Không đọc được danh mục.'.tr;
         _loading = false;
       });
     }
@@ -90,7 +91,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Chọn danh mục')),
+      appBar: AppBar(title: Text('Chọn danh mục'.tr)),
       body: SafeArea(
         top: false,
         child: _body(colors),
@@ -109,7 +110,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
           children: [
             Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -122,8 +123,10 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Text(
-              'Chưa có danh mục cho loại này.\n'
-              'Bạn có thể thêm mới từ màn danh mục.',
+              [
+                'Chưa có danh mục cho loại này.'.tr,
+                'Bạn có thể thêm mới từ màn danh mục.'.tr,
+              ].join('\n'),
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.textSecondary, fontSize: 14),
             ),
@@ -154,7 +157,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                 onTap: () => _onTapCategory(c),
                 icon: categoryIcon(c.icon),
                 color: Color(c.color),
-                label: c.name,
+                label: c.name.tr,
               ),
             _gridCell(
               colors,
@@ -207,7 +210,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              label ?? 'Thêm mới',
+              label ?? 'Thêm mới'.tr,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -235,7 +238,9 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: Text(
-            'DANH MỤC CON: ${parent.name.toUpperCase()}',
+            'DANH MỤC CON: @tên'.trParams({
+              'tên': parent.name.tr.toUpperCase(),
+            }),
             style: TextStyle(
               color: colors.tabInactive,
               fontSize: 11,
@@ -267,7 +272,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    child.name,
+                    child.name.tr,
                     style: TextStyle(
                       color: colors.textPrimary,
                       fontSize: 14,

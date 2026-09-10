@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../theme/sora_colors.dart';
 import '../category/category.dart';
@@ -78,7 +79,7 @@ class CategoryRow extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          category.name,
+                          category.name.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -91,7 +92,7 @@ class CategoryRow extends StatelessWidget {
                       if (hidden) ...[
                         const SizedBox(width: 8),
                         Text(
-                          'Đã ẩn',
+                          'Đã ẩn'.tr,
                           style: TextStyle(
                             color: colors.textSecondary,
                             fontSize: 11,

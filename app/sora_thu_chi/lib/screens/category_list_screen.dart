@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/category/category_list.dart';
@@ -74,7 +75,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được danh mục.';
+        _error = 'Không đọc được danh mục.'.tr;
         _loading = false;
       });
     }
@@ -82,7 +83,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   List<Category> get _current => _tab == CategoryType.expense ? _expense : _income;
 
-  String get _typeNoun => _tab == CategoryType.expense ? 'chi tiêu' : 'thu nhập';
+  /// Từ chỉ loại trong câu rỗng ("danh mục chi tiêu/thu nhập") — đã dịch.
+  String get _typeNoun =>
+      _tab == CategoryType.expense ? 'chi tiêu'.tr : 'thu nhập'.tr;
 
   void _switchTab(CategoryType type) {
     if (_tab == type) return;
@@ -142,16 +145,16 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
     return SubPageScaffold(
-      title: 'Danh mục',
+      title: 'Danh mục'.tr,
       actions: [
         IconButton(
-          tooltip: 'Sắp xếp',
+          tooltip: 'Sắp xếp'.tr,
           icon: const Icon(Icons.sort, color: AppColors.white),
           onPressed: _openSort, // mở màn sắp xếp `04` theo tab đang mở (PBI 16).
         ),
       ],
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Thêm danh mục',
+        tooltip: 'Thêm danh mục'.tr,
         onPressed: () => _openForm(initialType: _tab),
         backgroundColor: AppColors.teal,
         elevation: 6,
@@ -175,7 +178,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           children: [
             Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -202,9 +205,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _tabLabel('Chi tiêu', CategoryType.expense, colors),
+            _tabLabel('Chi tiêu'.tr, CategoryType.expense, colors),
             const SizedBox(width: 48),
-            _tabLabel('Thu nhập', CategoryType.income, colors),
+            _tabLabel('Thu nhập'.tr, CategoryType.income, colors),
           ],
         ),
       ),
@@ -255,8 +258,10 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
           child: Text(
-            'Chưa có danh mục $_typeNoun nào.\n'
-            'Bạn có thể thêm mới bằng nút "+" góc dưới.',
+            [
+              'Chưa có danh mục @loại nào.'.trParams({'loại': _typeNoun}),
+              'Bạn có thể thêm mới bằng nút "+" góc dưới.'.tr,
+            ].join('\n'),
             textAlign: TextAlign.center,
             style: TextStyle(color: colors.textSecondary, fontSize: 14),
           ),
@@ -279,7 +284,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return CategoryRow(
       category: c,
       // Dòng phụ đếm con chỉ khi cha **có** con (FR-005) — trích dùng chung R4.
-      subtitle: childCount == 0 ? null : '$childCount danh mục con',
+      subtitle: childCount == 0
+          ? null
+          : '@n danh mục con'.trParams({'n': '$childCount'}),
       onTap: () => _onRowTap(c),
     );
   }

@@ -52,7 +52,9 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                         child: Column(
                           children: [
                             Text(
-                              _confirming ? 'Nhập lại mã PIN' : 'Thiết lập mã PIN',
+                              _confirming
+                                  ? 'Nhập lại mã PIN'.tr
+                                  : 'Thiết lập mã PIN'.tr,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: colors.textPrimary,
@@ -63,10 +65,10 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                             const SizedBox(height: 8),
                             Text(
                               _error.isNotEmpty
-                                  ? _error
+                                  ? _error.tr
                                   : (_confirming
-                                      ? 'Nhập lại mã PIN lần hai để xác nhận'
-                                      : 'Tạo mã PIN 4 số để bảo vệ dữ liệu'),
+                                      ? 'Nhập lại mã PIN lần hai để xác nhận'.tr
+                                      : 'Tạo mã PIN 4 số để bảo vệ dữ liệu'.tr),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _error.isNotEmpty
@@ -157,15 +159,15 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        content: const Text('Mã PIN này dễ đoán. Vẫn dùng mã PIN này?'),
+        content: Text('Mã PIN này dễ đoán. Vẫn dùng mã PIN này?'.tr),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Đặt lại'),
+            child: Text('Đặt lại'.tr),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Tiếp tục'),
+            child: Text('Tiếp tục'.tr),
           ),
         ],
       ),

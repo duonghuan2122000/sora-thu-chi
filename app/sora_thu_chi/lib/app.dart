@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 
 import 'core/boot_gate.dart';
+import 'core/locale/locale_controller.dart';
+import 'core/locale/locale_store.dart';
+import 'core/locale/sora_translations.dart';
 import 'core/security/pin_controller.dart';
 import 'core/security/pin_store.dart';
 import 'core/security/pin_store_secure.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/theme/theme_store.dart';
+import 'data/locale_deps.dart';
 import 'data/theme_deps.dart';
 import 'screens/pin/pin_lock_screen.dart';
 import 'theme/app_theme.dart';
@@ -14,13 +19,16 @@ import 'theme/app_theme.dart';
 /// Gốc app. `home` = BootGate nền trung tính; PIN controller được khởi tạo ở
 /// đây (qua PinGate) rồi dùng lại cho khóa khi resume (US2).
 class SoraApp extends StatefulWidget {
-  const SoraApp({super.key, this.store, this.themeStore});
+  const SoraApp({super.key, this.store, this.themeStore, this.localeStore});
 
   /// Bơm store để test; mặc định dùng secure storage thật.
   final PinStore? store;
 
   /// Bơm store giao diện để test; mặc định dùng drift.
   final ThemeStore? themeStore;
+
+  /// Bơm store ngôn ngữ để test; mặc định dùng drift.
+  final LocaleStore? localeStore;
 
   @override
   State<SoraApp> createState() => _SoraAppState();
@@ -42,6 +50,11 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
       Get.put(ThemeController(widget.themeStore ?? ensureThemeStore()));
     }
     Get.find<ThemeController>().load();
+    // Ngôn ngữ: cùng khuôn — nạp lựa chọn đã lưu (chỉ reassemble khi khác `vi`).
+    if (!Get.isRegistered<LocaleController>()) {
+      Get.put(LocaleController(widget.localeStore ?? ensureLocaleStore()));
+    }
+    Get.find<LocaleController>().load();
   }
 
   @override
@@ -86,8 +99,11 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final theme = Get.find<ThemeController>();
+    final localeCtl = Get.find<LocaleController>();
     // Obx bọc cả MaterialApp: đổi Rx → themeMode mới → toàn cây rebuild ngay,
     // không cần khởi động lại (FR-005/SC-004).
+    // Lưu ý: hạ `locale:` xuống đây **không** tự rebuild route đang mở — việc
+    // "đổi ngay" do `LocaleController.setLocale` gọi `Get.updateLocale` (R2).
     return Obx(
       () => GetMaterialApp(
         title: 'Sora Thu Chi',
@@ -95,6 +111,14 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
         theme: AppTheme.themeData,
         darkTheme: AppTheme.darkThemeData,
         themeMode: theme.mode.value,
+        translations: SoraTranslations(),
+        locale: localeCtl.locale.value,
+        supportedLocales: const [Locale('vi'), Locale('en')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         navigatorKey: _navigatorKey,
         home: PinGate(store: _store),
       ),

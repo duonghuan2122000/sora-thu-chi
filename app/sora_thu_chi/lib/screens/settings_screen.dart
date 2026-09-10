@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/profile/device_profile.dart';
 import '../core/widgets/screen_header.dart';
@@ -70,14 +71,14 @@ class SettingsScreen extends StatelessWidget {
     final colors = SoraColors.of(context);
     return Column(
       children: [
-        ScreenHeader(title: 'Cài đặt', bottom: _ProfileBlock(profile: profile)),
+        ScreenHeader(title: 'Cài đặt'.tr, bottom: _ProfileBlock(profile: profile)),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.only(top: 4, bottom: 24),
             children: [
-              const _SectionLabel('TÀI KHOẢN'),
+              _SectionLabel('TÀI KHOẢN'.tr),
               _SettingsRow(
-                label: 'Tiền tệ mặc định',
+                label: 'Tiền tệ mặc định'.tr,
                 trailing: Text(
                   profile.currencyCode,
                   style: TextStyle(
@@ -88,19 +89,19 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               _SettingsRow(
-                label: 'Đổi mã PIN',
+                label: 'Đổi mã PIN'.tr,
                 trailing: Icon(
                   Icons.chevron_right,
                   color: colors.tabInactive,
                 ),
               ),
-              const _SettingsRow(
-                label: 'Mở khóa sinh trắc học',
-                trailing: Switch(value: false, onChanged: null),
-              ),
-              const _SectionLabel('KHÁC'),
               _SettingsRow(
-                label: 'Quản lý ví',
+                label: 'Mở khóa sinh trắc học'.tr,
+                trailing: const Switch(value: false, onChanged: null),
+              ),
+              _SectionLabel('KHÁC'.tr),
+              _SettingsRow(
+                label: 'Quản lý ví'.tr,
                 onTap: () => _openManageWallet(context),
                 trailing: Icon(
                   Icons.chevron_right,
@@ -108,7 +109,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               _SettingsRow(
-                label: 'Danh mục',
+                label: 'Danh mục'.tr,
                 onTap: () => _openManageCategory(context),
                 trailing: Icon(
                   Icons.chevron_right,
@@ -116,7 +117,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               _SettingsRow(
-                label: 'Tiện ích & Cá nhân hóa',
+                label: 'Tiện ích & Cá nhân hóa'.tr,
                 onTap: () => _openManageUtilities(context),
                 trailing: Icon(
                   Icons.chevron_right,
@@ -177,7 +178,7 @@ class _ProfileBlock extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Chạm để đổi ảnh đại diện',
+                'Chạm để đổi ảnh đại diện'.tr,
                 style: TextStyle(
                   color: colors.tealLightText,
                   fontSize: 13,

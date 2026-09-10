@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/date_label.dart';
 import '../core/money_format.dart';
@@ -92,8 +93,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Future<void> _openTransfer() async {
     if (!canTransferFromWallet(_wallet)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thẻ tín dụng chưa dùng để chuyển tiền.'),
+        SnackBar(
+          content: Text('Thẻ tín dụng chưa dùng để chuyển tiền.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -101,8 +102,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (!hasEligibleDestination(_controller.wallets, _wallet.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Chưa có ví đích hợp lệ để chuyển tiền.'),
+        SnackBar(
+          content: Text('Chưa có ví đích hợp lệ để chuyển tiền.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -153,7 +154,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               onEdit: _openEdit,
               onHide: () {}, // PBI sau.
             ),
-            const _SectionHeader('GIAO DỊCH GẦN ĐÂY'),
+            _SectionHeader('GIAO DỊCH GẦN ĐÂY'.tr),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -210,7 +211,9 @@ class _Hero extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             isCredit
-                ? '${wallet.creditUsedPercent}% hạn mức đã dùng'
+                ? '@percent% hạn mức đã dùng'.trParams({
+                    'percent': wallet.creditUsedPercent.toString(),
+                  })
                 : wallet.typeLabel,
             style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
@@ -240,9 +243,9 @@ class _QuickActions extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
       child: Row(
         children: [
-          _action(Icons.swap_horiz, 'Chuyển tiền', onTransfer, colors),
-          _action(Icons.edit_outlined, 'Sửa ví', onEdit, colors),
-          _action(Icons.visibility_off_outlined, 'Ẩn ví', onHide, colors),
+          _action(Icons.swap_horiz, 'Chuyển tiền'.tr, onTransfer, colors),
+          _action(Icons.edit_outlined, 'Sửa ví'.tr, onEdit, colors),
+          _action(Icons.visibility_off_outlined, 'Ẩn ví'.tr, onHide, colors),
         ],
       ),
     );
@@ -423,7 +426,7 @@ class _EmptyTransactions extends StatelessWidget {
             const Text('🧾', style: TextStyle(fontSize: 36)),
             const SizedBox(height: 10),
             Text(
-              'Chưa có giao dịch nào.',
+              'Chưa có giao dịch nào.'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 15,
@@ -432,7 +435,7 @@ class _EmptyTransactions extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Giao dịch của ví sẽ xuất hiện tại đây.',
+              'Giao dịch của ví sẽ xuất hiện tại đây.'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.tabInactive,

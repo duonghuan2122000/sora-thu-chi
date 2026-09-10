@@ -91,7 +91,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
                         child: Column(
                           children: [
                             Text(
-                              'Nhập mã PIN',
+                              'Nhập mã PIN'.tr,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: colors.textPrimary,
@@ -102,10 +102,11 @@ class _PinLockScreenState extends State<PinLockScreen> {
                             const SizedBox(height: 8),
                             Text(
                               _blocked
-                                  ? 'Nhiều lần nhập sai. Thử lại sau $_blockSeconds giây.'
+                                  ? 'Nhiều lần nhập sai. Thử lại sau @giây giây.'
+                                      .trParams({'giây': '$_blockSeconds'})
                                   : _error.isNotEmpty
-                                      ? _error
-                                      : 'Mở khóa Sora Thu Chi',
+                                      ? _error.tr
+                                      : 'Mở khóa Sora Thu Chi'.tr,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: (_blocked || _error.isNotEmpty)

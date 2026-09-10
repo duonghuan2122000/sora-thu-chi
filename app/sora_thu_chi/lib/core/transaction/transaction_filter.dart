@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import '../category/category.dart';
 import 'transaction.dart';
 import 'transaction_list.dart';
@@ -12,10 +14,10 @@ enum TxnTypeFilter { all, income, expense, transfer }
 
 extension TxnTypeFilterLabelX on TxnTypeFilter {
   String get label => switch (this) {
-        TxnTypeFilter.all => 'Tất cả',
-        TxnTypeFilter.income => 'Thu',
-        TxnTypeFilter.expense => 'Chi',
-        TxnTypeFilter.transfer => 'Chuyển khoản',
+        TxnTypeFilter.all => 'Tất cả'.tr,
+        TxnTypeFilter.income => 'Thu'.tr,
+        TxnTypeFilter.expense => 'Chi'.tr,
+        TxnTypeFilter.transfer => 'Chuyển khoản'.tr,
       };
 }
 
@@ -24,10 +26,10 @@ enum SortOption { dateNewest, dateOldest, amountAsc, amountDesc }
 
 extension SortOptionLabelX on SortOption {
   String get label => switch (this) {
-        SortOption.dateNewest => 'Ngày mới nhất',
-        SortOption.dateOldest => 'Ngày cũ nhất',
-        SortOption.amountAsc => 'Số tiền tăng dần',
-        SortOption.amountDesc => 'Số tiền giảm dần',
+        SortOption.dateNewest => 'Ngày mới nhất'.tr,
+        SortOption.dateOldest => 'Ngày cũ nhất'.tr,
+        SortOption.amountAsc => 'Số tiền tăng dần'.tr,
+        SortOption.amountDesc => 'Số tiền giảm dần'.tr,
       };
 }
 
@@ -36,11 +38,11 @@ enum DatePreset { today, thisWeek, thisMonth, all, custom }
 
 extension DatePresetLabelX on DatePreset {
   String get label => switch (this) {
-        DatePreset.today => 'Hôm nay',
-        DatePreset.thisWeek => 'Tuần này',
-        DatePreset.thisMonth => 'Tháng này',
-        DatePreset.all => 'Toàn bộ',
-        DatePreset.custom => 'Tùy chọn',
+        DatePreset.today => 'Hôm nay'.tr,
+        DatePreset.thisWeek => 'Tuần này'.tr,
+        DatePreset.thisMonth => 'Tháng này'.tr,
+        DatePreset.all => 'Toàn bộ'.tr,
+        DatePreset.custom => 'Tùy chọn'.tr,
       };
 }
 

@@ -35,7 +35,7 @@ class _WalletListScreenState extends State<WalletListScreen> {
   Widget build(BuildContext context) {
     final controller = _controller!;
     return SubPageScaffold(
-      title: 'Quản lý ví',
+      title: 'Quản lý ví'.tr,
       child: SafeArea(
         top: false,
         child: Obx(() {
@@ -51,7 +51,7 @@ class _WalletListScreenState extends State<WalletListScreen> {
                 total: activeTotal(wallets),
                 count: activeCount(wallets),
               ),
-              const _SectionTitle('VÍ CỦA BẠN'),
+              _SectionTitle('VÍ CỦA BẠN'.tr),
               Expanded(
                 child: display.isEmpty
                     ? const _EmptyState()
@@ -100,7 +100,7 @@ class _TotalCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'TỔNG SỐ DƯ TẤT CẢ VÍ',
+              'TỔNG SỐ DƯ TẤT CẢ VÍ'.tr,
               style: TextStyle(
                 color: colors.tabInactive,
                 fontSize: 12,
@@ -119,7 +119,8 @@ class _TotalCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '$count ví đang hoạt động',
+              '@count ví đang hoạt động'
+                  .trParams({'count': count.toString()}),
               style: TextStyle(
                 color: colors.textSecondary,
                 fontSize: 13,
@@ -218,7 +219,7 @@ class _WalletRow extends StatelessWidget {
   Widget _buildSubtitle(bool muted, SoraColors colors) {
     if (muted) {
       return Text(
-        'Không tính vào tổng',
+        'Không tính vào tổng'.tr,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontSize: 13, color: colors.tabInactive),
@@ -241,7 +242,7 @@ class _WalletRow extends StatelessWidget {
         TextSpan(
           children: [
             TextSpan(
-              text: 'Mặc định',
+              text: 'Mặc định'.tr,
               style: TextStyle(
                 color: colors.tealOnNeutral,
                 fontWeight: FontWeight.w700,
@@ -328,7 +329,7 @@ class _EmptyState extends StatelessWidget {
             const Text('🗂️', style: TextStyle(fontSize: 44)),
             const SizedBox(height: 12),
             Text(
-              'Chưa có ví nào.',
+              'Chưa có ví nào.'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,
@@ -337,7 +338,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              "Chạm '+ Thêm ví mới' để tạo ví đầu tiên.",
+              "Chạm '+ Thêm ví mới' để tạo ví đầu tiên.".tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.tabInactive,
@@ -378,7 +379,7 @@ class _AddWalletButton extends StatelessWidget {
             ),
           ),
           onPressed: onTap,
-          child: const Text('+ Thêm ví mới'),
+          child: Text('+ Thêm ví mới'.tr),
         ),
       ),
     );

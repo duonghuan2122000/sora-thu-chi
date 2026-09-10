@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/money_format.dart';
@@ -104,7 +105,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được dữ liệu.';
+        _error = 'Không đọc được dữ liệu.'.tr;
         _loading = false;
       });
     }
@@ -153,25 +154,30 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   String _fmt(DateTime d) => '${_two(d.day)}/${_two(d.month)}/${d.year}';
 
   String get _rangeLabel {
-    if (_draft.datePreset == DatePreset.all) return 'Toàn bộ';
+    if (_draft.datePreset == DatePreset.all) return 'Toàn bộ'.tr;
     final start = _draft.dateStart;
     final end = _draft.dateEnd;
-    if (start == null && end == null) return 'Toàn bộ';
+    if (start == null && end == null) return 'Toàn bộ'.tr;
     return '${start == null ? '…' : _fmt(start)} - ${end == null ? '…' : _fmt(end)}';
   }
 
   String get _walletLabel {
     final id = _draft.walletId;
-    if (id == null) return 'Tất cả các ví';
+    if (id == null) return 'Tất cả các ví'.tr;
     final wallet = _wallets.where((w) => w.id == id).firstOrNull;
-    return wallet == null ? 'Tất cả các ví' : (wallet.isHidden ? wallet.hiddenName : wallet.name);
+    return wallet == null
+        ? 'Tất cả các ví'.tr
+        : (wallet.isHidden ? wallet.hiddenName : wallet.name);
   }
 
   bool _categoryEnabled() => _draft.type != TxnTypeFilter.transfer;
 
   String get _summaryText {
     final count = _summary.count;
-    return '$count kết quả · Tổng: ${formatMoney(_summary.signedTotal)}';
+    return '@n kết quả · Tổng: @total'.trParams({
+      'n': '$count',
+      'total': formatMoney(_summary.signedTotal),
+    });
   }
 
   // ---- Bottom sheets / pickers ----
@@ -326,9 +332,9 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                       ),
                     ),
                     onPressed: _reset,
-                    child: const FittedBox(
+                    child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text('Đặt lại'),
+                      child: Text('Đặt lại'.tr),
                     ),
                   ),
                 ),
@@ -353,9 +359,9 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
                       ),
                     ),
                     onPressed: _amountInvalid ? null : _apply,
-                    child: const FittedBox(
+                    child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text('Áp dụng'),
+                      child: Text('Áp dụng'.tr),
                     ),
                   ),
                 ),
@@ -396,7 +402,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
-                hintText: 'Tìm kiếm giao dịch...',
+                hintText: 'Tìm kiếm giao dịch...'.tr,
                 hintStyle: TextStyle(
                   color: light.textSecondary,
                   fontSize: 14,
@@ -417,7 +423,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           children: [
             Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -431,12 +437,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
       children: [
         _typeChips(colors),
         const SizedBox(height: 20),
-        _sectionLabel('BỘ LỌC NÂNG CAO', colors),
+        _sectionLabel('BỘ LỌC NÂNG CAO'.tr, colors),
         const SizedBox(height: 4),
         _filterRow(
           key: const ValueKey('filter-period'),
           icon: Icons.calendar_today_outlined,
-          label: 'Khoảng thời gian',
+          label: 'Khoảng thời gian'.tr,
           value: _rangeLabel,
           valueKey: const ValueKey('filter-period-value'),
           onTap: _pickDatePreset,
@@ -446,7 +452,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         _filterRow(
           key: const ValueKey('filter-category'),
           icon: Icons.category_outlined,
-          label: 'Danh mục',
+          label: 'Danh mục'.tr,
           enabled: _categoryEnabled(),
           onTap: _pickCategory,
           child: _categoryValue(colors),
@@ -455,7 +461,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         _filterRow(
           key: const ValueKey('filter-wallet'),
           icon: Icons.account_balance_wallet_outlined,
-          label: 'Ví',
+          label: 'Ví'.tr,
           value: _walletLabel,
           valueKey: const ValueKey('filter-wallet-value'),
           onTap: _pickWallet,
@@ -466,7 +472,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         _filterRow(
           key: const ValueKey('filter-sort'),
           icon: Icons.sort,
-          label: 'Sắp xếp theo',
+          label: 'Sắp xếp theo'.tr,
           value: _draft.sort.label,
           valueKey: const ValueKey('filter-sort-value'),
           onTap: _pickSort,
@@ -563,7 +569,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   Widget _categoryValue(SoraColors colors) {
     if (!_categoryEnabled()) {
       return Text(
-        'Không áp dụng cho Chuyển khoản',
+        'Không áp dụng cho Chuyển khoản'.tr,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: colors.tabInactive, fontSize: 14),
@@ -576,7 +582,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         children: [
           Expanded(
             child: Text(
-              'Chọn danh mục',
+              'Chọn danh mục'.tr,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -611,8 +617,9 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   Widget _categoryChip(int id, {Category? category, required SoraColors colors}) {
     final name = category?.name ?? 'id $id';
     return InputChip(
+      // Khoá test giữ nguyên tên gốc trong DB (R9) — chỉ nhãn hiển thị dịch.
       key: ValueKey('category-chip-$name'),
-      label: Text(name),
+      label: Text(name.tr),
       visualDensity: VisualDensity.compact,
       backgroundColor: colors.tealLightBg,
       side: BorderSide.none,
@@ -634,7 +641,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             Icon(Icons.add, color: colors.tealOnNeutral, size: 18),
             const SizedBox(width: 2),
             Text(
-              'Thêm',
+              'Thêm'.tr,
               style: TextStyle(
                 color: colors.tealOnNeutral,
                 fontSize: 13,
@@ -653,7 +660,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
         _filterRow(
           key: const ValueKey('filter-amount'),
           icon: Icons.payments_outlined,
-          label: 'Khoảng số tiền',
+          label: 'Khoảng số tiền'.tr,
           onTap: () => _pickAmount(minSide: true),
           child: Row(
             children: [
@@ -668,7 +675,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'Số tiền tối thiểu không được lớn hơn tối đa',
+              'Số tiền tối thiểu không được lớn hơn tối đa'.tr,
               style: TextStyle(color: colors.coralOnNeutral, fontSize: 12),
             ),
           ),
@@ -678,7 +685,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
 
   Widget _amountPill({required bool minSide, required SoraColors colors}) {
     final value = minSide ? _draft.amountMin : _draft.amountMax;
-    final prefix = minSide ? 'Từ' : 'Đến';
+    final prefix = minSide ? 'Từ'.tr : 'Đến'.tr;
     return InkWell(
       key: ValueKey(minSide ? 'amount-min' : 'amount-max'),
       onTap: () => _pickAmount(minSide: minSide),
@@ -820,7 +827,7 @@ class _DatePresetSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
-              'Khoảng thời gian',
+              'Khoảng thời gian'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,
@@ -918,7 +925,7 @@ class _CategorySheetState extends State<_CategorySheet> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
               child: Text(
-                'Chọn danh mục',
+                'Chọn danh mục'.tr,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 16,
@@ -955,7 +962,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                     ),
                   ),
                   onPressed: () => Navigator.of(context).pop(_selected),
-                  child: const Text('Xong'),
+                  child: Text('Xong'.tr),
                 ),
               ),
             ),
@@ -997,7 +1004,9 @@ class _CategorySheetState extends State<_CategorySheet> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                isParentWithChildren ? '${c.name} (gồm con)' : c.name,
+                isParentWithChildren
+                    ? '@name (gồm con)'.trParams({'name': c.name.tr})
+                    : c.name.tr,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 14,
@@ -1034,7 +1043,7 @@ class _WalletSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
-              'Chọn ví',
+              'Chọn ví'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,
@@ -1043,7 +1052,7 @@ class _WalletSheet extends StatelessWidget {
             ),
           ),
           _SheetOption(
-            label: 'Tất cả các ví',
+            label: 'Tất cả các ví'.tr,
             selected: selectedId == null,
             // Sentinel −2 = chọn "Tất cả" (null kết quả = đóng không chọn).
             onTap: () => Navigator.of(context).pop(-2),
@@ -1078,7 +1087,7 @@ class _SortSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
             child: Text(
-              'Sắp xếp theo',
+              'Sắp xếp theo'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,
@@ -1116,7 +1125,8 @@ class _AmountSheetState extends State<_AmountSheet> {
 
   late int _amount = widget.initial ?? 0;
 
-  String get _title => widget.minSide ? 'Số tiền tối thiểu' : 'Số tiền tối đa';
+  String get _title =>
+      widget.minSide ? 'Số tiền tối thiểu'.tr : 'Số tiền tối đa'.tr;
 
   void _append(int digit) => setState(() => _amount = appendAmountDigit(_amount, digit));
 
@@ -1169,7 +1179,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                       ),
                     ),
                     onPressed: () => Navigator.of(context).pop(_clear),
-                    child: const Text('Xóa giới hạn'),
+                    child: Text('Xóa giới hạn'.tr),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1185,7 +1195,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                       ),
                     ),
                     onPressed: () => Navigator.of(context).pop(_amount),
-                    child: const Text('Xong'),
+                    child: Text('Xong'.tr),
                   ),
                 ),
               ],

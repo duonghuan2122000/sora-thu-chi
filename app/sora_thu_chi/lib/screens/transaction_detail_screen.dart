@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/date_label.dart';
 import '../core/money_format.dart';
@@ -57,7 +58,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được dữ liệu giao dịch.';
+        _error = 'Không đọc được dữ liệu giao dịch.'.tr;
         _loading = false;
       });
     }
@@ -79,7 +80,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
     return SubPageScaffold(
-      title: 'Chi tiết giao dịch',
+      title: 'Chi tiết giao dịch'.tr,
       actions: [
         // Điểm vào menu Sửa/Xóa — màn đích PBI sau, chạm không lỗi (FR-012).
         IconButton(
@@ -120,9 +121,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'Nhân bản',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              child: Text(
+                'Nhân bản'.tr,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -138,9 +139,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'Sửa',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              child: Text(
+                'Sửa'.tr,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -187,7 +188,7 @@ class _ErrorState extends StatelessWidget {
                 ),
               ),
               onPressed: onRetry,
-              child: const Text('Thử lại'),
+              child: Text('Thử lại'.tr),
             ),
           ],
         ),
@@ -212,7 +213,7 @@ class _NotFoundState extends StatelessWidget {
             const Text('🧾', style: TextStyle(fontSize: 40)),
             const SizedBox(height: 12),
             Text(
-              'Không tìm thấy giao dịch.',
+              'Không tìm thấy giao dịch.'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 15,
@@ -337,30 +338,30 @@ class _DetailRows extends StatelessWidget {
       // Chuyển khoản: tách rõ chiều "Ví nguồn" → "Ví đích" (FR-006/SC-005).
       rows.add(_InfoRow(
         icon: Icons.account_balance_wallet_outlined,
-        label: 'Ví nguồn',
+        label: 'Ví nguồn'.tr,
         value: _valueText(v.sourceWalletName!, colors),
       ));
       rows.add(_InfoRow(
         icon: Icons.account_balance_wallet_outlined,
-        label: 'Ví đích',
+        label: 'Ví đích'.tr,
         value: _valueText(v.destWalletName!, colors),
       ));
     } else {
       rows.add(_InfoRow(
         icon: Icons.account_balance_wallet_outlined,
-        label: 'Ví',
-        value: _valueText(v.singleWalletName ?? 'Ví', colors),
+        label: 'Ví'.tr,
+        value: _valueText(v.singleWalletName ?? 'Ví'.tr, colors),
       ));
     }
     rows.add(_InfoRow(
       icon: Icons.schedule,
-      label: 'Ngày giờ',
+      label: 'Ngày giờ'.tr,
       value: _valueText(formatDateTimeDetailLabel(v.date), colors),
     ));
     if (v.note.isNotEmpty) {
       rows.add(_InfoRow(
         icon: Icons.notes,
-        label: 'Ghi chú',
+        label: 'Ghi chú'.tr,
         value: _valueText(v.note, colors),
       ));
     }
@@ -370,14 +371,14 @@ class _DetailRows extends StatelessWidget {
     if (v.receiptImage.isNotEmpty) {
       rows.add(_InfoRow(
         icon: Icons.image_outlined,
-        label: 'Ảnh hóa đơn',
+        label: 'Ảnh hóa đơn'.tr,
         value: _ReceiptThumb(path: v.receiptImage),
       ));
     }
     if (v.location.isNotEmpty) {
       rows.add(_InfoRow(
         icon: Icons.location_on_outlined,
-        label: 'Vị trí',
+        label: 'Vị trí'.tr,
         value: _valueText(v.location, colors),
       ));
     }
@@ -467,7 +468,7 @@ class _TagRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tag',
+                  'Tag'.tr,
                   style: TextStyle(
                     color: colors.listLabel,
                     fontSize: 13,

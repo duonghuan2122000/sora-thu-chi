@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/category/category.dart';
+import 'package:sora_thu_chi/core/locale/sora_translations.dart';
 import 'package:sora_thu_chi/screens/category_picker_screen.dart';
 
 import 'fakes/fake_wallet_repository.dart';
+
+/// Bật chế độ tiếng Anh cho test — pump `MaterialApp` thường nên phải tự đăng
+/// ký bản đồ dịch rồi đặt `Get.locale` (khôi phục trong teardown).
+void useEnglish() {
+  Get.addTranslations(SoraTranslations().keys);
+  Get.locale = const Locale('en');
+  addTearDown(() {
+    Get.locale = null;
+    Get.reset();
+  });
+}
+
+Category _cat(int id, String name) => Category(
+  id: id,
+  name: name,
+  type: CategoryType.expense,
+  icon: 'category',
+  color: 0xFF0F6E56,
+);
 
 /// Repo trả rỗng — kiểm tra empty state (loại không có danh mục).
 class _NoCategoriesRepo extends FakeWalletRepository {
@@ -151,6 +172,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('Thêm mới'), findsWidgets);
+    });
+
+    testWidgets('(g) locale en: tên mặc định trên lưới dịch, tên tự tạo giữ nguyên (FR-009/FR-010)',
+        (tester) async {
+      useEnglish();
+      final repo = FakeWalletRepository.withCategories(
+        categoriesSeed: [_cat(1, 'Ăn uống'), _cat(2, 'Trà sữa')],
+      );
+
+      await pumpPicker(
+        tester,
+        type: CategoryType.expense,
+        repository: repo,
+        onPicked: (_) {},
+      );
+
+      expect(find.text('Food & Drink'), findsOneWidget);
+      expect(find.text('Ăn uống'), findsNothing);
+      expect(find.text('Trà sữa'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'transaction.dart';
 import 'transaction_list.dart' show categoryGlyph;
@@ -94,11 +95,11 @@ TransactionDetailView? buildTransactionDetail({
   }
   // Đủ 2 vế → 1 view trung tính với "Ví nguồn"/"Ví đích" (FR-006/SC-005).
   if (source != null && dest != null) {
-    final fallback = walletName[source.walletId] ?? 'Ví';
-    final destName = walletName[dest.walletId] ?? 'Ví';
+    final fallback = walletName[source.walletId] ?? 'Ví'.tr;
+    final destName = walletName[dest.walletId] ?? 'Ví'.tr;
     return TransactionDetailView(
       type: TxnType.transfer,
-      summaryTitle: TxnType.transfer.label,
+      summaryTitle: TxnType.transfer.label.tr,
       summaryGlyph: Icons.swap_horiz,
       amount: source.amount.abs(),
       date: source.date,
@@ -124,13 +125,13 @@ TransactionDetailView _single(Transaction t, Map<int, String> walletName) {
   if (neutral) {
     return TransactionDetailView(
       type: t.type,
-      summaryTitle: t.typeLabel,
+      summaryTitle: t.typeLabel.tr,
       summaryGlyph: t.type == TxnType.transfer
           ? Icons.swap_horiz
           : Icons.tune,
       amount: t.amount.abs(),
       date: t.date,
-      singleWalletName: walletName[t.walletId] ?? 'Ví',
+      singleWalletName: walletName[t.walletId] ?? 'Ví'.tr,
       note: t.note,
       tags: parseTags(t.tags),
       receiptImage: t.receiptImage,
@@ -140,11 +141,11 @@ TransactionDetailView _single(Transaction t, Map<int, String> walletName) {
   return TransactionDetailView(
     type: t.type,
     // summaryTitle/glyph: danh mục; rỗng → nhãn loại + glyph fallback.
-    summaryTitle: t.category.isEmpty ? t.typeLabel : t.category,
+    summaryTitle: t.category.isEmpty ? t.typeLabel.tr : t.category,
     summaryGlyph: t.category.isEmpty ? categoryGlyph(t.typeLabel) : categoryGlyph(t.category),
     amount: t.amount,
     date: t.date,
-    singleWalletName: walletName[t.walletId] ?? 'Ví',
+    singleWalletName: walletName[t.walletId] ?? 'Ví'.tr,
     note: t.note,
     tags: parseTags(t.tags),
     receiptImage: t.receiptImage,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/category/category_list.dart';
@@ -55,8 +56,10 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
     _load();
   }
 
-  String get _typeNoun =>
-      widget.initialType == CategoryType.expense ? 'chi tiêu' : 'thu nhập';
+  /// Từ chỉ loại trong câu rỗng — đã dịch.
+  String get _typeNoun => widget.initialType == CategoryType.expense
+      ? 'chi tiêu'.tr
+      : 'thu nhập'.tr;
 
   Future<void> _load() async {
     setState(() {
@@ -75,7 +78,7 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được danh mục.';
+        _error = 'Không đọc được danh mục.'.tr;
         _loading = false;
       });
     }
@@ -107,13 +110,13 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
     return SubPageScaffold(
-      title: 'Sắp xếp danh mục',
+      title: 'Sắp xếp danh mục'.tr,
       actions: [
         TextButton(
           key: const ValueKey('sort-done'),
           onPressed: _done,
           style: TextButton.styleFrom(foregroundColor: AppColors.white),
-          child: const Text('Xong'),
+          child: Text('Xong'.tr),
         ),
       ],
       child: SafeArea(top: false, child: _body(colors)),
@@ -131,7 +134,7 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
           children: [
             Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -143,7 +146,8 @@ class _CategorySortScreenState extends State<CategorySortScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
           child: Text(
-            'Không có danh mục $_typeNoun nào để sắp xếp.',
+            'Không có danh mục @loại nào để sắp xếp.'
+                .trParams({'loại': _typeNoun}),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colors.textSecondary,

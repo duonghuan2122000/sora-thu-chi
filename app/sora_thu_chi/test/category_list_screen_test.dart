@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/category/category.dart';
+import 'package:sora_thu_chi/core/locale/sora_translations.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/category_child_list_screen.dart';
 import 'package:sora_thu_chi/screens/category_form_screen.dart';
@@ -92,6 +94,17 @@ const _expenseParents = [
 ];
 
 const _incomeParents = ['Lương', 'Thưởng', 'Đầu tư', 'Khác'];
+
+/// Bật chế độ tiếng Anh cho test — các test này pump `MaterialApp` thường nên
+/// phải tự đăng ký bản đồ dịch rồi đặt `Get.locale` (khôi phục trong teardown).
+void useEnglish() {
+  Get.addTranslations(SoraTranslations().keys);
+  Get.locale = const Locale('en');
+  addTearDown(() {
+    Get.locale = null;
+    Get.reset();
+  });
+}
 
 void main() {
   group('CategoryListScreen — bố cục mockup 01 (acceptance 1)', () {
@@ -481,6 +494,36 @@ void main() {
         lessThan(tester.getTopLeft(find.text('Ăn uống')).dy),
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('PBI 19 — tên danh mục dịch ở tầng hiển thị (FR-009/FR-010/SC-007)', () {
+    final seed = [
+      _cat(1, 'Ăn uống'),
+      _cat(2, 'Ăn ngoài cùng team'), // danh mục mặc định đã đổi tên.
+      _cat(3, 'Trà sữa'), // danh mục người dùng tự tạo.
+    ];
+
+    testWidgets('locale en: tên mặc định dịch, tên đã đổi/tự tạo giữ nguyên văn',
+        (tester) async {
+      useEnglish();
+      await _openScreen(tester, FakeWalletRepository.withCategories(categoriesSeed: seed));
+
+      expect(find.text('Food & Drink'), findsOneWidget);
+      expect(find.text('Ăn uống'), findsNothing);
+      expect(find.text('Ăn ngoài cùng team'), findsOneWidget);
+      expect(find.text('Trà sữa'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('locale vi: mọi tên hiển thị nguyên văn như trước (không hồi quy)',
+        (tester) async {
+      await _openScreen(tester, FakeWalletRepository.withCategories(categoriesSeed: seed));
+
+      expect(find.text('Ăn uống'), findsOneWidget);
+      expect(find.text('Food & Drink'), findsNothing);
+      expect(find.text('Ăn ngoài cùng team'), findsOneWidget);
+      expect(find.text('Trà sữa'), findsOneWidget);
     });
   });
 }

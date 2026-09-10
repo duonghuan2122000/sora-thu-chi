@@ -30,6 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Chuỗi hệ thống Material/Cupertino (hộp thoại, date picker) theo ngôn ngữ đã
+  # chọn — chỉ SDK Flutter, không thêm package bên thứ ba (PBI 19).
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

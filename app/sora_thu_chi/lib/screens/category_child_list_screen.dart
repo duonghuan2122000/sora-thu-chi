@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/category/category_list.dart';
@@ -92,7 +93,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Không đọc được danh mục.';
+        _error = 'Không đọc được danh mục.'.tr;
         _loading = false;
       });
     }
@@ -162,7 +163,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _parent.name,
+                  _parent.name.tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -172,7 +173,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
                   ),
                 ),
                 Text(
-                  'Danh mục con',
+                  'Danh mục con'.tr,
                   style: TextStyle(
                     color: AppColors.white.withValues(alpha: 0.85),
                     fontSize: 11,
@@ -185,7 +186,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
         actions: [
           IconButton(
             key: const ValueKey('add-child'),
-            tooltip: 'Thêm danh mục con',
+            tooltip: 'Thêm danh mục con'.tr,
             onPressed: _addChild,
             icon: const Icon(Icons.add, color: AppColors.white),
           ),
@@ -206,7 +207,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
           children: [
             Text(_error!, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -221,8 +222,10 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(32, 40, 32, 8),
             child: Text(
-              'Chưa có danh mục con nào.\n'
-              'Thêm bằng nút "+" góc phải hoặc hàng bên dưới.',
+              [
+                'Chưa có danh mục con nào.'.tr,
+                'Thêm bằng nút "+" góc phải hoặc hàng bên dưới.'.tr,
+              ].join('\n'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textSecondary,
@@ -262,7 +265,7 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Thêm danh mục con',
+                'Thêm danh mục con'.tr,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

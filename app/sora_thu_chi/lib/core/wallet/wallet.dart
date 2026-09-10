@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 import '../money_format.dart';
 
 /// Loại ví / tài khoản.
@@ -6,11 +8,11 @@ enum WalletType { cash, bank, credit, eWallet, savings }
 extension WalletTypeLabelX on WalletType {
   /// Tên loại tiếng Việt hiển thị ở dòng phụ hàng ví.
   String get label => switch (this) {
-        WalletType.cash => 'Tiền mặt',
-        WalletType.bank => 'Tài khoản ngân hàng',
-        WalletType.credit => 'Thẻ tín dụng',
-        WalletType.eWallet => 'Ví điện tử',
-        WalletType.savings => 'Sổ tiết kiệm',
+        WalletType.cash => 'Tiền mặt'.tr,
+        WalletType.bank => 'Tài khoản ngân hàng'.tr,
+        WalletType.credit => 'Thẻ tín dụng'.tr,
+        WalletType.eWallet => 'Ví điện tử'.tr,
+        WalletType.savings => 'Sổ tiết kiệm'.tr,
       };
 }
 
@@ -89,11 +91,13 @@ class Wallet {
   }
 
   /// `Đã dùng {đã dùng} / {hạn mức} đ` — dòng phụ thẻ tín dụng (FR-007).
-  String get creditUsageLabel =>
-      'Đã dùng ${formatAmount(creditUsed ?? 0)} / ${formatAmount(creditLimit ?? 0)} đ';
+  String get creditUsageLabel => 'Đã dùng @used / @limit đ'.trParams({
+        'used': formatAmount(creditUsed ?? 0),
+        'limit': formatAmount(creditLimit ?? 0),
+      });
 
-  /// Tên hiển thị khi ví đã ẩn.
-  String get hiddenName => '$name (đã ẩn)';
+  /// Tên hiển thị khi ví đã ẩn — hậu tố dịch, tên ví là dữ liệu giữ nguyên.
+  String get hiddenName => '$name ${'(đã ẩn)'.tr}';
 
   String get typeLabel => type.label;
 

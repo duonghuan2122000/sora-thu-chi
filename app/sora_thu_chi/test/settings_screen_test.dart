@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/profile/device_profile.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/utilities/utilities_store.dart';
@@ -13,6 +14,7 @@ import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_theme_store.dart';
 import 'fakes/fake_utilities_store.dart';
 import 'fakes/fake_wallet_repository.dart';
@@ -37,11 +39,13 @@ void _registerRepository() {
 
 /// [UtilitiesScreen] mở qua SettingsScreen (store null) tự ensure store — đăng
 /// ký store fake để không khởi tạo drift (sqlite native) trong widget test.
-/// Hàng "Giao diện" (PBI 18) đọc [ThemeController] qua Obx → đăng ký kèm.
+/// Hàng "Giao diện" (PBI 18) đọc [ThemeController] và hàng "Ngôn ngữ" (PBI 19)
+/// đọc [LocaleController] qua Obx → đăng ký kèm.
 void _registerUtilitiesStore() {
   Get.reset();
   Get.put<UtilitiesStore>(FakeUtilitiesStore());
   Get.put<ThemeController>(ThemeController(FakeThemeStore()));
+  Get.put<LocaleController>(LocaleController(FakeLocaleStore()));
   addTearDown(Get.reset);
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../core/money_format.dart';
 import '../core/wallet/wallet.dart';
@@ -10,12 +11,13 @@ import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 
 /// Nhãn chip ngắn cho 5 loại ví (khác [WalletTypeLabelX.label] dài cho dòng phụ).
-const List<(WalletType, String)> _typeChipLabels = [
-  (WalletType.cash, 'Tiền mặt'),
-  (WalletType.bank, 'Ngân hàng'),
-  (WalletType.credit, 'Thẻ tín dụng'),
-  (WalletType.eWallet, 'Ví điện tử'),
-  (WalletType.savings, 'Sổ tiết kiệm'),
+/// Getter (không phải hằng) để nhãn dịch lại khi đổi ngôn ngữ.
+List<(WalletType, String)> get _typeChipLabels => [
+  (WalletType.cash, 'Tiền mặt'.tr),
+  (WalletType.bank, 'Ngân hàng'.tr),
+  (WalletType.credit, 'Thẻ tín dụng'.tr),
+  (WalletType.eWallet, 'Ví điện tử'.tr),
+  (WalletType.savings, 'Sổ tiết kiệm'.tr),
 ];
 
 /// Form dùng chung 2 chế độ Thêm/Sửa ví (FR-001/002/009/010/011).
@@ -133,22 +135,22 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
   }
 
   String? _validateName(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Vui lòng nhập tên ví';
+    if (v == null || v.trim().isEmpty) return 'Vui lòng nhập tên ví'.tr;
     return null;
   }
 
   String? _validateInitialBalance(String? v) {
     if (_locked) return null;
     if (v == null || v.trim().isEmpty) {
-      return _isAdd ? 'Vui lòng nhập số dư ban đầu' : null;
+      return _isAdd ? 'Vui lòng nhập số dư ban đầu'.tr : null;
     }
-    if (int.tryParse(v.trim()) == null) return 'Số tiền không hợp lệ';
+    if (int.tryParse(v.trim()) == null) return 'Số tiền không hợp lệ'.tr;
     return null;
   }
 
   String? _validateCreditLimit(String? v) {
     final value = int.tryParse(v?.trim() ?? '');
-    if (value == null || value <= 0) return 'Hạn mức phải lớn hơn 0';
+    if (value == null || value <= 0) return 'Hạn mức phải lớn hơn 0'.tr;
     return null;
   }
 
@@ -212,8 +214,8 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
       if (!mounted) return;
       // FR-014: báo lỗi, giữ nguyên dữ liệu đã nhập.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không lưu được ví. Vui lòng thử lại.'),
+        SnackBar(
+          content: Text('Không lưu được ví. Vui lòng thử lại.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );
@@ -223,7 +225,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
-    final title = _isAdd ? 'Thêm ví mới' : 'Sửa ví';
+    final title = _isAdd ? 'Thêm ví mới'.tr : 'Sửa ví'.tr;
     return SubPageScaffold(
       title: title,
       bottomNavigationBar: SafeArea(
@@ -247,7 +249,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                 ),
               ),
               onPressed: _save,
-              child: const Text('Lưu ví'),
+              child: Text('Lưu ví'.tr),
             ),
           ),
         ),
@@ -260,16 +262,16 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
               if (_locked) const _LockedNote(),
-              _fieldLabel(colors, 'Tên ví'),
+              _fieldLabel(colors, 'Tên ví'.tr),
               TextFormField(
                 key: const ValueKey('field-name'),
                 controller: _nameCtrl,
-                decoration: _decoration(hint: 'VD: Tiền mặt, Vietcombank…'),
+                decoration: _decoration(hint: 'VD: Tiền mặt, Vietcombank…'.tr),
                 textInputAction: TextInputAction.next,
                 validator: _validateName,
               ),
               const SizedBox(height: 20),
-              _fieldLabel(colors, 'Loại ví'),
+              _fieldLabel(colors, 'Loại ví'.tr),
               if (_locked)
                 _ReadonlyValue(_typeChipLabel(_type))
               else
@@ -278,7 +280,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
                   onChanged: _onTypeChanged,
                 ),
               const SizedBox(height: 20),
-              _fieldLabel(colors, _isAdd ? 'Số dư ban đầu' : 'Số dư'),
+              _fieldLabel(colors, _isAdd ? 'Số dư ban đầu'.tr : 'Số dư'.tr),
               if (_locked)
                 _ReadonlyValue(formatMoney(_existing!.initialBalanceValue))
               else
@@ -296,7 +298,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
               if (_isCredit) ..._creditFields(colors),
               if (_isSavings) ..._savingsFields(colors),
               if (_isBankOrEwallet) ..._bankFields(colors),
-              _fieldLabel(colors, 'Biểu tượng & màu sắc'),
+              _fieldLabel(colors, 'Biểu tượng & màu sắc'.tr),
               const SizedBox(height: 8),
               _IconPicker(selected: _icon, onChanged: (v) => setState(() => _icon = v)),
               const SizedBox(height: 12),
@@ -327,7 +329,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
       .$2;
 
   List<Widget> _creditFields(SoraColors colors) => [
-    _fieldLabel(colors, 'Hạn mức tín dụng'),
+    _fieldLabel(colors, 'Hạn mức tín dụng'.tr),
     TextFormField(
       key: const ValueKey('field-credit-limit'),
       controller: _creditLimitCtrl,
@@ -338,13 +340,13 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
     ),
     const SizedBox(height: 4),
     _DateField(
-      label: 'Ngày sao kê (tùy chọn)',
+      label: 'Ngày sao kê (tùy chọn)'.tr,
       value: _statementDate,
       onPick: _pickDate((d) => setState(() => _statementDate = d)),
       onClear: () => setState(() => _statementDate = null),
     ),
     _DateField(
-      label: 'Ngày đến hạn (tùy chọn)',
+      label: 'Ngày đến hạn (tùy chọn)'.tr,
       value: _dueDate,
       onPick: _pickDate((d) => setState(() => _dueDate = d)),
       onClear: () => setState(() => _dueDate = null),
@@ -353,16 +355,16 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
   ];
 
   List<Widget> _savingsFields(SoraColors colors) => [
-    _fieldLabel(colors, 'Kỳ hạn (tháng, tùy chọn)'),
+    _fieldLabel(colors, 'Kỳ hạn (tháng, tùy chọn)'.tr),
     TextFormField(
       key: const ValueKey('field-term'),
       controller: _termCtrl,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: _decoration(suffix: 'tháng'),
+      decoration: _decoration(suffix: 'tháng'.tr),
     ),
     _DateField(
-      label: 'Ngày đáo hạn (tùy chọn)',
+      label: 'Ngày đáo hạn (tùy chọn)'.tr,
       value: _maturityDate,
       onPick: _pickDate((d) => setState(() => _maturityDate = d)),
       onClear: () => setState(() => _maturityDate = null),
@@ -371,26 +373,27 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
   ];
 
   List<Widget> _bankFields(SoraColors colors) {
-    final orgLabel = _type == WalletType.eWallet ? 'Tổ chức' : 'Ngân hàng';
+    final orgLabel =
+        _type == WalletType.eWallet ? 'Tổ chức'.tr : 'Ngân hàng'.tr;
     return [
-      _fieldLabel(colors, '$orgLabel (tùy chọn)'),
+      _fieldLabel(colors, '@org (tùy chọn)'.trParams({'org': orgLabel})),
       TextFormField(
         key: const ValueKey('field-institution'),
         controller: _institutionCtrl,
         decoration: _decoration(
           hint: _type == WalletType.eWallet
-              ? 'VD: Momo, ZaloPay…'
-              : 'VD: Vietcombank…',
+              ? 'VD: Momo, ZaloPay…'.tr
+              : 'VD: Vietcombank…'.tr,
         ),
       ),
       const SizedBox(height: 12),
-      _fieldLabel(colors, 'Số cuối tài khoản (tùy chọn)'),
+      _fieldLabel(colors, 'Số cuối tài khoản (tùy chọn)'.tr),
       TextFormField(
         key: const ValueKey('field-last-digits'),
         controller: _lastDigitsCtrl,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: _decoration(hint: 'Vài số cuối, chỉ để đối chiếu'),
+        decoration: _decoration(hint: 'Vài số cuối, chỉ để đối chiếu'.tr),
       ),
       const SizedBox(height: 12),
     ];
@@ -420,7 +423,7 @@ class _WalletFormScreenState extends State<WalletFormScreen> {
     mainAxisAlignment: MainAxisAlignment.end,
     children: [
       Text(
-        'Tiền tệ: VND',
+        'Tiền tệ: VND'.tr,
         style: TextStyle(color: colors.textSecondary, fontSize: 13),
       ),
     ],
@@ -447,8 +450,9 @@ class _LockedNote extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Ví đã có giao dịch nên không đổi được loại ví và số dư ban đầu. '
-              'Muốn đổi số dư → tạo giao dịch Điều chỉnh số dư.',
+              ('Ví đã có giao dịch nên không đổi được loại ví và số dư ban đầu. '
+                      'Muốn đổi số dư → tạo giao dịch Điều chỉnh số dư.')
+                  .tr,
               style: TextStyle(color: colors.textPrimary, fontSize: 13),
             ),
           ),
@@ -646,7 +650,7 @@ class _DateField extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  value == null ? 'Chọn ngày' : _fmt(value!),
+                  value == null ? 'Chọn ngày'.tr : _fmt(value!),
                   style: TextStyle(
                     color: value == null
                         ? colors.tabInactive
@@ -708,7 +712,7 @@ class _DefaultSwitch extends StatelessWidget {
             onChanged: disabled ? null : onChanged,
             activeTrackColor: AppColors.teal,
             title: Text(
-              'Đặt làm ví mặc định',
+              'Đặt làm ví mặc định'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 15,
@@ -720,7 +724,7 @@ class _DefaultSwitch extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: Text(
-                'Ví này là ví mặc định duy nhất đang hoạt động nên không thể tắt.',
+                'Ví này là ví mặc định duy nhất đang hoạt động nên không thể tắt.'.tr,
                 style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
             ),

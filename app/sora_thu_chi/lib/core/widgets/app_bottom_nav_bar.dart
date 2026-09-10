@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../theme/sora_colors.dart';
 
@@ -28,11 +29,11 @@ class AppBottomNavBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _item(context, index: 0, label: 'Tổng quan', icon: Icons.home_outlined),
-            _item(context, index: 1, label: 'Giao dịch', icon: Icons.list_alt_outlined),
+            _item(context, index: 0, label: 'Tổng quan'.tr, icon: Icons.home_outlined),
+            _item(context, index: 1, label: 'Giao dịch'.tr, icon: Icons.list_alt_outlined),
             const Expanded(child: SizedBox()),
-            _item(context, index: 2, label: 'Báo cáo', icon: Icons.pie_chart_outline),
-            _item(context, index: 3, label: 'Cài đặt', icon: Icons.settings_outlined),
+            _item(context, index: 2, label: 'Báo cáo'.tr, icon: Icons.pie_chart_outline),
+            _item(context, index: 3, label: 'Cài đặt'.tr, icon: Icons.settings_outlined),
           ],
         ),
       ),

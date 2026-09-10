@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../core/locale/locale_controller.dart';
+import '../core/locale/locale_prefs.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/theme/theme_mode.dart';
 import '../core/utilities/utilities.dart';
@@ -9,6 +11,7 @@ import '../core/utilities/utilities_store.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/utilities_deps.dart';
 import '../theme/sora_colors.dart';
+import 'language_screen.dart';
 import 'theme_screen.dart';
 
 /// Màn "Tiện ích & Cá nhân hóa" (mockup `01`, PBI 17) — màn con từ Cài đặt: app
@@ -18,13 +21,15 @@ import 'theme_screen.dart';
 /// Widget màn hình chính hiển thị switch "bật" câm, chạm toàn hàng mở hướng dẫn
 /// ghim widget theo nền tảng (R5); **2 công tắc thật** (Ẩn số dư tắt / Máy tính
 /// bật — FR-006) bật/tắt + nhớ qua [UtilitiesStore] (ghi-through), nhưng chưa
-/// kéo hiệu ứng màn khác (FR-007); 4 hàng điều hướng no-op chờ màn con 03–07.
+/// kéo hiệu ứng màn khác (FR-007).
 ///
-/// Hàng "Giao diện" **đã kích hoạt** (PBI 18): phần cuối đọc reactive
-/// [ThemeController] (Obx) nên hiện đúng lựa chọn hiện hành — kể cả khi người
-/// dùng vừa đổi ở màn 02 rồi quay lại (màn này vẫn mounted dưới route, FR-007);
-/// chạm hàng → push `ThemeScreen` (FR-001). Màu màn đọc theo theme qua
-/// [SoraColors] nên giao diện tối không còn vùng trắng chói.
+/// Hàng "Giao diện" **đã kích hoạt** (PBI 18) và hàng "Ngôn ngữ" **đã kích
+/// hoạt** (PBI 19): phần cuối đọc reactive [ThemeController]/[LocaleController]
+/// (Obx) nên hiện đúng lựa chọn hiện hành — kể cả khi người dùng vừa đổi ở màn
+/// 02/03 rồi quay lại (màn này vẫn mounted dưới route, FR-007); chạm hàng →
+/// push `ThemeScreen`/`LanguageScreen` (FR-001). 3 hàng điều hướng còn lại vẫn
+/// no-op chờ màn con 04–07. Màu màn đọc theo theme qua [SoraColors] nên giao
+/// diện tối không còn vùng trắng chói.
 ///
 /// StatefulWidget (R6) đọc store 1 lần khi mở, không GetX controller; seam
 /// [store] để test bơm fake (R7). Ghi-through nối đuôi để bật/tắt nhanh không
@@ -95,29 +100,38 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
       _setPrefs(_prefs.copyWith(amountCalculatorEnabled: value));
 
   /// Hướng dẫn ghim widget — việc ghim do hệ điều hành quản lý (R5/FR-008).
+  /// Ghép từng dòng đã dịch (không nối chuỗi thủ công) để mỗi dòng là một khóa
+  /// dịch riêng.
   void _showWidgetHelp() {
     final android = defaultTargetPlatform == TargetPlatform.android;
+    final steps = android
+        ? const [
+            'Cách ghim trên Android:',
+            '• Chạm-giữ màn hình chính',
+            '• Chọn "Widgets"',
+            '• Kéo widget của app ra màn hình chính',
+          ]
+        : const [
+            'Cách ghim trên iPhone/iPad:',
+            '• Chạm-giữ màn hình chính',
+            '• Chạm nút "+" phía trên',
+            '• Chọn app rồi thêm widget',
+          ];
+    final body = [
+      'App không tự ghim widget lên màn hình chính được.',
+      '',
+      ...steps,
+    ].map((line) => line.isEmpty ? '' : line.tr).join('\n');
+
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hướng dẫn ghim widget'),
-        content: Text(
-          android
-              ? 'App không tự ghim widget lên màn hình chính được.\n\n'
-                  'Cách ghim trên Android:\n'
-                  '• Chạm-giữ màn hình chính\n'
-                  '• Chọn "Widgets"\n'
-                  '• Kéo widget của app ra màn hình chính'
-              : 'App không tự ghim widget lên màn hình chính được.\n\n'
-                  'Cách ghim trên iPhone/iPad:\n'
-                  '• Chạm-giữ màn hình chính\n'
-                  '• Chạm nút "+" phía trên\n'
-                  '• Chọn app rồi thêm widget',
-        ),
+        title: Text('Hướng dẫn ghim widget'.tr),
+        content: Text(body),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Đóng'),
+            child: Text('Đóng'.tr),
           ),
         ],
       ),
@@ -131,10 +145,17 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
     );
   }
 
+  /// Mở màn con "Ngôn ngữ" (màn 03) — điểm vào no-op của PBI 17 nay kích hoạt.
+  void _openLanguageScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const LanguageScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
-      title: 'Tiện ích & Cá nhân hóa',
+      title: 'Tiện ích & Cá nhân hóa'.tr,
       child: SafeArea(
         top: false,
         child: _body(context),
@@ -152,9 +173,9 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: TextStyle(color: colors.textPrimary)),
+            Text(_error!.tr, style: TextStyle(color: colors.textPrimary)),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('Thử lại')),
+            OutlinedButton(onPressed: _load, child: Text('Thử lại'.tr)),
           ],
         ),
       );
@@ -162,13 +183,13 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 48),
       children: [
-        const _SectionLabel('HIỂN THỊ'),
+        _SectionLabel('HIỂN THỊ'.tr),
         ..._rows(colors, [
           _navRow(
             colors: colors,
             icon: Icons.wb_sunny_outlined,
-            name: 'Giao diện',
-            subtitle: 'Sáng / Tối / Theo hệ thống',
+            name: 'Giao diện'.tr,
+            subtitle: 'Sáng / Tối / Theo hệ thống'.tr,
             trailing: Obx(
               () => _trailingValue(
                 colors,
@@ -180,59 +201,65 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
           _navRow(
             colors: colors,
             icon: Icons.language,
-            name: 'Ngôn ngữ',
-            subtitle: 'Ngôn ngữ hiển thị trong ứng dụng',
-            trailing: _trailingValue(colors, 'Tiếng Việt'),
+            name: 'Ngôn ngữ'.tr,
+            subtitle: 'Ngôn ngữ hiển thị trong ứng dụng'.tr,
+            trailing: Obx(
+              () => _trailingValue(
+                colors,
+                localeEndonym(Get.find<LocaleController>().locale.value),
+              ),
+            ),
+            onTap: _openLanguageScreen,
           ),
           _navRow(
             colors: colors,
             icon: Icons.tune,
-            name: 'Định dạng & Tiền tệ',
-            subtitle: 'Ngày, tiền tệ, tuần, kỳ tài chính',
+            name: 'Định dạng & Tiền tệ'.tr,
+            subtitle: 'Ngày, tiền tệ, tuần, kỳ tài chính'.tr,
             trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
         ]),
-        const _SectionLabel('TRẢI NGHIỆM'),
+        _SectionLabel('TRẢI NGHIỆM'.tr),
         ..._rows(colors, [
           _helpRow(
             colors: colors,
             icon: Icons.widgets_outlined,
-            name: 'Widget màn hình chính',
-            subtitle: 'Hiện số dư & chi tiêu hôm nay',
+            name: 'Widget màn hình chính'.tr,
+            subtitle: 'Hiện số dư & chi tiêu hôm nay'.tr,
             trailing: const Switch(value: true, onChanged: null),
           ),
           _switchRow(
             colors: colors,
             icon: Icons.visibility_off_outlined,
-            name: 'Ẩn số dư (Privacy mode)',
-            subtitle: 'Che số tiền trên màn hình chính',
+            name: 'Ẩn số dư (Privacy mode)'.tr,
+            subtitle: 'Che số tiền trên màn hình chính'.tr,
             value: _prefs.hideBalance,
             onChanged: _toggleHideBalance,
           ),
           _switchRow(
             colors: colors,
             icon: Icons.calculate_outlined,
-            name: 'Máy tính khi nhập số tiền',
-            subtitle: 'Cho phép +, -, x, / khi nhập',
+            name: 'Máy tính khi nhập số tiền'.tr,
+            subtitle: 'Cho phép +, -, x, / khi nhập'.tr,
             value: _prefs.amountCalculatorEnabled,
             onChanged: _toggleCalculator,
           ),
         ]),
-        const _SectionLabel('DỮ LIỆU & TÌM KIẾM'),
+        _SectionLabel('DỮ LIỆU & TÌM KIẾM'.tr),
         ..._rows(colors, [
           _navRow(
             colors: colors,
             icon: Icons.search,
-            name: 'Tìm kiếm toàn cục',
-            subtitle: 'Giao dịch, danh mục, ví',
+            name: 'Tìm kiếm toàn cục'.tr,
+            subtitle: 'Giao dịch, danh mục, ví'.tr,
             trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
           // Dòng phụ mô tả sạch (không `#…`/số tag giả — R4/FR-009/SC-008).
           _navRow(
             colors: colors,
             icon: Icons.sell_outlined,
-            name: 'Quản lý Tag',
-            subtitle: 'Gắn nhãn cho giao dịch',
+            name: 'Quản lý Tag'.tr,
+            subtitle: 'Gắn nhãn cho giao dịch'.tr,
             trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
         ]),

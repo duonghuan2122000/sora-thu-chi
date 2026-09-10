@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/utilities/utilities_store.dart';
+import 'package:sora_thu_chi/screens/language_screen.dart';
 import 'package:sora_thu_chi/screens/theme_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_theme_store.dart';
 import 'fakes/fake_utilities_store.dart';
 
@@ -22,16 +25,44 @@ FakeThemeStore registerThemeController({ThemeMode? initialMode}) {
   return fake;
 }
 
+/// Đăng ký [LocaleController] (hàng "Ngôn ngữ" đọc qua Obx — PBI 19). Gọi SAU
+/// [registerThemeController] (hàm đó `Get.reset`).
+FakeLocaleStore registerLocaleController({Locale? initialLocale}) {
+  final fake = FakeLocaleStore(initialLocale: initialLocale);
+  Get.put<LocaleController>(LocaleController(fake));
+  return fake;
+}
+
+/// Đổi ngôn ngữ gọi `Get.updateLocale` → `reassembleApplication()`; trong test
+/// binding phải để chuỗi async này chạy ở zone thật rồi mới pump, nếu không
+/// `handleBeginFrame` vỡ assert `schedulerPhase == idle`.
+Future<void> settleLocaleChange(WidgetTester tester) async {
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 50)),
+  );
+  await tester.pumpAndSettle();
+}
+
 /// Đẩy [UtilitiesScreen] qua route để có nút back; màn luôn nhận [store] bơm
 /// (fake) → không chạm drift (R7). [initialMode] đặt sẵn giao diện đã lưu,
-/// [loadTheme] gọi `load()` trước khi mở màn (mô phỏng mở lại app).
+/// [loadTheme] gọi `load()` trước khi mở màn (mô phỏng mở lại app); [initialLocale]
+/// / [loadLocale] tương tự cho hàng "Ngôn ngữ".
 Future<FakeThemeStore> pumpUtilities(
   WidgetTester tester, {
   UtilitiesStore? store,
   ThemeMode? initialMode,
   bool loadTheme = false,
+  Locale? initialLocale,
+  bool loadLocale = false,
 }) async {
   final themeFake = registerThemeController(initialMode: initialMode);
+  registerLocaleController(initialLocale: initialLocale);
+  if (loadLocale) {
+    await Get.find<LocaleController>().load();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+  }
   if (loadTheme) await Get.find<ThemeController>().load();
   await tester.binding.setSurfaceSize(const Size(390, 1400));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -205,12 +236,11 @@ void main() {
     expect(find.text('Hướng dẫn ghim widget'), findsNothing);
   });
 
-  testWidgets('4 hàng điều hướng no-op: chạm không mở màn/dialog, không lỗi', (tester) async {
+  testWidgets('3 hàng điều hướng còn no-op: chạm không mở màn/dialog, không lỗi', (tester) async {
     await pumpUtilities(tester, store: FakeUtilitiesStore());
 
-    // "Giao diện" đã kích hoạt ở PBI 18 → không còn trong nhóm no-op (FR-001).
+    // "Giao diện" (PBI 18) và "Ngôn ngữ" (PBI 19) đã kích hoạt → không còn no-op.
     for (final label in [
-      'Ngôn ngữ',
       'Định dạng & Tiền tệ',
       'Tìm kiếm toàn cục',
       'Quản lý Tag',
@@ -227,6 +257,49 @@ void main() {
     expect(find.text('Tiếng Việt'), findsOneWidget);
     expect(find.byType(UtilitiesScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Hàng "Ngôn ngữ": chạm mở màn 03, back về màn Tiện ích (FR-001)',
+      (tester) async {
+    await pumpUtilities(tester, store: FakeUtilitiesStore());
+
+    await tester.tap(find.text('Ngôn ngữ'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LanguageScreen), findsOneWidget);
+    expect(find.byType(BottomNavigationBar), findsNothing);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(UtilitiesScreen), findsOneWidget);
+    expect(find.byType(LanguageScreen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Trailing hàng "Ngôn ngữ" phản ánh lựa chọn đã lưu (FR-007)',
+      (tester) async {
+    await pumpUtilities(
+      tester,
+      store: FakeUtilitiesStore(),
+      initialLocale: const Locale('en'),
+      loadLocale: true,
+    );
+
+    expect(find.text('English'), findsOneWidget);
+    expect(find.text('Tiếng Việt'), findsNothing);
+  });
+
+  testWidgets('Đổi ngôn ngữ khi màn 01 vẫn mounted → trailing cập nhật ngay',
+      (tester) async {
+    await pumpUtilities(tester, store: FakeUtilitiesStore());
+
+    expect(find.text('Tiếng Việt'), findsOneWidget);
+
+    Get.find<LocaleController>().setLocale(const Locale('en'));
+    await settleLocaleChange(tester);
+
+    expect(find.text('English'), findsOneWidget);
+    expect(find.text('Tiếng Việt'), findsNothing);
   });
 
   testWidgets('Hàng "Giao diện": chạm mở màn 02, back về màn Tiện ích (FR-001)',
@@ -282,6 +355,7 @@ void main() {
 
   testWidgets('Cỡ chữ lớn + màn nhỏ: cuộn tới hàng cuối, không overflow', (tester) async {
     registerThemeController();
+    registerLocaleController();
     await tester.binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     tester.binding.platformDispatcher.textScaleFactorTestValue = 2.0;

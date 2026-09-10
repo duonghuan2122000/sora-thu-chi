@@ -46,7 +46,7 @@ class TransactionScreen extends StatelessWidget {
     return Column(
       children: [
         ScreenHeader(
-          title: 'Giao dịch',
+          title: 'Giao dịch'.tr,
           centerTitle: true,
           trailing: _FilterButton(onTap: () => _openFilter(context, controller)),
         ),
@@ -119,7 +119,7 @@ class _ErrorState extends StatelessWidget {
                 color: colors.coralOnNeutral, size: 40),
             const SizedBox(height: 12),
             Text(
-              'Không đọc được dữ liệu giao dịch.',
+              'Không đọc được dữ liệu giao dịch.'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textPrimary,
@@ -137,7 +137,7 @@ class _ErrorState extends StatelessWidget {
                 ),
               ),
               onPressed: onRetry,
-              child: const Text('Thử lại'),
+              child: Text('Thử lại'.tr),
             ),
           ],
         ),
@@ -256,7 +256,9 @@ class _FilterBar extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '$count kết quả · Tổng: ${formatMoney(signedTotal)}',
+              '@n kết quả · Tổng: @total'.trParams(
+                {'n': '$count', 'total': formatMoney(signedTotal)},
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -269,7 +271,7 @@ class _FilterBar extends StatelessWidget {
           TextButton(
             key: const ValueKey('clear-filter'),
             onPressed: onClear,
-            child: const Text('Bỏ lọc'),
+            child: Text('Bỏ lọc'.tr),
           ),
         ],
       ),
@@ -293,7 +295,7 @@ class _NoMatchState extends StatelessWidget {
             Icon(Icons.search_off, color: colors.tabInactive, size: 44),
             const SizedBox(height: 12),
             Text(
-              'Không có giao dịch khớp bộ lọc.',
+              'Không có giao dịch khớp bộ lọc.'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textPrimary,
@@ -303,7 +305,7 @@ class _NoMatchState extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Bỏ lọc để xem toàn bộ.',
+              'Bỏ lọc để xem toàn bộ.'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.tabInactive, fontSize: 13),
             ),
@@ -350,9 +352,9 @@ class _MonthStatCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _StatBlock(label: 'Thu tháng này', isIncome: true, value: stat.incomeTotal)),
+          Expanded(child: _StatBlock(label: 'Thu tháng này'.tr, isIncome: true, value: stat.incomeTotal)),
           const SizedBox(width: 10),
-          Expanded(child: _StatBlock(label: 'Chi tháng này', isIncome: false, value: stat.expenseTotal)),
+          Expanded(child: _StatBlock(label: 'Chi tháng này'.tr, isIncome: false, value: stat.expenseTotal)),
         ],
       ),
     );
@@ -566,7 +568,7 @@ class _EmptyState extends StatelessWidget {
             const Text('🧾', style: TextStyle(fontSize: 44)),
             const SizedBox(height: 12),
             Text(
-              'Chưa có giao dịch nào.',
+              'Chưa có giao dịch nào.'.tr,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 16,
@@ -575,7 +577,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              "Chạm nút '+' giữa thanh dưới để ghi giao dịch đầu tiên.",
+              "Chạm nút '+' giữa thanh dưới để ghi giao dịch đầu tiên.".tr,
               textAlign: TextAlign.center,
               style: TextStyle(color: colors.tabInactive, fontSize: 13),
             ),
