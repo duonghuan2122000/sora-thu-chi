@@ -1,3 +1,4 @@
+import 'package:sora_thu_chi/core/budget/budget.dart';
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/category/category_source.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
@@ -24,16 +25,19 @@ class FakeWalletRepository implements WalletRepository {
 
   /// Thêm seed danh mục tuỳ chọn (PBI 13 — màn danh sách cần case ẩn/con lạ):
   /// mặc định giữ [CategorySource.all], additive nên test cũ không đổi hành vi.
+  /// [budgetsSeed] (PBI 20) mặc định **rỗng** — ngân sách không seed như ví.
   FakeWalletRepository.withCategories({
     List<Wallet>? wallets,
     DateTime? now,
     List<Transaction>? transactions,
     List<Category>? categoriesSeed,
+    List<Budget>? budgetsSeed,
   }) : this._(
          wallets: wallets,
          now: now,
          transactions: transactions,
          categoriesSeed: categoriesSeed,
+         budgetsSeed: budgetsSeed,
        );
 
   FakeWalletRepository._({
@@ -41,6 +45,7 @@ class FakeWalletRepository implements WalletRepository {
     DateTime? now,
     List<Transaction>? transactions,
     List<Category>? categoriesSeed,
+    List<Budget>? budgetsSeed,
   }) {
     for (final w in wallets ?? WalletSource.all()) {
       _store[w.id] = w;
@@ -83,14 +88,20 @@ class FakeWalletRepository implements WalletRepository {
     _categories.addAll(categoriesSeed ?? CategorySource.all);
     _nextCategoryId =
         _categories.fold<int>(1, (max, c) => c.id >= max ? c.id + 1 : max);
+    // Ngân sách (PBI 20) — mặc định rỗng, chỉ seed khi test truyền.
+    _budgets.addAll(budgetsSeed ?? const []);
+    _nextBudgetId =
+        _budgets.fold<int>(1, (max, b) => b.id >= max ? b.id + 1 : max);
   }
 
   final Map<int, Wallet> _store = {};
   final List<Transaction> _transactions = [];
   final List<Category> _categories = [];
+  final List<Budget> _budgets = [];
   late int _nextId;
   late int _nextTxnId;
   late int _nextCategoryId;
+  late int _nextBudgetId;
 
   List<Wallet> get allStored => _store.values.toList();
 
@@ -260,6 +271,34 @@ class FakeWalletRepository implements WalletRepository {
         categoryId: category.id,
       ),
     );
+  }
+
+  @override
+  Future<List<Budget>> budgets() async => List.unmodifiable(_budgets);
+
+  @override
+  Future<Budget> insertBudget(Budget budget) async {
+    // Bỏ qua id đưa vào — fake tự sinh (như drift thật).
+    final created = Budget(
+      id: _nextBudgetId++,
+      categoryId: budget.categoryId,
+      amount: budget.amount,
+      period: budget.period,
+      isRecurring: budget.isRecurring,
+      startDate: budget.startDate,
+    );
+    _budgets.add(created);
+    return created;
+  }
+
+  @override
+  Future<Budget> updateBudget(Budget budget) async {
+    final i = _budgets.indexWhere((b) => b.id == budget.id);
+    if (i < 0) {
+      throw StateError('Không tìm thấy ngân sách ${budget.id} trong fake.');
+    }
+    _budgets[i] = budget;
+    return budget;
   }
 
   @override

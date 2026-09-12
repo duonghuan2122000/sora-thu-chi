@@ -1,3 +1,4 @@
+import '../core/budget/budget.dart';
 import '../core/category/category.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
@@ -93,4 +94,17 @@ abstract class WalletRepository {
     required DateTime date,
     String note = '',
   });
+
+  /// Toàn bộ ngân sách của thiết bị (PBI 20) — **không lọc** theo kỳ/danh mục;
+  /// màn Tổng quan tự suy "đã chi"/trạng thái (module `core/budget`).
+  Future<List<Budget>> budgets();
+
+  /// Ghi một ngân sách **mới** — bỏ qua `budget.id` (DB sinh), ghi đủ 6 cột.
+  /// Trả [Budget] đã lưu. Repository **không** tự validate chồng lấn — luật
+  /// thuộc `budget_rules` + UI (bám nếp `insertCategory`).
+  Future<Budget> insertBudget(Budget budget);
+
+  /// Ghi đủ 6 cột của dòng `id == budget.id` — dùng cả khi sửa danh mục/số
+  /// tiền/chu kỳ lẫn khi bật-tắt lặp lại. Trả [Budget] đã lưu.
+  Future<Budget> updateBudget(Budget budget);
 }

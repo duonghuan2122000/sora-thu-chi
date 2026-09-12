@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 
+import '../core/budget/budget.dart';
 import '../core/category/category.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
@@ -273,6 +274,58 @@ class DriftWalletRepository implements WalletRepository {
       );
     });
   }
+
+  @override
+  Future<List<Budget>> budgets() async {
+    final rows = await _db.select(_db.budgets).get();
+    final list = rows.map(_toBudget).toList();
+    list.sort((a, b) => a.id.compareTo(b.id));
+    return list;
+  }
+
+  @override
+  Future<Budget> insertBudget(Budget budget) async {
+    // Bỏ qua `budget.id` — DB tự sinh (như insert ví/danh mục).
+    final id = await _db.into(_db.budgets).insert(
+      BudgetsCompanion.insert(
+        categoryId: budget.categoryId,
+        amount: budget.amount,
+        period: budget.period,
+        isRecurring: Value(budget.isRecurring),
+        startDate: budget.startDate,
+      ),
+    );
+    final row = await (_db.select(_db.budgets)..where((t) => t.id.equals(id)))
+        .getSingle();
+    return _toBudget(row);
+  }
+
+  @override
+  Future<Budget> updateBudget(Budget budget) async {
+    // Ghi đủ 6 cột nghiệp vụ của dòng đang sửa (không có cột nào giữ nguyên ngầm).
+    await (_db.update(_db.budgets)..where((t) => t.id.equals(budget.id))).write(
+      BudgetsCompanion(
+        categoryId: Value(budget.categoryId),
+        amount: Value(budget.amount),
+        period: Value(budget.period),
+        isRecurring: Value(budget.isRecurring),
+        startDate: Value(budget.startDate),
+      ),
+    );
+    final row = await (_db.select(_db.budgets)
+          ..where((t) => t.id.equals(budget.id)))
+        .getSingle();
+    return _toBudget(row);
+  }
+
+  Budget _toBudget(BudgetsRow r) => Budget(
+    id: r.id,
+    categoryId: r.categoryId,
+    amount: r.amount,
+    period: r.period,
+    isRecurring: r.isRecurring,
+    startDate: r.startDate,
+  );
 
   Category _toCategory(CategoryRow r) => Category(
     id: r.id,

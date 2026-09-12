@@ -6,7 +6,7 @@ import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/transaction_screen.dart';
 import '../data/transaction_deps.dart';
-import '../theme/app_colors.dart';
+import 'widgets/add_transaction_fab.dart';
 import 'widgets/app_bottom_nav_bar.dart';
 
 /// Vỏ app: giữ 4 màn chính sống (IndexedStack) + bottom nav đổi tab.
@@ -20,12 +20,16 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _screens = [
-    DashboardScreen(),
-    TransactionScreen(),
-    ReportScreen(),
-    SettingsScreen(),
+  /// `late final` (không còn `static const`): tab Báo cáo cần bơm
+  /// [_onTabSelected] xuống màn Tổng quan Ngân sách đẩy từ nó (PBI 20) — màn
+  /// con tự dựng bottom nav nhưng không giữ state của shell.
+  late final List<Widget> _screens = [
+    const DashboardScreen(),
+    const TransactionScreen(),
+    ReportScreen(onSelectTab: _onTabSelected),
+    const SettingsScreen(),
   ];
+
 
   void _onTabSelected(int index) {
     setState(() => _selectedIndex = index);
@@ -56,19 +60,8 @@ class _AppShellState extends State<AppShell> {
         children: _screens,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Material(
-        color: AppColors.teal,
-        shape: const CircleBorder(),
-        elevation: 6,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: () => _openAddTransaction(context),
-          child: const SizedBox(
-            width: 52,
-            height: 52,
-            child: Icon(Icons.add, color: AppColors.white, size: 28),
-          ),
-        ),
+      floatingActionButton: AddTransactionFab(
+        onTap: () => _openAddTransaction(context),
       ),
       bottomNavigationBar: AppBottomNavBar(
         selectedIndex: _selectedIndex,

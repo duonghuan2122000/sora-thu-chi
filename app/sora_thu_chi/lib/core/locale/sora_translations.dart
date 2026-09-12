@@ -340,6 +340,49 @@ class SoraTranslations extends Translations {
     'DANH MỤC CON: @tên': 'SUBCATEGORIES: @tên',
 
     // ---------------------------------------------------------------------
+    // Ngân sách (PBI 20) — màn Tổng quan `01`, màn Thêm/Sửa `02`, chu kỳ &
+    // thông báo lỗi ở `core/budget` (gọi `.tr` qua biến nên test quét không bắt)
+    // ---------------------------------------------------------------------
+    'Ngân sách': 'Budgets',
+    'Giới hạn chi tiêu theo danh mục': 'Spending limits by category',
+    'Tuần': 'Week',
+    'Tháng': 'Month',
+    'Năm': 'Year',
+    'Tháng @tháng, @năm': '@tháng/@năm',
+    'Tổng ngân sách tháng này': "This month's total budget",
+    'Còn lại @số đ': '@số đ remaining',
+    '@n ngày còn lại': '@n days left',
+    'DANH MỤC': 'CATEGORIES',
+    'Sao chép tháng trước': 'Copy last month',
+    'Đã kết thúc': 'Ended',
+    'Danh mục đã bị xóa': 'Category deleted',
+    'Không đọc được ngân sách.': 'Could not read budgets.',
+    'Chưa có ngân sách nào.': 'No budgets yet.',
+    'Đặt giới hạn chi tiêu cho một danh mục để theo dõi tiến độ.':
+        'Set a spending limit for a category to track progress.',
+    'Thêm ngân sách': 'Add budget',
+    'Sửa ngân sách': 'Edit budget',
+    'Lưu ngân sách': 'Save budget',
+    'PHẠM VI NGÂN SÁCH': 'BUDGET SCOPE',
+    'Theo danh mục': 'By category',
+    'Tổng cộng': 'Overall',
+    'SỐ TIỀN GIỚI HẠN': 'LIMIT AMOUNT',
+    'CHU KỲ': 'PERIOD',
+    'Ví áp dụng': 'Applies to wallets',
+    'Tất cả ví': 'All wallets',
+    'Lặp lại tự động mỗi kỳ': 'Auto-repeat every period',
+    'Cộng dồn phần chưa dùng hết': 'Roll over unused amount',
+    'Ngưỡng cảnh báo': 'Alert thresholds',
+    '80% và 100%': '80% and 100%',
+    'Vui lòng chọn danh mục.': 'Please select a category.',
+    'Vui lòng nhập số tiền lớn hơn 0.':
+        'Please enter an amount greater than 0.',
+    'Đã có ngân sách cho danh mục này trong kỳ. Hãy sửa ngân sách đang có.':
+        'A budget already exists for this category in this period. Please edit the existing budget.',
+    'Không lưu được ngân sách. Vui lòng thử lại.':
+        'Could not save the budget. Please try again.',
+
+    // ---------------------------------------------------------------------
     // Bảo mật PIN & khung Tổng quan/Báo cáo
     // ---------------------------------------------------------------------
     'Nhập lại mã PIN': 'Re-enter PIN',

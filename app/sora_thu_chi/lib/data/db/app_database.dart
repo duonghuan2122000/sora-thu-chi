@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/budget/budget.dart';
 import '../../core/category/category.dart';
 import '../../core/category/category_source.dart';
 import '../../core/transaction/transaction.dart';
@@ -97,6 +98,21 @@ class AppSettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
+/// Bảng ngân sách theo danh mục (data-model §Thực thể 1, schema v6 — PBI 20):
+/// 6 cột có hiệu lực đợt này. "Đã chi"/% đã dùng/trạng thái là **đại lượng suy
+/// ra** khi nạp màn (không lưu, không bảng snapshot — research R3); không tạo
+/// quan hệ FK drift (bám kiểu `transactions.category_id`). Migration v5→v6 =
+/// thuần tạo bảng, **không seed** (spec đòi trạng thái rỗng lần mở đầu).
+@DataClassName('BudgetsRow')
+class Budgets extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get categoryId => integer()();
+  IntColumn get amount => integer()();
+  TextColumn get period => textEnum<BudgetPeriod>()();
+  BoolColumn get isRecurring => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get startDate => dateTime()();
+}
+
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
 QueryExecutor _openConnection() {
   return LazyDatabase(() async {
@@ -106,12 +122,12 @@ QueryExecutor _openConnection() {
   });
 }
 
-@DriftDatabase(tables: [Wallets, Categories, Transactions, AppSettings])
+@DriftDatabase(tables: [Wallets, Categories, Transactions, AppSettings, Budgets])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -152,6 +168,11 @@ class AppDatabase extends _$AppDatabase {
       // nhánh migration/seed ví/danh mục/giao dịch hiện có.
       if (from < 5) {
         await m.createTable(appSettings);
+      }
+      // from < 6 (PBI 20): mọi DB cũ hơn v6 chưa từng có bảng ngân sách → tạo
+      // bảng (6 cột, không seed); không đụng các bảng hiện có.
+      if (from < 6) {
+        await m.createTable(budgets);
       }
     },
   );
