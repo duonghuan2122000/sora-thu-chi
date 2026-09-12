@@ -16,9 +16,9 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 ## Thư viện chính
 | Thư viện | Mục đích | Module dùng |
 |---|---|---|
-| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `budget_period_snapshots` |
+| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets` (schema **v7**), `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
-| `fl_chart` | Biểu đồ | Báo cáo (pie/bar/line); so sánh dự kiến–thực tế budget (cột đôi/line chồng) |
+| `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật lần đầu ở PBI 21**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách ([[Ngân sách]]). Còn lại: tab Báo cáo (pie/bar/line) |
 | `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
 | `flutter_secure_storage` | Lưu bí mật khóa app + khóa mã hóa (Keychain/Keystore) | Khóa app — PBI 3: key `pin_salt_hash` (hash PIN), key `lock_state` (chống dò JSON) |
 | `crypto` | Băm **SHA-256** (PBI 3, dep mới) | Hash PIN có muối — [[Hồ sơ & Bảo mật]] |

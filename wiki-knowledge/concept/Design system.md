@@ -34,7 +34,13 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 | Nền card thống kê nhanh | `#F1EFE8` |
 | Đường kẻ phân cách | `#E0E0E0` / `#EFEFEF` |
 
-**Mốc tiến độ ngân sách 80–99% — ĐÃ CHỐT (PBI 20)**: giữ hệ **2 màu gốc**, không thêm màu thứ ba — thanh tiến độ dùng **coral nhạt `#D85A30` ở `alpha 0.6`**, còn **%** vẫn coral đậm. Dưới 80%: thanh + % teal. Từ 100%: thanh coral đậm + % coral (dòng vượt giới hạn chỉ hiện %, không hiện số tiền vượt). Chi tiết ở [[Ngân sách]], màn `01`.
+**Mốc tiến độ ngân sách 80–99% — ĐÃ CHỐT (PBI 20)**: giữ hệ **2 màu gốc**, không thêm màu thứ ba — thanh tiến độ dùng **coral nhạt `#D85A30` ở `alpha 0.6`**, còn **%** vẫn coral đậm. Dưới 80%: thanh + % teal. Từ 100%: thanh coral đậm + % coral (màn `01` chỉ hiện %, màn `03` hiện thêm **số tiền vượt**). Chi tiết ở [[Ngân sách]].
+
+**Biểu đồ ngân sách (PBI 21)** — không thêm token màu mới, tái dùng token hiện có:
+- **Cột "Dự kiến"**: một **màu trung tính** cho **mọi** kỳ — `dotEmpty` (`#B4B2A9` light / `#6E6D66` dark) ở `alpha 0.5`. Cố ý **không** dùng teal/coral (2 màu đó đã mang nghĩa thu/chi).
+- **Đường mốc giới hạn**: **nét đứt** `dashArray [3,3]` màu `dotEmpty`, nhãn "Dự kiến {giới hạn}" cỡ 9px.
+- **Cột "Thực tế"**: **teal** khi kỳ đó không vượt, **coral** khi vượt (đúng quy tắc thu/chi). Chú giải (legend) vẽ 2 ô màu Dự kiến/Thực tế với ô "Thực tế" **coral** theo mockup `03`.
+- Nhãn kỳ dưới trục `9–10px`, **kỳ đang xem in đậm + màu chữ chính**, kỳ khác chữ phụ.
 
 ## Giao diện Sáng / Tối / Theo hệ thống — đã triển khai PBI 18
 > Bộ đôi theme qua **`ThemeExtension<SoraColors>`** (không thêm dependency). Nguồn: `.specify/specs/18`, `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §1.2`.
