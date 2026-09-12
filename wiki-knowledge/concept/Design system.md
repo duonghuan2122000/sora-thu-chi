@@ -42,6 +42,13 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - **Cột "Thực tế"**: **teal** khi kỳ đó không vượt, **coral** khi vượt (đúng quy tắc thu/chi). Chú giải (legend) vẽ 2 ô màu Dự kiến/Thực tế với ô "Thực tế" **coral** theo mockup `03`.
 - Nhãn kỳ dưới trục `9–10px`, **kỳ đang xem in đậm + màu chữ chính**, kỳ khác chữ phụ.
 
+**Bảng màu ĐỊNH TÍNH cho vòng tròn báo cáo (PBI 22) — token `SoraColors.chartPalette`** (6 phần tử, **đổi theo theme**):
+- Light `[#0F6E56, #3D8C77, #E3B341, #6B7FD7, #B4B2A9, #5F5E5A]` · Dark `[#3FA98A, #4FB694, #E3B341, #8B9DEE, #A8A8A3, #C9C7BE]`. Phần tử **cuối** dành riêng cho nhóm "Khác" (`rank == -1` → chỉ số 5), 5 phần tử đầu theo **thứ hạng** danh mục.
+- Doc §5 chốt bộ màu định tính (teal, teal đậm nhạt, hổ phách, xanh lam nhạt, xám) vì vòng tròn cần nhiều màu phân biệt; **tuyệt đối KHÔNG dùng coral** — coral đã mang nghĩa "chi tiêu/cảnh báo", dùng làm màu trang trí danh mục sẽ phá quy tắc.
+- Màu gán **cố định theo hạng**, **không** lấy `Category.color` (nếu không, 2 danh mục cùng màu sẽ không phân biệt được và màu sẽ nhảy khi đổi kỳ).
+- Là **token theme** (không hex cứng trong widget) để đạt tương phản ở dark mode; `copyWith`/`lerp` lerp từng phần tử theo chỉ số (độ dài cố định 6).
+- **Cột biểu đồ dòng tiền + 2 số tổng** thì ngược lại: vẫn dùng token teal/coral sẵn có (đúng nghĩa thu/chi), tô bằng `tealOnNeutral`/`coralOnNeutral`.
+
 ## Giao diện Sáng / Tối / Theo hệ thống — đã triển khai PBI 18
 > Bộ đôi theme qua **`ThemeExtension<SoraColors>`** (không thêm dependency). Nguồn: `.specify/specs/18`, `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §1.2`.
 
@@ -112,6 +119,6 @@ Outline (line) mảnh, độ dày đồng nhất; màu ngữ cảnh (teal hành 
 - Theme/token độc lập layer nghiệp vụ — đọc thêm [[Stack kỹ thuật]].
 
 ## Liên kết
-- [[Ví & Tài khoản]] [[Giao dịch]] [[Danh mục]] [[Ngân sách]] — màn hình cụ thể mỗi module.
+- [[Ví & Tài khoản]] [[Giao dịch]] [[Danh mục]] [[Ngân sách]] [[Báo cáo]] — màn hình cụ thể mỗi module.
 - [[Hồ sơ & Bảo mật]] — màn khóa PIN tách shell, numpad.
 - [[Nguyên tắc nghiệp vụ]] — quy tắc màu thu/chi.

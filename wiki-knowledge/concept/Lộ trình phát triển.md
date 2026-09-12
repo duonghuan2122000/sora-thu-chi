@@ -1,11 +1,13 @@
 ---
 title: "Lộ trình phát triển"
-date: 2026-09-03
+date: 2026-09-12
 tags: [concept, roadmap]
 sources:
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
   - ../docs/budget/nghiep-vu-ngan-sach.md
   - ../docs/transaction/nghiep-vu-thiet-ke-quan-ly-giao-dich.md
+  - ../docs/report/bao-cao-thong-ke-giai-phap.md
+  - ../../.specify/specs/22/spec.md
 ---
 
 # Lộ trình phát triển
@@ -15,7 +17,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 ## Theo giai đoạn
 | Giai đoạn | Tính năng trọng tâm | Phụ thuộc |
 |---|---|---|
-| **MVP** | Khóa app (PIN/sinh trắc), Quản lý ví, Thêm/sửa/xóa giao dịch, Danh mục, Báo cáo cơ bản (pie/bar) | — |
+| **MVP** | Khóa app (PIN/sinh trắc), Quản lý ví, Thêm/sửa/xóa giao dịch, Danh mục, Báo cáo cơ bản (pie/bar) — **màn `01` Tổng quan đã xong (PBI 22)** | — |
 | **GĐ2** | Ngân sách, Giao dịch định kỳ, Nhắc nhở, Xuất báo cáo Excel/PDF | Giao dịch + Danh mục (MVP); Ngân sách cần module Thông báo (cùng GĐ2) |
 | **GĐ3** | Mục tiêu tiết kiệm, Quản lý nợ, **Backup/Restore JSON** | — |
 
@@ -34,6 +36,9 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
   - **2c đóng ở mức tối thiểu** (theo đúng phạm vi đã chốt trong spec): so sánh dự kiến–thực tế + tốc độ tiêu **tính lại từ dữ liệu giao dịch đã có**, **không** cần thêm dữ liệu người dùng nhập, **không** lưu snapshot. Phần **còn lại của 2c** (chưa gắn PBI): **dự báo số tiền tới hết kỳ**, băng **"chi chậm hơn dự kiến"**, ngưỡng cảnh báo tuỳ chỉnh.
   - **Lưu trữ là một chiều và chưa có nơi xem lại** (chốt 2026-09-12): dữ liệu giữ nguyên trong máy để phục vụ báo cáo sau này, nhưng **chưa** có màn/danh sách mở lại, **chưa** có phục hồi; màn `01` giữ nguyên mockup `01`, không thêm nhóm "Đã lưu trữ". Cần một PBI riêng khi muốn dùng lại dữ liệu đã lưu trữ.
   - Còn lại: **2b** (ngân sách tổng, theo ví, cảnh báo push, cộng dồn/sao chép) + phần còn lại của **2c** ở trên.
+- **Báo cáo (MVP) — màn `01` Tổng quan đã triển khai (PBI 22)** — điểm vào: tab **Báo cáo** trên app shell (màn cấp tab, có bottom nav). Có: segmented control **4 kỳ** (Ngày/Tuần/Tháng/Năm, mặc định Tháng), 2 số tổng, **biểu đồ dòng tiền 6 đơn vị** kết thúc ở kỳ đang chọn, **vòng tròn phân bổ** top 5 danh mục cha + "Khác", **top danh mục chi tiêu** (≤5, có thanh tiến độ), **trạng thái rỗng** theo kỳ, và **drill-down**: chạm một danh mục → mở tab Giao dịch đã lọc sẵn (Chi + khoảng kỳ + danh mục cha). **Không schema riêng, không cache** — chỉ đọc `transactions` + `categories` (schema **v7**). Hàng "Ngân sách" giữ **trong** tab Báo cáo, đặt trước các thẻ (chốt 2026-09-12). Chi tiết tại [[Báo cáo]].
+  - Còn lại của module Báo cáo: 3 màn **`02` Chi tiết theo Danh mục**, **`03` So sánh Kỳ**, **`04` Xuất báo cáo (PDF/Excel/CSV)** + **bộ lọc báo cáo nâng cao** (khoảng ngày tuỳ chỉnh — tức **nút biểu tượng lịch** của mockup `01`, hiện **không** hiển thị; lọc theo ví/danh mục/tag; ghi nhớ bộ lọc), biểu đồ **xu hướng (line)** + đường trung bình động, báo cáo dòng tiền theo từng ví, insight tự động, toggle "xem theo danh mục con", "Xem tất cả" trên thẻ top, kéo/vuốt quá 6 đơn vị.
+  - **Chưa quy đổi đa tiền tệ** trên màn báo cáo (cộng theo số tiền ghi trên giao dịch) — chờ quyết định mở về **nguồn tỷ giá offline** (#5 dưới).
 - Mục tiêu tiết kiệm & quản lý nợ (GĐ3): chỉ liệt kê ở doc tính năng tổng, **chưa có đặc tả module riêng** — nguồn thiếu, cần bổ sung khi triển khai.
 
 ## Module & data dependency (từ đặc tả)

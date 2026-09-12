@@ -18,7 +18,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 |---|---|---|
 | `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets` (schema **v7**), `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
-| `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật lần đầu ở PBI 21**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách ([[Ngân sách]]). Còn lại: tab Báo cáo (pie/bar/line) |
+| `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21) và **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22 — [[Báo cáo]]). Còn lại: line chart xu hướng, biểu đồ màn `03` So sánh kỳ |
 | `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
 | `flutter_secure_storage` | Lưu bí mật khóa app + khóa mã hóa (Keychain/Keystore) | Khóa app — PBI 3: key `pin_salt_hash` (hash PIN), key `lock_state` (chống dò JSON) |
 | `crypto` | Băm **SHA-256** (PBI 3, dep mới) | Hash PIN có muối — [[Hồ sơ & Bảo mật]] |
@@ -29,6 +29,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 - **Offline, không API**: tỷ giá quy đổi đa tiền tệ dùng bảng tỷ giá lưu sẵn/nhập tay — **không** real-time API ([[Ví & Tài khoản]]).
 - **Mã hóa local**: SQLite/Hive mã hóa; không lưu số thẻ/ngân hàng thật.
 - **Số liệu tính toán/cache**: `current_balance` ví, `budget_period_snapshots` — drift cache để khỏi tính lại toàn bộ lịch sử mỗi lần mở màn (budget doc §9). Snapshot vẫn **recompute** khi gd trong phạm vi đổi ([[Ngân sách]], [[Nguyên tắc nghiệp vụ]]).
+  - **Thực tế đã đi ngược đề xuất này 2 lần** (PBI 21 và 22): **bỏ** bảng snapshot ngân sách và **bỏ** bảng tổng hợp báo cáo `report_monthly_summary` — mọi số liệu tính lại từ `transactions` khi nạp màn (dữ liệu cá nhân vài nghìn dòng ⇒ dưới ngưỡng 1 giây). Chỉ thêm cache khi **đo** thấy chậm.
 - **Transfer 2 dòng liên kết** bằng `transfer_group_id` → xóa/sửa đồng bộ.
 - Widget "% dùng hạn mức thẻ tín dụng" nên tách widget dùng chung → tái dùng cho thanh tiến độ ngân sách.
 
