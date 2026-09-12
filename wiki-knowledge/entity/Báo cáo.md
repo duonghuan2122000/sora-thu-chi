@@ -10,13 +10,14 @@ sources:
   - ../docs/report/man-hinh-04-xuat-bao-cao.svg
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
   - ../../.specify/specs/22/spec.md
+  - ../../.specify/specs/23/spec.md
 ---
 
 # Báo cáo
 
 Module **thống kê/trực quan hoá** thu chi — biến dữ liệu đã ghi thành cái nhìn tổng thể (tiền vào/ra, phân bổ theo danh mục, xu hướng). Tab **Báo cáo** trên app shell; màn Tổng quan là **cửa vào của cả module** (hiện chứa luôn lối vào [[Ngân sách]]).
 
-**Trạng thái:** **màn `01` Tổng quan — đã triển khai (PBI 22)**. Còn lại của module: Chi tiết theo Danh mục (`02`), So sánh Kỳ (`03`), Xuất báo cáo PDF/Excel/CSV (`04`) — PBI sau. Xem [[Lộ trình phát triển]].
+**Trạng thái:** **màn `01` Tổng quan (PBI 22) + màn `02` Chi tiết theo danh mục (PBI 23) — đã triển khai**. Còn lại của module: So sánh Kỳ (`03`), Xuất báo cáo PDF/Excel/CSV (`04`) — PBI sau. Xem [[Lộ trình phát triển]].
 
 ## Mô hình dữ liệu — KHÔNG có schema riêng
 
@@ -42,6 +43,10 @@ Màn báo cáo **chỉ đọc** bảng `transactions` + `categories` (schema **v
     - không có Thu/Chi nào ⇒ **cả 3 thẻ** "Chưa có giao dịch nào trong kỳ này" + 2 số tổng `0 đ`;
     - **chỉ có Thu** ⇒ biểu đồ **vẫn vẽ đủ 6 đơn vị**, **riêng** thẻ phân bổ + thẻ top "Chưa có chi tiêu nào trong kỳ này".
 11. **Chạm một danh mục → mở tab Giao dịch đã lọc sẵn**: `TxnSearchFilter` (Chi + `dateStart = range.start` + `dateEnd = range.end − 1 ngày` + `categoryIds = {id cha}` + sort ngày mới nhất) rồi `onSelectTab(1)`. Màn Báo cáo **là** tab nên chỉ đổi tab, **không** `popUntil`. Bộ lọc PBI 12 **tự mở rộng cha → con** ⇒ danh sách khớp đúng số trên lát cắt. Nhóm **"Khác"** (`categoryId == null`) **không có đích** ⇒ không chạm được.
+12. **Màn `02` liệt kê ĐẦY ĐỦ danh mục** (khác màn `01` cắt top 5): **mọi** danh mục có chi tiêu đều có dòng + lát riêng, **không** gộp phần ngoài top 5. Hệ quả — dòng **"Khác"** ở màn `02` **chỉ** chứa tiền chi **không gắn danh mục** (`categoryId == null`), **không** nuốt phần ngoài top 5 (khác nghĩa "Khác" ở màn `01`). Cùng một hàm nhóm `_breakdown`, chỉ khác chỗ lấy nhóm.
+13. **Màu định tính gán theo THỨ HẠNG và LẶP CHU KỲ**: `chartPalette[rank % 5]`, "Khác" (`rank == -1`) = `chartPalette[5]`. Từ danh mục thứ 6 trở đi màu **trùng lại** hạng 1 — chấp nhận, phân biệt bằng **tên + thứ tự** (không dùng `Category.color`, không coral). Chấm màu và thanh tiến độ của một dòng lấy từ **cùng một biến `rank`** ⇒ luôn trùng màu lát cắt tương ứng.
+14. **Chip kỳ ở màn `02` là NHÃN TĨNH** — chỉ hiển thị loại kỳ + mốc, **không** bấm được, **không** mũi tên/menu chọn kỳ (khác biệt **cố ý** so với mockup `02`; bộ lọc thời gian nâng cao vẫn ngoài phạm vi). Màn `02` **không** có trạng thái kỳ riêng: luôn kế thừa kỳ đang xem ở màn `01`; back về màn `01` **không** đổi kỳ.
+15. **Trạng thái rỗng của màn `02` là TOÀN MÀN**: `total == 0` ⇒ chỉ thông điệp (`hasAnyTxn` ? "Chưa có chi tiêu nào trong kỳ này" : "Chưa có giao dịch nào trong kỳ này"), **không** vẽ vòng tròn rỗng, **không** tiêu đề nhóm rỗng.
 
 ## Khi nào số liệu được tính lại
 
@@ -62,10 +67,26 @@ Bố cục theo mockup `01`, thứ tự từ trên xuống:
 2. **Hàng điều hướng "Ngân sách"** — giữ nguyên từ PBI 20, đặt **trước** các thẻ số liệu (quyết định đã chốt 2026-09-12: không chuyển sang Cài đặt).
 3. **Thẻ "Dòng tiền 6 \<đơn vị\> gần đây"** — chú giải Thu (chấm teal) / Chi (chấm coral); cột ghép đôi, **chạm một cột hiện số tiền đã định dạng** (tooltip), không điều hướng. Nhãn trục: `dd/MM` (Ngày/Tuần) · `T@{tháng}` (Tháng) · `{năm}` (Năm).
 4. **Thẻ "Phân bổ chi tiêu theo danh mục"** — vòng tròn (donut) màu lấy từ bảng màu **định tính** `SoraColors.chartPalette` (xem [[Design system]]) + nhãn **"Tổng chi" + số tiền phủ giữa vòng tròn** (`fl_chart` không vẽ chữ ở tâm ⇒ phải `Stack`); bên phải là danh sách chú giải (chấm màu, tên, `%`) sắp giảm dần.
-5. **Thẻ "Top danh mục chi tiêu"** — tối đa 5 dòng: bubble icon danh mục + tên + số tiền + **thanh tiến độ** (một màu teal, bề rộng `percent/100`).
+5. **Thẻ "Top danh mục chi tiêu"** — tối đa 5 dòng: bubble icon danh mục + tên + số tiền + **thanh tiến độ** (một màu teal, bề rộng `percent/100`). Hàng tiêu đề có liên kết **"Xem tất cả"** (chỉ hiện khi kỳ có chi tiêu) → mở màn `02`.
 
 - **Kỳ đang chọn sống trong controller singleton** ⇒ rời sang Ngân sách rồi quay lại **vẫn giữ kỳ**.
-- `ValueKey` cho QA/test: `report-period-<day|week|month|year>`, `report-entry-budget`, `report-flow-chart`, `report-donut`, `report-slice-<id|other>`, `report-legend-<id|other>`, `report-top-<id>`.
+- `ValueKey` cho QA/test: `report-period-<day|week|month|year>`, `report-entry-budget`, `report-flow-chart`, `report-donut`, `report-slice-<id|other>`, `report-legend-<id|other>`, `report-top-<id>`, `report-see-all`.
+
+## Màn `02` — Chi tiêu theo danh mục (đã triển khai, PBI 23)
+
+**Màn con đè shell** (`SubPageScaffold`: app bar teal + nút back, **không** bottom nav, **không** FAB) — vào bằng liên kết **"Xem tất cả"** ở thẻ Top màn `01` (1 lần chạm), nên **kỳ luôn kế thừa** màn `01`. Thứ tự trên xuống:
+
+1. **Chip kỳ** — nhãn tĩnh `Ngày 12/09/2026` · `Tuần 07/09–13/09/2026` (năm theo **ngày cuối kỳ**) · `Tháng 9/2026` · `Năm 2026`; ghép danh từ kỳ **đã có bản dịch** với chuỗi ngày không phụ thuộc ngôn ngữ.
+2. **Vòng tròn 200×200** — nhãn giữa = `Tổng chi ngày/tuần/tháng/năm` + tổng chi (`Stack` phủ tâm + `FittedBox` chống tràn số lớn).
+3. **Tiêu đề nhóm `DANH MỤC (n)`** với `n = số dòng` (danh mục + "Khác" nếu có).
+4. **Mỗi dòng**: chấm màu (theo hạng) + tên (cắt ellipsis) + số tiền căn phải + `%` + **thanh tiến độ cùng màu chấm**.
+5. **Dòng gợi ý** cuối danh sách "Chạm vào một danh mục để xem các giao dịch" — chữ tĩnh.
+
+- **Drill-down**: chạm **dòng** hoặc **lát cắt** (cùng hành vi) → đặt `TxnSearchFilter` như màn `01` rồi **`popUntil(isFirst)`** (vì màn `02` là route **đè** shell) **rồi** `onSelectTab(1)`. Dòng "Khác" `onTap: null`.
+- **Không đọc DB**: số liệu dựng lại mỗi lần build từ **bản chụp RAM** của `ReportController` qua `categoryDetail()` (trả `null` khi chưa nạp — màn chỉ mở được từ màn `01` đã có dữ liệu) ⇒ hai màn **không thể lệch số**, không phát sinh phép đọc nào (SC-008 < 1 giây giữ nguyên).
+- **Đứng trong màn `02` thì số liệu KHÔNG tự nhảy** (kế thừa hành vi PBI 22); muốn số mới → quay lại tab Báo cáo (nạp lại) rồi mở lại.
+- **Hàng tỉ / màn nhỏ**: lệch bố cục thì giảm `centerSpaceRadius`/cỡ chữ — điều chỉnh **một chỗ** trong màn `02`.
+- `ValueKey` cho QA/test: `report-detail-chip`, `report-detail-donut`, `report-detail-row-<id|other>`, `report-detail-empty`, `report-see-all` (màn `01`).
 
 ## Giới hạn đã biết (đừng tưởng là bug)
 
@@ -77,7 +98,7 @@ Bố cục theo mockup `01`, thứ tự từ trên xuống:
 
 ## Ngoài phạm vi (đợt này)
 
-Bộ lọc báo cáo nâng cao (khoảng ngày tuỳ chỉnh, theo ví/danh mục/tag, ghi nhớ bộ lọc), biểu đồ xu hướng (line) + đường trung bình động, báo cáo dòng tiền theo từng ví, insight tự động, toggle "xem theo danh mục con", liên kết "Xem tất cả" trên thẻ top, kéo/vuốt biểu đồ quá 6 đơn vị, xuất PDF/Excel/CSV, bảng tổng hợp/cache số liệu.
+Bộ lọc báo cáo nâng cao (khoảng ngày tuỳ chỉnh, theo ví/danh mục/tag, ghi nhớ bộ lọc), biểu đồ xu hướng (line) + đường trung bình động, báo cáo dòng tiền theo từng ví, insight tự động, toggle "xem theo danh mục con", màn So sánh kỳ (`03`) + Xuất báo cáo (`04`), kéo/vuốt biểu đồ quá 6 đơn vị, bảng tổng hợp/cache số liệu.
 
 ## Liên kết
 

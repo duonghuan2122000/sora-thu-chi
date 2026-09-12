@@ -46,6 +46,7 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - Light `[#0F6E56, #3D8C77, #E3B341, #6B7FD7, #B4B2A9, #5F5E5A]` · Dark `[#3FA98A, #4FB694, #E3B341, #8B9DEE, #A8A8A3, #C9C7BE]`. Phần tử **cuối** dành riêng cho nhóm "Khác" (`rank == -1` → chỉ số 5), 5 phần tử đầu theo **thứ hạng** danh mục.
 - Doc §5 chốt bộ màu định tính (teal, teal đậm nhạt, hổ phách, xanh lam nhạt, xám) vì vòng tròn cần nhiều màu phân biệt; **tuyệt đối KHÔNG dùng coral** — coral đã mang nghĩa "chi tiêu/cảnh báo", dùng làm màu trang trí danh mục sẽ phá quy tắc.
 - Màu gán **cố định theo hạng**, **không** lấy `Category.color` (nếu không, 2 danh mục cùng màu sẽ không phân biệt được và màu sẽ nhảy khi đổi kỳ).
+- **Màn `02` Chi tiết theo danh mục (PBI 23) dùng CÙNG bảng màu nhưng lặp chu kỳ**: `chartPalette[rank % 5]` ⇒ danh mục thứ 6 trở đi **trùng màu** hạng 2, 3… (chốt 2026-09-12 — bảng màu vẫn 6 phần tử, **không** thêm màu mới, **không** coral); "Khác" vẫn là `chartPalette[5]`. Phân biệt các hạng trùng màu bằng **tên + thứ tự**. Chấm màu và thanh tiến độ của một dòng lấy từ **một** biến `rank` ⇒ luôn trùng màu lát cắt.
 - Là **token theme** (không hex cứng trong widget) để đạt tương phản ở dark mode; `copyWith`/`lerp` lerp từng phần tử theo chỉ số (độ dài cố định 6).
 - **Cột biểu đồ dòng tiền + 2 số tổng** thì ngược lại: vẫn dùng token teal/coral sẵn có (đúng nghĩa thu/chi), tô bằng `tealOnNeutral`/`coralOnNeutral`.
 
