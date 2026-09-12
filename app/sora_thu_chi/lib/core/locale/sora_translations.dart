@@ -383,6 +383,48 @@ class SoraTranslations extends Translations {
         'Could not save the budget. Please try again.',
 
     // ---------------------------------------------------------------------
+    // Ngân sách (PBI 21) — màn Chi tiết `03`
+    // ---------------------------------------------------------------------
+    'Ngân sách tháng • @kỳ': 'Monthly budget • @kỳ',
+    'Ngân sách tuần • @kỳ': 'Weekly budget • @kỳ',
+    'Ngân sách năm • @kỳ': 'Yearly budget • @kỳ',
+    'Tuần @từ – @đến': '@từ – @đến',
+    '@tháng, @năm': '@tháng/@năm',
+    'Năm @năm': '@năm',
+    'Đã dùng': 'Used',
+    'Trạng thái': 'Status',
+    'trên @số đ giới hạn': 'of @số đ limit',
+    'Bình thường @p%': 'Normal @p%',
+    'Sắp đạt @p%': 'Almost @p%',
+    'Vượt @p%': 'Over @p%',
+    'Vượt @số đ': 'Over @số đ',
+    'Tốc độ chi tiêu nhanh hơn dự kiến': 'Spending faster than planned',
+    'Đã dùng @p% ngày nhưng chi @q% ngân sách':
+        '@p% of days passed but @q% of budget spent',
+    'GIAO DỊCH TRONG KỲ': 'TRANSACTIONS IN PERIOD',
+    'Xem tất cả': 'See all',
+    'Chưa có giao dịch Chi nào trong kỳ.': 'No expenses in this period.',
+    'Chi tiêu thuộc danh mục này sẽ hiện tại đây.':
+        'Spending in this category will show up here.',
+    'Danh mục của ngân sách đã bị xóa.': "This budget's category was deleted.",
+    'Chạm "Chỉnh sửa" để gán lại danh mục khác.':
+        'Tap "Edit" to assign another category.',
+    'Chọn kỳ': 'Select period',
+    'Chỉnh sửa': 'Edit',
+    'Lưu trữ ngân sách': 'Archive budget',
+    'Lưu trữ ngân sách?': 'Archive this budget?',
+    'Ngân sách sẽ ngừng theo dõi. Các giao dịch đã ghi vẫn còn nguyên.':
+        'The budget stops being tracked. Recorded transactions stay untouched.',
+    'Lưu trữ': 'Archive',
+    'SO SÁNH DỰ KIẾN • THỰC TẾ': 'PLANNED • ACTUAL',
+    'Dự kiến': 'Planned',
+    'Thực tế': 'Actual',
+    'Dự kiến @số đ': 'Planned @số đ',
+    'T@tháng': 'M@tháng',
+    '@ngày/@tháng': '@ngày/@tháng',
+    '@năm': '@năm',
+
+    // ---------------------------------------------------------------------
     // Bảo mật PIN & khung Tổng quan/Báo cáo
     // ---------------------------------------------------------------------
     'Nhập lại mã PIN': 'Re-enter PIN',

@@ -142,6 +142,65 @@ void main() {
     });
   });
 
+  group('budgetPeriodTransactions — danh sách Chi trong kỳ (PBI 21, FR-011)', () {
+    final range = DateRange(
+      start: DateTime(2026, 9, 1),
+      end: DateTime(2026, 10, 1),
+    );
+
+    test('chỉ Chi, gồm danh mục con, đúng khoảng [start, end), mới nhất trước',
+        () {
+      final txs = [
+        _expense(1, 100000, DateTime(2026, 9, 5, 9)),
+        _expense(13, 50000, DateTime(2026, 9, 20, 18, 30)), // con của 1 — mới nhất
+        _income(1, 900000, DateTime(2026, 9, 6)),
+        Transaction(
+          id: 901,
+          walletId: 1,
+          type: TxnType.transfer,
+          amount: -400000,
+          date: DateTime(2026, 9, 7),
+          categoryId: 1,
+        ),
+        _expense(2, 70000, DateTime(2026, 9, 8)), // danh mục khác
+        _expense(1, 300000, DateTime(2026, 9, 1)), // đúng start → có
+        _expense(1, 300000, DateTime(2026, 10, 1)), // đúng end → không (nửa mở)
+      ];
+      final list = budgetPeriodTransactions(
+        categoryIds: budgetScopeCategoryIds(1, categories),
+        transactions: txs,
+        range: range,
+      );
+
+      expect(list.map((t) => t.date).toList(), [
+        DateTime(2026, 9, 20, 18, 30),
+        DateTime(2026, 9, 5, 9),
+        DateTime(2026, 9, 1),
+      ]);
+      expect(list.map((t) => -t.amount).reduce((a, b) => a + b), 450000);
+    });
+
+    test('budgetSpent khớp đúng tổng danh sách (SC-005 — một phép lọc)', () {
+      final txs = [
+        _expense(1, 100000, DateTime(2026, 9, 5)),
+        _expense(13, 50000, DateTime(2026, 9, 20)),
+        _expense(14, 25000, DateTime(2026, 9, 21)),
+        _income(1, 900000, DateTime(2026, 9, 6)),
+      ];
+      final ids = budgetScopeCategoryIds(1, categories);
+      final list = budgetPeriodTransactions(
+        categoryIds: ids,
+        transactions: txs,
+        range: range,
+      );
+      expect(
+        budgetSpent(categoryIds: ids, transactions: txs, range: range),
+        list.fold<int>(0, (sum, t) => sum - t.amount),
+      );
+      expect(list.length, 3);
+    });
+  });
+
   group('budgetProgressLevel — 3 dải màu (FR-005)', () {
     test('45/84/96/107 rơi đúng dải', () {
       expect(budgetProgressLevel(45), ProgressLevel.normal);
@@ -331,6 +390,35 @@ void main() {
       );
       expect(view.rows.single.spent, 450000);
       expect(view.rows.single.percent, 15);
+    });
+
+    test('ngân sách đã lưu trữ bị loại khỏi danh sách VÀ thẻ tổng (FR-016)',
+        () {
+      final view = buildBudgetOverview(
+        budgets: [
+          _budget(id: 1, categoryId: 1, amount: 3000000, startDate: DateTime(2026, 9, 1)),
+          Budget(
+            id: 2,
+            categoryId: 5,
+            amount: 2000000,
+            period: BudgetPeriod.monthly,
+            isRecurring: true,
+            startDate: DateTime(2026, 9, 1),
+            isArchived: true,
+          ),
+        ],
+        transactions: [
+          _expense(1, 600000, DateTime(2026, 9, 4)),
+          _expense(5, 1900000, DateTime(2026, 9, 4)),
+        ],
+        categories: categories,
+        now: now,
+        viewedMonth: viewedMonth,
+      );
+
+      expect(view.rows.map((r) => r.budget.id).toList(), [1]);
+      expect(view.totalLimit, 3000000);
+      expect(view.totalSpent, 600000);
     });
 
     test('không có ngân sách → rỗng', () {

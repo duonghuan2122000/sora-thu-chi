@@ -50,20 +50,41 @@ Set<int> budgetScopeCategoryIds(int categoryId, List<Category> categories) {
   return ids;
 }
 
+/// Giao dịch **Chi** thuộc [categoryIds] và có `date` trong [range], sắp
+/// **mới nhất trước** (FR-011/FR-012) — Thu/chuyển khoản bị loại hoàn toàn.
+/// Một phép lọc duy nhất dùng chung cho "đã chi" ([budgetSpent]) và danh sách
+/// giao dịch trong kỳ của màn Chi tiết ⇒ tổng hai nơi không thể lệch (SC-005).
+List<Transaction> budgetPeriodTransactions({
+  required Set<int> categoryIds,
+  required List<Transaction> transactions,
+  required DateRange range,
+}) {
+  final matched = <Transaction>[];
+  for (final t in transactions) {
+    if (t.type != TxnType.expense) continue;
+    final id = t.categoryId;
+    if (id == null || !categoryIds.contains(id)) continue;
+    if (!range.contains(t.date)) continue;
+    matched.add(t);
+  }
+  return sortNewestFirst(matched);
+}
+
 /// "Đã chi" của một ngân sách (FR-006): tổng `-amount` các giao dịch
 /// **Chi** thuộc [categoryIds] và có `date` trong [range] — Thu/chuyển khoản
-/// bị loại hoàn toàn (`amount` trong DB có dấu, chi = âm).
+/// bị loại hoàn toàn (`amount` trong DB có dấu, chi = âm). Cộng lại chính danh
+/// sách của [budgetPeriodTransactions] (research R11).
 int budgetSpent({
   required Set<int> categoryIds,
   required List<Transaction> transactions,
   required DateRange range,
 }) {
   var spent = 0;
-  for (final t in transactions) {
-    if (t.type != TxnType.expense) continue;
-    final id = t.categoryId;
-    if (id == null || !categoryIds.contains(id)) continue;
-    if (!range.contains(t.date)) continue;
+  for (final t in budgetPeriodTransactions(
+    categoryIds: categoryIds,
+    transactions: transactions,
+    range: range,
+  )) {
     spent += -t.amount;
   }
   return spent;
@@ -153,6 +174,9 @@ BudgetOverview buildBudgetOverview({
   final rows = <BudgetRow>[];
 
   for (final budget in budgets) {
+    // Ngân sách đã lưu trữ không còn theo dõi: ra khỏi cả danh sách lẫn thẻ
+    // tổng (FR-016, data-model luật 9). `budgets()` vẫn trả chúng.
+    if (budget.isArchived) continue;
     final category = categoryById[budget.categoryId];
     final startRange = budgetPeriodRange(budget.period, budget.startDate);
     final running = budget.isRecurring || startRange.contains(now);

@@ -111,6 +111,8 @@ class Budgets extends Table {
   TextColumn get period => textEnum<BudgetPeriod>()();
   BoolColumn get isRecurring => boolean().withDefault(const Constant(true))();
   DateTimeColumn get startDate => dateTime()();
+  // PBI 21 (schema v7): ngừng theo dõi mà không mất dữ liệu giao dịch.
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 }
 
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
@@ -127,7 +129,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -173,6 +175,11 @@ class AppDatabase extends _$AppDatabase {
       // bảng (6 cột, không seed); không đụng các bảng hiện có.
       if (from < 6) {
         await m.createTable(budgets);
+      }
+      // from < 7 (PBI 21): bảng budgets đã có (nhánh trên tạo mới cho DB cũ hơn
+      // kèm sẵn cột) → chỉ thêm cột is_archived, default false cho mọi dòng cũ.
+      if (from >= 6 && from < 7) {
+        await m.addColumn(budgets, budgets.isArchived);
       }
     },
   );

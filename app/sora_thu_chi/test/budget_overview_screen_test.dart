@@ -271,15 +271,17 @@ void main() {
       expect(find.byType(BudgetOverviewScreen), findsOneWidget);
     });
 
-    testWidgets('chạm dòng ngân sách → mở màn Sửa điền sẵn (FR-017)',
+    testWidgets('chạm dòng ngân sách → mở màn Chi tiết Ngân sách (FR-001)',
         (tester) async {
       await _openScreen(tester, _seededRepo());
 
       await tester.tap(find.byKey(const ValueKey('budget-row-1')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Sửa ngân sách'), findsOneWidget);
-      expect(find.text('3.000.000'), findsOneWidget);
+      // Màn Chi tiết (mockup 03) — không còn mở thẳng form Sửa như PBI 20.
+      expect(find.text('Sửa ngân sách'), findsNothing);
+      expect(find.text('Đã dùng'), findsOneWidget);
+      expect(find.text('GIAO DỊCH TRONG KỲ'), findsOneWidget);
     });
   });
 

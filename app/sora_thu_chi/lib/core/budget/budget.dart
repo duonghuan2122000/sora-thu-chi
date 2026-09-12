@@ -24,6 +24,7 @@ class Budget {
     required this.period,
     required this.isRecurring,
     required this.startDate,
+    this.isArchived = false,
   });
 
   /// id thật trong DB; 0 = chưa lưu (repository sinh id khi insert).
@@ -42,4 +43,25 @@ class Budget {
 
   /// Ngày bắt đầu áp dụng (tạo mới = hôm nay).
   final DateTime startDate;
+
+  /// Đã **lưu trữ** (PBI 21): ngừng theo dõi, **không** xóa giao dịch nào.
+  /// Màn Tổng quan bỏ qua dòng này; một chiều, chưa có phục hồi (ngoài phạm vi).
+  final bool isArchived;
+
+  Budget copyWith({
+    int? categoryId,
+    int? amount,
+    BudgetPeriod? period,
+    bool? isRecurring,
+    DateTime? startDate,
+    bool? isArchived,
+  }) => Budget(
+    id: id,
+    categoryId: categoryId ?? this.categoryId,
+    amount: amount ?? this.amount,
+    period: period ?? this.period,
+    isRecurring: isRecurring ?? this.isRecurring,
+    startDate: startDate ?? this.startDate,
+    isArchived: isArchived ?? this.isArchived,
+  );
 }

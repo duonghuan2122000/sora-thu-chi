@@ -293,6 +293,7 @@ class DriftWalletRepository implements WalletRepository {
         period: budget.period,
         isRecurring: Value(budget.isRecurring),
         startDate: budget.startDate,
+        isArchived: Value(budget.isArchived),
       ),
     );
     final row = await (_db.select(_db.budgets)..where((t) => t.id.equals(id)))
@@ -302,7 +303,7 @@ class DriftWalletRepository implements WalletRepository {
 
   @override
   Future<Budget> updateBudget(Budget budget) async {
-    // Ghi đủ 6 cột nghiệp vụ của dòng đang sửa (không có cột nào giữ nguyên ngầm).
+    // Ghi đủ 7 cột nghiệp vụ của dòng đang sửa (không có cột nào giữ nguyên ngầm).
     await (_db.update(_db.budgets)..where((t) => t.id.equals(budget.id))).write(
       BudgetsCompanion(
         categoryId: Value(budget.categoryId),
@@ -310,6 +311,7 @@ class DriftWalletRepository implements WalletRepository {
         period: Value(budget.period),
         isRecurring: Value(budget.isRecurring),
         startDate: Value(budget.startDate),
+        isArchived: Value(budget.isArchived),
       ),
     );
     final row = await (_db.select(_db.budgets)
@@ -325,6 +327,7 @@ class DriftWalletRepository implements WalletRepository {
     period: r.period,
     isRecurring: r.isRecurring,
     startDate: r.startDate,
+    isArchived: r.isArchived,
   );
 
   Category _toCategory(CategoryRow r) => Category(

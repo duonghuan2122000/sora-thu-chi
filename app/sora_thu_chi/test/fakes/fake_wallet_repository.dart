@@ -286,6 +286,7 @@ class FakeWalletRepository implements WalletRepository {
       period: budget.period,
       isRecurring: budget.isRecurring,
       startDate: budget.startDate,
+      isArchived: budget.isArchived,
     );
     _budgets.add(created);
     return created;

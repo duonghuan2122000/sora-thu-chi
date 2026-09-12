@@ -2612,6 +2612,21 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, BudgetsRow> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2620,6 +2635,7 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, BudgetsRow> {
     period,
     isRecurring,
     startDate,
+    isArchived,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2669,6 +2685,12 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, BudgetsRow> {
     } else if (isInserting) {
       context.missing(_startDateMeta);
     }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
     return context;
   }
 
@@ -2704,6 +2726,10 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, BudgetsRow> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}start_date'],
       )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
     );
   }
 
@@ -2723,6 +2749,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
   final BudgetPeriod period;
   final bool isRecurring;
   final DateTime startDate;
+  final bool isArchived;
   const BudgetsRow({
     required this.id,
     required this.categoryId,
@@ -2730,6 +2757,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
     required this.period,
     required this.isRecurring,
     required this.startDate,
+    required this.isArchived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2744,6 +2772,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
     }
     map['is_recurring'] = Variable<bool>(isRecurring);
     map['start_date'] = Variable<DateTime>(startDate);
+    map['is_archived'] = Variable<bool>(isArchived);
     return map;
   }
 
@@ -2755,6 +2784,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
       period: Value(period),
       isRecurring: Value(isRecurring),
       startDate: Value(startDate),
+      isArchived: Value(isArchived),
     );
   }
 
@@ -2772,6 +2802,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
       ),
       isRecurring: serializer.fromJson<bool>(json['isRecurring']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
     );
   }
   @override
@@ -2786,6 +2817,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
       ),
       'isRecurring': serializer.toJson<bool>(isRecurring),
       'startDate': serializer.toJson<DateTime>(startDate),
+      'isArchived': serializer.toJson<bool>(isArchived),
     };
   }
 
@@ -2796,6 +2828,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
     BudgetPeriod? period,
     bool? isRecurring,
     DateTime? startDate,
+    bool? isArchived,
   }) => BudgetsRow(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
@@ -2803,6 +2836,7 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
     period: period ?? this.period,
     isRecurring: isRecurring ?? this.isRecurring,
     startDate: startDate ?? this.startDate,
+    isArchived: isArchived ?? this.isArchived,
   );
   BudgetsRow copyWithCompanion(BudgetsCompanion data) {
     return BudgetsRow(
@@ -2816,6 +2850,9 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
           ? data.isRecurring.value
           : this.isRecurring,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
     );
   }
 
@@ -2827,14 +2864,22 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
           ..write('amount: $amount, ')
           ..write('period: $period, ')
           ..write('isRecurring: $isRecurring, ')
-          ..write('startDate: $startDate')
+          ..write('startDate: $startDate, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, categoryId, amount, period, isRecurring, startDate);
+  int get hashCode => Object.hash(
+    id,
+    categoryId,
+    amount,
+    period,
+    isRecurring,
+    startDate,
+    isArchived,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2844,7 +2889,8 @@ class BudgetsRow extends DataClass implements Insertable<BudgetsRow> {
           other.amount == this.amount &&
           other.period == this.period &&
           other.isRecurring == this.isRecurring &&
-          other.startDate == this.startDate);
+          other.startDate == this.startDate &&
+          other.isArchived == this.isArchived);
 }
 
 class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
@@ -2854,6 +2900,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
   final Value<BudgetPeriod> period;
   final Value<bool> isRecurring;
   final Value<DateTime> startDate;
+  final Value<bool> isArchived;
   const BudgetsCompanion({
     this.id = const Value.absent(),
     this.categoryId = const Value.absent(),
@@ -2861,6 +2908,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
     this.period = const Value.absent(),
     this.isRecurring = const Value.absent(),
     this.startDate = const Value.absent(),
+    this.isArchived = const Value.absent(),
   });
   BudgetsCompanion.insert({
     this.id = const Value.absent(),
@@ -2869,6 +2917,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
     required BudgetPeriod period,
     this.isRecurring = const Value.absent(),
     required DateTime startDate,
+    this.isArchived = const Value.absent(),
   }) : categoryId = Value(categoryId),
        amount = Value(amount),
        period = Value(period),
@@ -2880,6 +2929,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
     Expression<String>? period,
     Expression<bool>? isRecurring,
     Expression<DateTime>? startDate,
+    Expression<bool>? isArchived,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2888,6 +2938,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
       if (period != null) 'period': period,
       if (isRecurring != null) 'is_recurring': isRecurring,
       if (startDate != null) 'start_date': startDate,
+      if (isArchived != null) 'is_archived': isArchived,
     });
   }
 
@@ -2898,6 +2949,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
     Value<BudgetPeriod>? period,
     Value<bool>? isRecurring,
     Value<DateTime>? startDate,
+    Value<bool>? isArchived,
   }) {
     return BudgetsCompanion(
       id: id ?? this.id,
@@ -2906,6 +2958,7 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
       period: period ?? this.period,
       isRecurring: isRecurring ?? this.isRecurring,
       startDate: startDate ?? this.startDate,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 
@@ -2932,6 +2985,9 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     return map;
   }
 
@@ -2943,7 +2999,8 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
           ..write('amount: $amount, ')
           ..write('period: $period, ')
           ..write('isRecurring: $isRecurring, ')
-          ..write('startDate: $startDate')
+          ..write('startDate: $startDate, ')
+          ..write('isArchived: $isArchived')
           ..write(')'))
         .toString();
   }
@@ -4242,6 +4299,7 @@ typedef $$BudgetsTableCreateCompanionBuilder =
       required BudgetPeriod period,
       Value<bool> isRecurring,
       required DateTime startDate,
+      Value<bool> isArchived,
     });
 typedef $$BudgetsTableUpdateCompanionBuilder =
     BudgetsCompanion Function({
@@ -4251,6 +4309,7 @@ typedef $$BudgetsTableUpdateCompanionBuilder =
       Value<BudgetPeriod> period,
       Value<bool> isRecurring,
       Value<DateTime> startDate,
+      Value<bool> isArchived,
     });
 
 class $$BudgetsTableFilterComposer
@@ -4290,6 +4349,11 @@ class $$BudgetsTableFilterComposer
 
   ColumnFilters<DateTime> get startDate => $composableBuilder(
     column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4332,6 +4396,11 @@ class $$BudgetsTableOrderingComposer
     column: $table.startDate,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BudgetsTableAnnotationComposer
@@ -4364,6 +4433,11 @@ class $$BudgetsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get startDate =>
       $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
 }
 
 class $$BudgetsTableTableManager
@@ -4403,6 +4477,7 @@ class $$BudgetsTableTableManager
                 Value<BudgetPeriod> period = const Value.absent(),
                 Value<bool> isRecurring = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
               }) => BudgetsCompanion(
                 id: id,
                 categoryId: categoryId,
@@ -4410,6 +4485,7 @@ class $$BudgetsTableTableManager
                 period: period,
                 isRecurring: isRecurring,
                 startDate: startDate,
+                isArchived: isArchived,
               ),
           createCompanionCallback:
               ({
@@ -4419,6 +4495,7 @@ class $$BudgetsTableTableManager
                 required BudgetPeriod period,
                 Value<bool> isRecurring = const Value.absent(),
                 required DateTime startDate,
+                Value<bool> isArchived = const Value.absent(),
               }) => BudgetsCompanion.insert(
                 id: id,
                 categoryId: categoryId,
@@ -4426,6 +4503,7 @@ class $$BudgetsTableTableManager
                 period: period,
                 isRecurring: isRecurring,
                 startDate: startDate,
+                isArchived: isArchived,
               ),
           withReferenceMapper: (p0) => p0
               .map(

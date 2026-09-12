@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -20,6 +21,127 @@ Future<AppDatabase?> _tryMemoryDb() async {
 }
 
 void main() {
+  group('Budgets drift — lưu trữ (schema v7, PBI 21)', () {
+    test('insert mặc định is_archived = false', () async {
+      final db = await _tryMemoryDb();
+      if (db == null) {
+        markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
+        return;
+      }
+      addTearDown(db.close);
+      final repo = DriftWalletRepository(db);
+
+      final saved = await repo.insertBudget(
+        Budget(
+          id: 0,
+          categoryId: 1,
+          amount: 3000000,
+          period: BudgetPeriod.monthly,
+          isRecurring: true,
+          startDate: DateTime(2026, 9, 1),
+        ),
+      );
+      expect(saved.isArchived, isFalse);
+
+      final raw = await db
+          .customSelect('SELECT is_archived FROM budgets')
+          .get();
+      expect(raw.single.read<bool>('is_archived'), isFalse);
+    });
+
+    test('updateBudget ghi isArchived = true rồi đọc lại; budgets() vẫn trả',
+        () async {
+      final db = await _tryMemoryDb();
+      if (db == null) {
+        markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
+        return;
+      }
+      addTearDown(db.close);
+      final repo = DriftWalletRepository(db);
+
+      final saved = await repo.insertBudget(
+        Budget(
+          id: 0,
+          categoryId: 1,
+          amount: 3000000,
+          period: BudgetPeriod.monthly,
+          isRecurring: true,
+          startDate: DateTime(2026, 9, 1),
+        ),
+      );
+      await repo.updateBudget(saved.copyWith(isArchived: true));
+
+      final all = await repo.budgets();
+      // Lọc archived thuộc tầng view — repository không lọc (data-model §Hợp đồng).
+      expect(all, hasLength(1));
+      expect(all.single.isArchived, isTrue);
+      expect(all.single.amount, 3000000);
+    });
+  });
+
+  group('Budgets drift — migration v6 → v7', () {
+    test('DB v6 thiếu cột is_archived → mở lại có cột, dữ liệu cũ nguyên vẹn',
+        () async {
+      final probe = await _tryMemoryDb();
+      if (probe == null) {
+        markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
+        return;
+      }
+      await probe.close();
+
+      final dir = await Directory.systemTemp.createTemp('sora_dao_v6');
+      addTearDown(() async {
+        try {
+          await dir.delete(recursive: true);
+        } catch (_) {}
+      });
+      final file = File(p.join(dir.path, 'v6.sqlite'));
+
+      // (1) Mở lần đầu (v7) rồi giả lập DB cũ v6: thay bảng budgets bằng hình
+      //     dạng v6 (chưa is_archived) + 1 dòng cũ, hạ user_version = 6.
+      final first = AppDatabase(NativeDatabase.createInBackground(file));
+      await first.customSelect('SELECT 1').get();
+      await first.customStatement('DROP TABLE budgets');
+      await first.customStatement(
+        'CREATE TABLE budgets ('
+        'id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
+        'category_id INTEGER NOT NULL, '
+        'amount INTEGER NOT NULL, '
+        'period TEXT NOT NULL, '
+        'is_recurring INTEGER NOT NULL DEFAULT 1, '
+        'start_date INTEGER NOT NULL)',
+      );
+      await first.customInsert(
+        'INSERT INTO budgets (category_id, amount, period, is_recurring, '
+        'start_date) VALUES (?, ?, ?, ?, ?)',
+        variables: [
+          Variable(1),
+          Variable(3000000),
+          Variable('monthly'),
+          Variable(1),
+          Variable(1788220800),
+        ],
+      );
+      await first.customStatement('PRAGMA user_version = 6');
+      await first.close();
+
+      // (2) Mở lại → onUpgrade 6→7 addColumn is_archived default false; ngân
+      //     sách cũ giữ nguyên số tiền, ví/giao dịch seed còn nguyên.
+      final db = AppDatabase(NativeDatabase.createInBackground(file));
+      addTearDown(db.close);
+      final repo = DriftWalletRepository(db);
+
+      final all = await repo.budgets();
+      expect(all, hasLength(1));
+      expect(all.single.amount, 3000000);
+      expect(all.single.categoryId, 1);
+      expect(all.single.period, BudgetPeriod.monthly);
+      expect(all.single.isArchived, isFalse);
+      expect((await repo.loadAll()).length, 5);
+      expect((await repo.allTransactions()).length, 11);
+    });
+  });
+
   group('Budgets drift — schema v6 (PBI 20)', () {
     test('bảng budgets rỗng sau khi tạo mới (không seed)', () async {
       final db = await _tryMemoryDb();

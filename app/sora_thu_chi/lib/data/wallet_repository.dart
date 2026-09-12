@@ -95,16 +95,18 @@ abstract class WalletRepository {
     String note = '',
   });
 
-  /// Toàn bộ ngân sách của thiết bị (PBI 20) — **không lọc** theo kỳ/danh mục;
-  /// màn Tổng quan tự suy "đã chi"/trạng thái (module `core/budget`).
+  /// Toàn bộ ngân sách của thiết bị (PBI 20) — **không lọc** theo kỳ/danh mục
+  /// **và không lọc ngân sách đã lưu trữ** (PBI 21): tầng view tự bỏ qua dòng
+  /// `isArchived` (màn Tổng quan, `buildBudgetOverview`).
   Future<List<Budget>> budgets();
 
-  /// Ghi một ngân sách **mới** — bỏ qua `budget.id` (DB sinh), ghi đủ 6 cột.
+  /// Ghi một ngân sách **mới** — bỏ qua `budget.id` (DB sinh), ghi đủ 7 cột.
   /// Trả [Budget] đã lưu. Repository **không** tự validate chồng lấn — luật
   /// thuộc `budget_rules` + UI (bám nếp `insertCategory`).
   Future<Budget> insertBudget(Budget budget);
 
-  /// Ghi đủ 6 cột của dòng `id == budget.id` — dùng cả khi sửa danh mục/số
-  /// tiền/chu kỳ lẫn khi bật-tắt lặp lại. Trả [Budget] đã lưu.
+  /// Ghi đủ 7 cột của dòng `id == budget.id` — dùng cả khi sửa danh mục/số
+  /// tiền/chu kỳ, khi bật-tắt lặp lại lẫn khi **lưu trữ** (`isArchived = true`).
+  /// Trả [Budget] đã lưu.
   Future<Budget> updateBudget(Budget budget);
 }

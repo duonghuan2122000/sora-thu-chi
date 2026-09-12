@@ -15,6 +15,7 @@ import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 import 'add_transaction_screen.dart';
+import 'budget_detail_screen.dart';
 import 'budget_form_screen.dart';
 
 /// Màn Tổng quan Ngân sách (mockup `01`, PBI 20) — màn **cấp tab** đẩy từ tab
@@ -137,6 +138,23 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
     await _reloadSilent();
   }
 
+  /// Chạm dòng ngân sách → màn **Chi tiết Ngân sách** (FR-001, research R1).
+  /// Quay về nạp lại im lặng: trong đó có thể vừa sửa giới hạn hoặc vừa lưu trữ.
+  Future<void> _openDetail(Budget budget) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => BudgetDetailScreen(
+          budgetId: budget.id,
+          repository: _repository,
+          now: _now,
+          onSelectTab: widget.onSelectTab,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    await _reloadSilent();
+  }
+
   /// FAB của shell trên màn này: ghi giao dịch rồi quay lại ⇒ phải nạp lại để
   /// "đã chi" khớp (SC-009).
   Future<void> _openAddTransaction() async {
@@ -237,7 +255,7 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
           ),
         ),
         for (final row in view.rows) ...[
-          _BudgetRowTile(row: row, onTap: () => _openForm(budget: row.budget)),
+          _BudgetRowTile(row: row, onTap: () => _openDetail(row.budget)),
           Divider(color: colors.listDivider, height: 1),
         ],
       ],
