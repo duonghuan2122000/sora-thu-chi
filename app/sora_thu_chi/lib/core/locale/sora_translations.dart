@@ -425,6 +425,22 @@ class SoraTranslations extends Translations {
     '@năm': '@năm',
 
     // ---------------------------------------------------------------------
+    // Báo cáo (PBI 22) — màn Tổng quan `01`
+    // ---------------------------------------------------------------------
+    'Ngày': 'Day',
+    'Tổng thu': 'Total income',
+    'Tổng chi': 'Total expense',
+    'Dòng tiền 6 ngày gần đây': 'Cash flow, last 6 days',
+    'Dòng tiền 6 tuần gần đây': 'Cash flow, last 6 weeks',
+    'Dòng tiền 6 tháng gần đây': 'Cash flow, last 6 months',
+    'Dòng tiền 6 năm gần đây': 'Cash flow, last 6 years',
+    'Phân bổ chi tiêu theo danh mục': 'Spending by category',
+    'Top danh mục chi tiêu': 'Top spending categories',
+    'Chưa có giao dịch nào trong kỳ này': 'No transactions in this period',
+    'Chưa có chi tiêu nào trong kỳ này': 'No spending in this period',
+    'Không đọc được dữ liệu báo cáo.': 'Could not read report data.',
+
+    // ---------------------------------------------------------------------
     // Bảo mật PIN & khung Tổng quan/Báo cáo
     // ---------------------------------------------------------------------
     'Nhập lại mã PIN': 'Re-enter PIN',

@@ -5,6 +5,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/transaction_screen.dart';
+import '../data/report_deps.dart';
 import '../data/transaction_deps.dart';
 import 'widgets/add_transaction_fab.dart';
 import 'widgets/app_bottom_nav_bar.dart';
@@ -39,6 +40,11 @@ class _AppShellState extends State<AppShell> {
     if (index == 1) {
       ensureTransactionController().load();
     }
+    // Tab Báo cáo cũng build sẵn offstage từ boot — nạp lại mỗi lần mở để số
+    // liệu phản ánh dữ liệu mới (FR-016/kịch bản 12).
+    if (index == 2) {
+      ensureReportController().load();
+    }
   }
 
   Future<void> _openAddTransaction(BuildContext context) async {
@@ -49,6 +55,11 @@ class _AppShellState extends State<AppShell> {
     // làm mới ngay danh sách + card "Thu/Chi tháng này" (FR-013/SC-006, R10).
     if (saved == true && mounted) {
       ensureTransactionController().load();
+      // FAB hiện trên mọi tab: đứng ở tab Báo cáo mà ghi giao dịch thì số liệu
+      // phải mới ngay trước mắt, không chờ lần chọn tab sau (R11/SC-008).
+      if (_selectedIndex == 2) {
+        ensureReportController().load();
+      }
     }
   }
 

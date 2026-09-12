@@ -24,6 +24,7 @@ class SoraColors extends ThemeExtension<SoraColors> {
     required this.tealLightText,
     required this.tealOnNeutral,
     required this.coralOnNeutral,
+    required this.chartPalette,
   });
 
   /// Nền màn / bottom nav / thân — thay `AppColors.white` khi dùng làm **nền**.
@@ -73,6 +74,11 @@ class SoraColors extends ThemeExtension<SoraColors> {
   /// ngữ cảnh chữ/icon. Sáng hơn ở theme tối (FR-009).
   final Color coralOnNeutral;
 
+  /// Bảng màu **định tính** cho vòng tròn phân bổ chi tiêu (PBI 22): 5 màu theo
+  /// hạng 0…4 + màu thứ 6 cho nhóm "Khác". Cố định theo **thứ hạng**, không lấy
+  /// `Category.color`; **không** dùng coral (coral chỉ dành cho chi tiêu/cảnh báo).
+  final List<Color> chartPalette;
+
   static const SoraColors light = SoraColors(
     background: Color(0xFFFFFFFF),
     surface: Color(0xFFFFFFFF),
@@ -89,6 +95,14 @@ class SoraColors extends ThemeExtension<SoraColors> {
     tealLightText: Color(0xFFCDE9DF),
     tealOnNeutral: Color(0xFF0F6E56),
     coralOnNeutral: Color(0xFFD85A30),
+    chartPalette: [
+      Color(0xFF0F6E56),
+      Color(0xFF3D8C77),
+      Color(0xFFE3B341),
+      Color(0xFF6B7FD7),
+      Color(0xFFB4B2A9),
+      Color(0xFF5F5E5A),
+    ],
   );
 
   static const SoraColors dark = SoraColors(
@@ -107,6 +121,14 @@ class SoraColors extends ThemeExtension<SoraColors> {
     tealLightText: Color(0xFFCDE9DF),
     tealOnNeutral: Color(0xFF3FA98A),
     coralOnNeutral: Color(0xFFE8734C),
+    chartPalette: [
+      Color(0xFF3FA98A),
+      Color(0xFF4FB694),
+      Color(0xFFE3B341),
+      Color(0xFF8B9DEE),
+      Color(0xFFA8A8A3),
+      Color(0xFFC9C7BE),
+    ],
   );
 
   /// Token theo theme hiện hành; theme chưa đăng ký extension → [light]
@@ -131,6 +153,7 @@ class SoraColors extends ThemeExtension<SoraColors> {
     Color? tealLightText,
     Color? tealOnNeutral,
     Color? coralOnNeutral,
+    List<Color>? chartPalette,
   }) {
     return SoraColors(
       background: background ?? this.background,
@@ -148,6 +171,7 @@ class SoraColors extends ThemeExtension<SoraColors> {
       tealLightText: tealLightText ?? this.tealLightText,
       tealOnNeutral: tealOnNeutral ?? this.tealOnNeutral,
       coralOnNeutral: coralOnNeutral ?? this.coralOnNeutral,
+      chartPalette: chartPalette ?? this.chartPalette,
     );
   }
 
@@ -170,6 +194,10 @@ class SoraColors extends ThemeExtension<SoraColors> {
       tealLightText: Color.lerp(tealLightText, other.tealLightText, t)!,
       tealOnNeutral: Color.lerp(tealOnNeutral, other.tealOnNeutral, t)!,
       coralOnNeutral: Color.lerp(coralOnNeutral, other.coralOnNeutral, t)!,
+      chartPalette: [
+        for (var i = 0; i < chartPalette.length; i++)
+          Color.lerp(chartPalette[i], other.chartPalette[i], t)!,
+      ],
     );
   }
 }

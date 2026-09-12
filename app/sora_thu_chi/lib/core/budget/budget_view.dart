@@ -1,23 +1,15 @@
 import '../category/category.dart';
+import '../date_range.dart';
 import '../transaction/transaction.dart';
 import 'budget.dart';
+
+export '../date_range.dart' show DateRange;
 
 /// Module **thuần** tính toán màn Tổng quan Ngân sách (PBI 20) — không đọc
 /// DB/state: nhận `budgets` + `transactions` + `categories` + mốc thời gian,
 /// trả dòng hiển thị và thẻ tổng. "Đã chi"/"%"/trạng thái **tính lại mỗi lần
 /// nạp màn** (research R3 — không bảng snapshot), nên sửa giao dịch hay ngân
 /// sách là số liệu tự khớp, không hồi tố kỳ trước.
-
-/// Khoảng thời gian nửa mở `[start, end)` — [end] **độc quyền**.
-class DateRange {
-  const DateRange({required this.start, required this.end});
-
-  final DateTime start;
-  final DateTime end;
-
-  bool contains(DateTime moment) =>
-      !moment.isBefore(start) && moment.isBefore(end);
-}
 
 /// Kỳ của [period] chứa mốc [anchor] (research R5): Tháng/Năm dương lịch,
 /// **Tuần bắt đầu Thứ Hai** (quy ước sẵn có của app — `resolveDatePreset`).

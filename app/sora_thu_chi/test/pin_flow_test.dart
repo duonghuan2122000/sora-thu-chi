@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/app.dart';
 import 'package:sora_thu_chi/core/security/pin_store.dart';
 import 'package:sora_thu_chi/core/widgets/app_bottom_nav_bar.dart';
+import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/pin/pin_setup_screen.dart';
 import 'package:sora_thu_chi/screens/pin/widgets/pin_dots.dart';
 import 'package:sora_thu_chi/screens/pin/widgets/pin_keypad.dart';
 
 import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_theme_store.dart';
+import 'fakes/fake_wallet_repository.dart';
 import 'fakes/pin_store_fake.dart';
 
 /// Pump cả app với store bơm được + chờ boot/route ổn định.
@@ -17,6 +20,11 @@ import 'fakes/pin_store_fake.dart';
 /// `ThemeController`/`LocaleController` + gọi `load()`; thiếu fake sẽ khởi tạo
 /// drift/sqlite native và vỡ test (R8/PBI 19).
 Future<void> pumpApp(WidgetTester tester, PinStore store) async {
+  // Tab Báo cáo nạp dữ liệu khi được chọn (PBI 22) ⇒ cần repo giả như
+  // `widget_test.pumpShell`; thiếu sẽ khởi tạo drift/sqlite native và treo test.
+  Get.reset();
+  Get.put<WalletRepository>(FakeWalletRepository());
+  addTearDown(Get.reset);
   await tester.pumpWidget(
     SoraApp(
       store: store,

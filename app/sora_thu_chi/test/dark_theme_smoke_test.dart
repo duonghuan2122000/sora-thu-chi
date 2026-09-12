@@ -1,12 +1,18 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/security/pin_controller.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
+import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
+import 'package:sora_thu_chi/data/report_deps.dart';
+import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
+import 'package:sora_thu_chi/screens/report_screen.dart';
 import 'package:sora_thu_chi/screens/theme_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
@@ -135,4 +141,61 @@ void main() {
       expect(tester.takeException(), isNull);
     }
   });
+
+  testWidgets(
+    'Màn Tổng quan Báo cáo ở tối: thẻ + vòng tròn đọc bảng màu tối, không overflow',
+    (tester) async {
+      registerTheme();
+      Get.put<WalletRepository>(
+        FakeWalletRepository.withCategories(
+          transactions: [
+            Transaction(
+              id: 1,
+              walletId: 1,
+              type: TxnType.expense,
+              category: 'Ăn uống',
+              amount: -4200000,
+              date: DateTime(2026, 3, 10),
+              categoryId: 1,
+            ),
+          ],
+          categoriesSeed: [
+            Category(
+              id: 1,
+              name: 'Ăn uống',
+              type: CategoryType.expense,
+              icon: 'restaurant',
+              color: 0xFF0F6E56,
+            ),
+          ],
+        ),
+      );
+      await tester.binding.setSurfaceSize(const Size(390, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = ensureReportController();
+      await tester.pumpWidget(
+        darkApp(const Scaffold(body: ReportScreen())),
+      );
+      await controller.load(now: DateTime(2026, 3, 15));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ReportScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+
+      // Lát cắt lấy đúng bảng màu **tối** (R4/SC-011), không phải bảng sáng.
+      final donut = tester.widget<PieChart>(
+        find.byKey(const ValueKey('report-donut')),
+      );
+      expect(donut.data.sections.first.color, SoraColors.dark.chartPalette[0]);
+
+      // Cuộn hết nội dung — không nhánh nào tràn khung.
+      for (var i = 0; i < 4; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 }
