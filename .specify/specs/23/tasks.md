@@ -68,7 +68,7 @@
 - [X] T025 QA tay trên emulator theo `quickstart.md` nhóm **A–L** (điểm vào/bố cục/quay về, chip kỳ + nhãn giữa, danh sách đầy đủ + màu thặng dư chu kỳ, số khớp, gộp con + "Khác", drill-down, trạng thái rỗng, làm mới số liệu, Tối + English, màn hình nhỏ + cỡ chữ lớn + số hàng tỉ, offline/hiệu năng, biên kỳ & ngày) — ghi lại kết quả từng nhóm
 - [X] T026 Tick checklist `.specify/specs/23/checklists/requirements.md` sau khi thi công xong (**giữ nguyên nội dung** đã duyệt)
 - [X] T027 Đồng bộ wiki theo skill `sora-wiki`: cập nhật `wiki-knowledge/entity/` **Báo cáo** (màn `02`: chip kỳ nhãn tĩnh, vòng tròn + danh sách **đầy đủ** mọi danh mục, màu định tính **lặp chu kỳ** 5 màu + xám cho "Khác", drill-down `popUntil` + đổi tab, 2 trạng thái rỗng, số liệu dựng từ bản chụp RAM), `wiki-knowledge/concept/` **Lộ trình phát triển** (màn `02` xong; còn `03` So sánh kỳ / `04` Xuất báo cáo + bộ lọc nâng cao) và **Design system** (bảng màu định tính dùng theo **thứ hạng, lặp chu kỳ**; khác biệt cố ý với mockup `02`) + append `wiki-knowledge/log.md` + cập nhật `wiki-knowledge/index.md`
-- [ ] T028 Commit PBI 23 theo skill `git-commit` (Conventional Commits, message tiếng Việt có dấu, **không** trailer `Co-Authored-By`)
+- [X] T028 Commit PBI 23 theo skill `git-commit` (Conventional Commits, message tiếng Việt có dấu, **không** trailer `Co-Authored-By`)
 
 ---
 
