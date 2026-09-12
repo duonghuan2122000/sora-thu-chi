@@ -67,3 +67,14 @@
 ## [2026-09-03] rule | Đa ngôn ngữ dùng GetX Translations
 - Thêm mục "Đa ngôn ngữ (i18n) — rule" vào [[Stack kỹ thuật]]: chuỗi UI qua key i18n từ lúc dựng UI, cấu hình root `GetMaterialApp(translations/locale/fallbackLocale)`, mặc định + fallback tiếng Việt, không dịch data user, tách i18n khỏi format số tiền/ngày.
 - Mở quyết định #7 trong [[Lộ trình phát triển]]: nhóm §12 Tiện ích chưa gắn GĐ; đa ngôn ngữ cần chốt danh sách ngôn ngữ. Quyết định của user (cơ chế GetX Translations) + nguồn gốc doc §12.
+
+## [2026-09-12] implement | Ngân sách phạm vi 2a — PBI 20 (màn `01` Tổng quan + `02` Thêm/Sửa)
+- Cập nhật [[Ngân sách]]: viết lại theo **trạng thái đã triển khai** — bảng drift **`budgets` schema v6** chỉ **6 cột** (`id, category_id, amount, period, is_recurring, start_date`), migration thuần tạo bảng **không seed**; 10 cột của doc §3.1 (`scope/wallet_ids/currency/period_start_rule/end_date/alert_thresholds/rollover_unused/status/created_at/updated_at`) **chưa có hiệu lực**.
+- Chốt kỹ thuật đáng nhớ: **bỏ hẳn bảng `budget_period_snapshots`** — "đã chi / % / còn lại / ngày còn lại" là đại lượng **tính lại mỗi lần nạp màn** (doc §9 cho phép khi dữ liệu nhỏ) ⇒ sửa `amount` không thể hồi tố kỳ trước, giao dịch Chi bị sửa/xoá tự khớp lại.
+- Rule ghi rõ: chỉ **Chi** (Thu/transfer loại); khớp `category_id` = chính nó **hoặc con trực tiếp** (không cháu, không suy đoán theo tên cho dòng `< v4`); `transaction_date ∈ [start, end)` **end độc quyền**; **Tuần bắt đầu Thứ Hai**, Tháng/Năm dương lịch; **chồng lấn** = cùng `category_id` + cùng `period` + khoảng **hiệu lực** giao nhau (lặp lại → ∞, không lặp lại → đúng kỳ chứa `start_date`).
+- Trạng thái `active/ended/invalid` **suy ra**, không lưu cột; `ended`/`invalid` **không** vào thẻ tổng; danh sách sắp **giảm dần theo %**; bộ chọn kỳ chỉ điều khiển dòng chu kỳ Tháng (Tuần/Năm giữ kỳ riêng + nhãn chu kỳ).
+- Ghi nhận ngoại lệ có lý do: màn `01` là **màn cấp tab** (điểm vào từ tab Báo cáo) nên **có bottom nav thật** + FAB dùng chung + callback đổi tab từ `AppShell`; màn `02` vẫn là sub-page không bottom nav. Seam: mở rộng `WalletRepository` 3 method + module thuần `core/budget/*`, **không** thêm repository/controller.
+- Giới hạn đã biết ghi vào page: picker danh mục tái dùng (PBI 11) **không chọn được cha có con** ⇒ UI chưa tạo được ngân sách cho danh mục cha (luật gộp con vẫn đúng ở tầng tính toán).
+- Cập nhật [[Design system]]: **đóng ⚠ mốc 80–99%** — thanh coral `#D85A30` `alpha 0.6` + % coral (giữ hệ 2 màu, không thêm token mới).
+- Cập nhật [[Lộ trình phát triển]]: ghi PBI 20 xong (2a + màn `01`/`02`), **đóng quyết định mở #2**, còn lại 2b/2c + màn `03`.
+- QA emulator A–N: phần lớn ĐẠT; bắt được **1 lỗi dịch** (hàng "Ngưỡng cảnh báo" màn `02` thiếu `.tr` ⇒ ở English sót "80% và 100%") — đã sửa + thêm khẳng định chống hồi quy. Nhóm không tái hiện được trên emulator (E/F/L/N một phần) phủ bằng test tự động; chi tiết ở `.specify/specs/20/quickstart.md`.

@@ -6,7 +6,7 @@ Wiki tri thức nghiệp vụ + thiết kế app **Sora Thu Chi** (Flutter, offl
 - [[Ví & Tài khoản]] — loại ví, số dư suy ra, transfer nội bộ, ẩn/xóa
 - [[Giao dịch]] — thu/chi/chuyển khoản, định kỳ, tìm/lọc, undo, màn hình
 - [[Danh mục]] — 2 cấp cha-con, schema drift v4, seed, màn quản lý `01` (PBI 13) + thêm/sửa `02` (PBI 14), luật gắn giao dịch, **dịch tên mặc định theo ngôn ngữ** (PBI 19)
-- [[Ngân sách]] — budget + snapshot từng kỳ, cảnh báo, vòng đời
+- [[Ngân sách]] — **phạm vi 2a đã triển khai (PBI 20)**: bảng `budgets` schema v6 (6 cột, không seed), tính "đã chi/%" lại khi nạp màn (không snapshot), màn `01` Tổng quan + `02` Thêm/Sửa; 3 dải màu tiến độ
 - [[Hồ sơ & Bảo mật]] — device profile, khóa app = mã PIN bắt buộc lần đầu (PBI 3 đã triển khai) + chống dò, đổi/quên PIN; màn Tiện ích & Cá nhân hóa `01` (PBI 17) + màn con `02` "Giao diện" (PBI 18) + màn con `03` "Ngôn ngữ" vi/en (PBI 19, bảng `AppSettings` schema v5)
 
 ## Concepts

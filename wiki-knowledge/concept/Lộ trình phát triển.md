@@ -29,6 +29,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 - **Backup/Restore GĐ3 nhưng là "van an toàn"** cho mất PIN/gỡ app ([[Hồ sơ & Bảo mật]]) — cân nhắc sớm hơn; khuyến nghị nhắc user backup định kỳ từ sớm.
 - **Import CSV/Excel + OCR**: mô tả "tùy chọn mở rộng/nâng cao", **chưa gắn GĐ cụ thể** trong roadmap chính (transaction doc §1) — ⚠ cần định vị (GĐ2 hay GĐ3).
 - **Ngân sách GĐ2 chia nhỏ:** 2a (budget danh mục + tiến độ, chưa push) → 2b (budget tổng/theo ví, push, copy) → 2c (so sánh dự kiến–thực tế, tốc độ tiêu — cần ≥2 kỳ lịch sử). Xem [[Ngân sách]].
+- **Ngân sách — phạm vi 2a + 2 màn đầu đã triển khai (PBI 20)** — điểm vào Cài đặt? **không**: điểm vào là tab **Báo cáo** → hàng "Ngân sách" → màn `01` Tổng quan Ngân sách (màn cấp tab, có bottom nav) + màn `02` Thêm/Sửa ngân sách. Bảng drift **`budgets` schema v6** (6 cột, **không seed**, mở rộng `WalletRepository` +3 method); **bỏ bảng snapshot** — "đã chi/%/còn lại" tính lại mỗi lần nạp màn. Chi tiết + rule tại [[Ngân sách]]. Còn lại: **2b** (ngân sách tổng, theo ví, cảnh báo push, cộng dồn/sao chép), **2c** (so sánh nhiều kỳ, tốc độ tiêu) và **màn `03` Chi tiết ngân sách** (nơi hiện số tiền vượt + biểu đồ `fl_chart`) — chưa gắn PBI.
 - Mục tiêu tiết kiệm & quản lý nợ (GĐ3): chỉ liệt kê ở doc tính năng tổng, **chưa có đặc tả module riêng** — nguồn thiếu, cần bổ sung khi triển khai.
 
 ## Module & data dependency (từ đặc tả)
@@ -44,7 +45,7 @@ Backup/Restore (GĐ3) ── van an toàn cho mất PIN / đổi máy
 ## ⚠ Quyết định mở (mâu thuẫn / chưa chốt giữa nguồn)
 Gom các điểm doc chưa chốt — đóng 1 điểm = 1 lần cập nhật wiki.
 1. **Quên PIN hướng A hay B** (auth doc §4.2). A = giữ dữ liệu (security question / reset qua backup); B = bảo mật tuyệt đối (mất PIN = xóa data, restore backup). Nghiêng **B**.
-2. **Màu thanh tiến độ ngân sách 80–99%** (budget doc §6). Design system chỉ 2 màu teal/coral; doc gợi ý **coral nhạt (opacity)** thay vì thêm màu thứ ba. → chưa chốt, ảnh hưởng [[Design system]].
+2. ~~**Màu thanh tiến độ ngân sách 80–99%**~~ — **ĐÃ ĐÓNG (PBI 20)**: giữ 2 màu gốc, thanh coral `#D85A30` ở `alpha 0.6` + % coral; <80 teal, ≥100 coral đậm. Xem [[Design system]] + [[Ngân sách]].
 3. **Seed danh mục thiếu "Phí giao dịch"** (wallet §4 vs category §3) — transfer có phí cần danh mục này; chưa có trong seed. Bổ sung vào seed hay để user tự tạo?
 4. **Đổi múi giờ → tính lại chuỗi recurring?** (auth §3) — ảnh hưởng thời điểm sinh gd định kỳ tiếp theo.
 5. **Tỷ giá quy đổi offline từ đâu** — "bảng tỷ giá lưu sẵn" chưa nói rõ nguồn (nhập tay? seed?) — [[Ví & Tài khoản]].

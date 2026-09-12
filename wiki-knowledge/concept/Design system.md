@@ -34,7 +34,7 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 | Nền card thống kê nhanh | `#F1EFE8` |
 | Đường kẻ phân cách | `#E0E0E0` / `#EFEFEF` |
 
-⚠ QUYẾT ĐỊNH MỞ: mốc tiến độ budget 80–99% chưa có màu trong hệ — gợi ý coral nhạt (opacity) để giữ 2 màu gốc. Xem [[Ngân sách]] và [[Lộ trình phát triển]].
+**Mốc tiến độ ngân sách 80–99% — ĐÃ CHỐT (PBI 20)**: giữ hệ **2 màu gốc**, không thêm màu thứ ba — thanh tiến độ dùng **coral nhạt `#D85A30` ở `alpha 0.6`**, còn **%** vẫn coral đậm. Dưới 80%: thanh + % teal. Từ 100%: thanh coral đậm + % coral (dòng vượt giới hạn chỉ hiện %, không hiện số tiền vượt). Chi tiết ở [[Ngân sách]], màn `01`.
 
 ## Giao diện Sáng / Tối / Theo hệ thống — đã triển khai PBI 18
 > Bộ đôi theme qua **`ThemeExtension<SoraColors>`** (không thêm dependency). Nguồn: `.specify/specs/18`, `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §1.2`.
