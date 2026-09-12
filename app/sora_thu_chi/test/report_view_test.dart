@@ -566,4 +566,190 @@ void main() {
       expect(view.range.end, DateTime(2026, 4, 1));
     });
   });
+
+  group('reportCategoryDetail — màn Chi tiết theo danh mục (PBI 23)', () {
+    ReportCategoryDetail build(
+      List<Transaction> transactions,
+      List<Category> categories, {
+      ReportPeriod period = ReportPeriod.month,
+      DateTime? now,
+    }) => reportCategoryDetail(
+      transactions: transactions,
+      categories: categories,
+      period: period,
+      now: now ?? DateTime(2026, 3, 15),
+    );
+
+    test('7 danh mục ⇒ đủ 7 dòng (không cắt ở 5), Σ tiền = total, Σ % = 100', () {
+      final categories = [for (var i = 1; i <= 7; i++) _cat(i, 'Danh mục $i')];
+      final detail = build([
+        for (var i = 1; i <= 7; i++)
+          _expense(i, 100000 * (8 - i), DateTime(2026, 3, 5), categoryId: i),
+      ], categories);
+
+      expect(detail.rows, hasLength(7));
+      expect(detail.total, 100000 * 28);
+      var sum = 0;
+      var percents = 0;
+      for (final row in detail.rows) {
+        sum += row.amount;
+        percents += row.percent;
+      }
+      expect(sum, detail.total);
+      expect(percents, 100);
+      expect(detail.hasAnyTxn, isTrue);
+      expect(detail.isEmpty, isFalse);
+    });
+
+    test('dòng "Khác" xếp cuối và CHỈ có khi có tiền chi không gắn danh mục', () {
+      final withOther = build([
+        _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
+        _expense(2, 50000, DateTime(2026, 3, 6)),
+      ], [_cat(1, 'Ăn uống')]);
+      expect(withOther.rows, hasLength(2));
+      expect(withOther.rows.last.categoryId, isNull);
+      expect(withOther.rows.last.amount, 50000);
+      expect(withOther.rows.last.rank, -1);
+
+      final withoutOther = build([
+        _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
+      ], [_cat(1, 'Ăn uống')]);
+      expect(withoutOther.rows, hasLength(1));
+      expect(withoutOther.rows.single.categoryId, 1);
+
+      // "Khác" lớn hơn mọi danh mục thật vẫn nằm cuối (luật 9).
+      final bigOther = build([
+        _expense(1, 10000, DateTime(2026, 3, 5), categoryId: 1),
+        _expense(2, 90000, DateTime(2026, 3, 6)),
+      ], [_cat(1, 'Ăn uống')]);
+      expect(bigOther.rows.first.categoryId, 1);
+      expect(bigOther.rows.last.categoryId, isNull);
+    });
+
+    test('gộp con → cha; danh mục ẩn vẫn tính; con mồ côi nhóm theo chính nó', () {
+      final categories = [
+        _cat(1, 'Ăn uống'),
+        _cat(2, 'Cà phê', parentId: 1),
+        _cat(3, 'Ẩn', isHidden: true),
+        _cat(9, 'Mồ côi', parentId: 99),
+      ];
+      final detail = build([
+        _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
+        _expense(2, 50000, DateTime(2026, 3, 6), categoryId: 2),
+        _expense(3, 30000, DateTime(2026, 3, 7), categoryId: 3),
+        _txn(
+          id: 4,
+          type: TxnType.expense,
+          amount: -20000,
+          date: DateTime(2026, 3, 8),
+          categoryId: 9,
+          category: 'Mồ côi',
+        ),
+      ], categories);
+
+      final byId = {for (final r in detail.rows) r.categoryId: r};
+      expect(byId[1]!.amount, 150000); // con gộp vào cha
+      expect(byId[3]!.amount, 30000); // danh mục ẩn vẫn tính
+      expect(byId[9]!.amount, 20000); // mồ côi nhóm theo chính nó
+      expect(byId.containsKey(null), isFalse);
+      expect(detail.total, 200000);
+    });
+
+    test('đồng hạng → tên tăng dần theo thứ tự chữ Việt; rank = chỉ số', () {
+      final detail = build([
+        _expense(1, 50000, DateTime(2026, 3, 5), categoryId: 1),
+        _expense(2, 50000, DateTime(2026, 3, 6), categoryId: 2),
+      ], [_cat(1, 'Nhà cửa'), _cat(2, 'Ăn uống')]);
+
+      expect(detail.rows.map((r) => r.name).toList(), ['Ăn uống', 'Nhà cửa']);
+      expect(detail.rows[0].rank, 0);
+      expect(detail.rows[1].rank, 1);
+    });
+
+    test('1 danh mục ⇒ 1 dòng 100%', () {
+      final detail = build([
+        _expense(1, 4200000, DateTime(2026, 3, 5), categoryId: 1),
+      ], [_cat(1, 'Ăn uống')]);
+
+      expect(detail.rows, hasLength(1));
+      expect(detail.rows.single.percent, 100);
+      expect(detail.rows.single.amount, detail.total);
+    });
+
+    test('kỳ rỗng ⇒ rows rỗng, total 0, hasAnyTxn false', () {
+      final detail = build(const [], [_cat(1, 'Ăn uống')]);
+      expect(detail.rows, isEmpty);
+      expect(detail.total, 0);
+      expect(detail.hasAnyTxn, isFalse);
+      expect(detail.isEmpty, isTrue);
+    });
+
+    test('kỳ chỉ Thu ⇒ total 0 nhưng hasAnyTxn true', () {
+      final detail = build([
+        _income(1, 500000, DateTime(2026, 3, 5)),
+      ], [_cat(1, 'Ăn uống')]);
+      expect(detail.total, 0);
+      expect(detail.rows, isEmpty);
+      expect(detail.hasAnyTxn, isTrue);
+    });
+
+    test('kỳ chỉ transfer ⇒ total 0 và hasAnyTxn false', () {
+      final detail = build([
+        _txn(
+          id: 1,
+          type: TxnType.transfer,
+          amount: -500000,
+          date: DateTime(2026, 3, 5),
+        ),
+      ], const []);
+      expect(detail.total, 0);
+      expect(detail.hasAnyTxn, isFalse);
+    });
+
+    test('kỳ giữ nguyên loại kỳ + range của kỳ đang xem', () {
+      final detail = build(
+        const [],
+        const [],
+        period: ReportPeriod.week,
+        now: DateTime(2026, 3, 18),
+      );
+      expect(detail.period, ReportPeriod.week);
+      expect(detail.range.start, DateTime(2026, 3, 16));
+      expect(detail.range.end, DateTime(2026, 3, 23));
+    });
+  });
+
+  group('reportPeriodChipLabel / reportExpenseCenterLabel (PBI 23)', () {
+    String chip(ReportPeriod period, DateTime anchor) =>
+        reportPeriodChipLabel(period, reportPeriodRange(period, anchor));
+
+    test('4 kỳ: Ngày / Tuần / Tháng / Năm', () {
+      final anchor = DateTime(2026, 9, 12); // Thứ Bảy
+      expect(chip(ReportPeriod.day, anchor), 'Ngày 12/09/2026');
+      expect(chip(ReportPeriod.week, anchor), 'Tuần 07/09–13/09/2026');
+      expect(chip(ReportPeriod.month, anchor), 'Tháng 9/2026');
+      expect(chip(ReportPeriod.year, anchor), 'Năm 2026');
+    });
+
+    test('tuần vắt qua tháng: năm lấy theo ngày cuối kỳ', () {
+      expect(
+        chip(ReportPeriod.week, DateTime(2026, 3, 31)),
+        'Tuần 30/03–05/04/2026',
+      );
+    });
+
+    test('tuần vắt qua năm: năm lấy theo ngày cuối kỳ', () {
+      expect(
+        chip(ReportPeriod.week, DateTime(2026, 12, 31)),
+        'Tuần 28/12–03/01/2027',
+      );
+    });
+
+    test('nhãn giữa vòng tròn theo 4 kỳ', () {
+      expect(reportExpenseCenterLabel(ReportPeriod.day), 'Tổng chi ngày');
+      expect(reportExpenseCenterLabel(ReportPeriod.week), 'Tổng chi tuần');
+      expect(reportExpenseCenterLabel(ReportPeriod.month), 'Tổng chi tháng');
+      expect(reportExpenseCenterLabel(ReportPeriod.year), 'Tổng chi năm');
+    });
+  });
 }

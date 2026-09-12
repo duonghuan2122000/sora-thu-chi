@@ -61,6 +61,18 @@ class ReportController extends GetxController {
     if (_loaded) _rebuild();
   }
 
+  /// Số liệu màn Chi tiết theo danh mục (PBI 23) — dựng lại từ bản chụp RAM mỗi
+  /// lần gọi; màn 02 chỉ mở được từ màn Tổng quan đã có dữ liệu (research R1).
+  ReportCategoryDetail? categoryDetail() {
+    if (!_loaded) return null;
+    return reportCategoryDetail(
+      transactions: _transactions,
+      categories: _categories,
+      period: period.value,
+      now: _now,
+    );
+  }
+
   void _rebuild() {
     data.value = buildReportView(
       transactions: _transactions,

@@ -12,6 +12,7 @@ import 'package:sora_thu_chi/core/transaction/transaction_filter.dart';
 import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/transaction_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
 import 'package:sora_thu_chi/screens/report_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
@@ -348,6 +349,30 @@ void main() {
       expect(find.text('3.000.000 đ'), findsOneWidget); // dòng top (tổng chi 4.000.000)
       expect(find.text('1.000.000 đ'), findsOneWidget);
       expect(find.text('75%'), findsOneWidget);
+    });
+  });
+
+  group('ReportScreen — điểm vào màn Chi tiết theo danh mục (PBI 23)', () {
+    testWidgets('thẻ Top có "Xem tất cả" khi kỳ có chi tiêu', (tester) async {
+      await _pump(tester, _seededRepo());
+      expect(find.byKey(const ValueKey('report-see-all')), findsOneWidget);
+    });
+
+    testWidgets('thẻ Top rỗng → KHÔNG có "Xem tất cả"', (tester) async {
+      await _pump(tester, _transferOnlyRepo());
+      expect(find.byKey(const ValueKey('report-see-all')), findsNothing);
+    });
+
+    testWidgets('chạm "Xem tất cả" → mở màn Chi tiêu theo danh mục',
+        (tester) async {
+      await _pump(tester, _seededRepo());
+
+      await tester.tap(find.byKey(const ValueKey('report-see-all')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportCategoryDetailScreen), findsOneWidget);
+      expect(find.text('Chi tiêu theo danh mục'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 

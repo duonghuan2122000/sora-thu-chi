@@ -441,6 +441,18 @@ class SoraTranslations extends Translations {
     'Không đọc được dữ liệu báo cáo.': 'Could not read report data.',
 
     // ---------------------------------------------------------------------
+    // Báo cáo (PBI 23) — màn Chi tiết `02`
+    // ---------------------------------------------------------------------
+    'Chi tiêu theo danh mục': 'Spending by category',
+    'DANH MỤC (@n)': 'CATEGORIES (@n)',
+    'Tổng chi ngày': 'Day total',
+    'Tổng chi tuần': 'Week total',
+    'Tổng chi tháng': 'Month total',
+    'Tổng chi năm': 'Year total',
+    'Chạm vào một danh mục để xem các giao dịch':
+        'Tap a category to see its transactions',
+
+    // ---------------------------------------------------------------------
     // Bảo mật PIN & khung Tổng quan/Báo cáo
     // ---------------------------------------------------------------------
     'Nhập lại mã PIN': 'Re-enter PIN',

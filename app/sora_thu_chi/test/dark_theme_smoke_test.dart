@@ -12,6 +12,7 @@ import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
+import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
 import 'package:sora_thu_chi/screens/report_screen.dart';
 import 'package:sora_thu_chi/screens/theme_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
@@ -192,6 +193,66 @@ void main() {
 
       // Cuộn hết nội dung — không nhánh nào tràn khung.
       for (var i = 0; i < 4; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'Màn Chi tiêu theo danh mục ở tối: đọc bảng màu tối, không overflow',
+    (tester) async {
+      registerTheme();
+      Get.put<WalletRepository>(
+        FakeWalletRepository.withCategories(
+          transactions: [
+            for (var i = 1; i <= 6; i++)
+              Transaction(
+                id: i,
+                walletId: 1,
+                type: TxnType.expense,
+                category: 'Danh mục $i',
+                amount: -100000 * i,
+                date: DateTime(2026, 3, 10),
+                categoryId: i,
+              ),
+          ],
+          categoriesSeed: [
+            for (var i = 1; i <= 6; i++)
+              Category(
+                id: i,
+                name: 'Danh mục $i',
+                type: CategoryType.expense,
+                icon: 'restaurant',
+                color: 0xFF0F6E56,
+              ),
+          ],
+        ),
+      );
+      await tester.binding.setSurfaceSize(const Size(390, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = ensureReportController();
+      await controller.load(now: DateTime(2026, 3, 15));
+      await tester.pumpWidget(
+        darkApp(const ReportCategoryDetailScreen()),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ReportCategoryDetailScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+
+      // Lát cắt lấy bảng màu **tối**, và hạng 5 (danh mục thứ 6) lặp lại màu hạng 0.
+      final donut = tester.widget<PieChart>(
+        find.byKey(const ValueKey('report-detail-donut')),
+      );
+      expect(donut.data.sections, hasLength(6));
+      expect(donut.data.sections[0].color, SoraColors.dark.chartPalette[0]);
+      expect(donut.data.sections[5].color, SoraColors.dark.chartPalette[0]);
+
+      for (var i = 0; i < 6; i++) {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);

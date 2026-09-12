@@ -13,6 +13,7 @@ import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 import 'budget_overview_screen.dart';
+import 'report_category_detail_screen.dart';
 
 /// Màn Tổng quan tab Báo cáo (mockup `01`, PBI 22): khu đầu màn teal
 /// (tiêu đề + segmented control 4 kỳ + 2 số tổng) rồi các thẻ số liệu.
@@ -46,6 +47,15 @@ class ReportScreen extends StatelessWidget {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BudgetOverviewScreen(onSelectTab: onSelectTab),
+      ),
+    );
+  }
+
+  /// "Xem tất cả" ở thẻ Top → màn Chi tiết theo danh mục (màn `02`, FR-001).
+  Future<void> _openCategoryDetail(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ReportCategoryDetailScreen(onSelectTab: onSelectTab),
       ),
     );
   }
@@ -92,7 +102,11 @@ class ReportScreen extends StatelessWidget {
                           categoryId,
                         ),
                       ),
-                      _TopCategoriesCard(view: view, colors: colors),
+                      _TopCategoriesCard(
+                        view: view,
+                        colors: colors,
+                        onSeeAll: () => _openCategoryDetail(context),
+                      ),
                     ],
                   )
                 // Màn build sẵn offstage từ boot: chỉ quay spinner khi thật sự
@@ -433,10 +447,17 @@ class _BreakdownCard extends StatelessWidget {
 /// mỗi dòng có bubble icon danh mục, tên, số tiền và thanh tiến độ theo tỉ lệ
 /// trên tổng chi; **không** có dòng "Khác" (FR-013).
 class _TopCategoriesCard extends StatelessWidget {
-  const _TopCategoriesCard({required this.view, required this.colors});
+  const _TopCategoriesCard({
+    required this.view,
+    required this.colors,
+    required this.onSeeAll,
+  });
 
   final ReportView view;
   final SoraColors colors;
+
+  /// Mở màn 02 (Chi tiết theo danh mục) — chỉ hiện khi thẻ có nội dung (R6).
+  final VoidCallback onSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -451,13 +472,39 @@ class _TopCategoriesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Top danh mục chi tiêu'.tr,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Top danh mục chi tiêu'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              InkWell(
+                key: const ValueKey('report-see-all'),
+                onTap: onSeeAll,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    'Xem tất cả'.tr,
+                    style: TextStyle(
+                      color: colors.tealOnNeutral,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           for (final item in view.top)

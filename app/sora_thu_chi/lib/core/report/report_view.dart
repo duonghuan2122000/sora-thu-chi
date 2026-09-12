@@ -393,6 +393,139 @@ List<ReportTopCategory> reportTopCategories({
   ];
 }
 
+/// Một dòng danh mục (và một lát cắt) màn **Chi tiết theo danh mục** (màn `02`,
+/// PBI 23) — data-model §1.1. Không mang `icon`/`color` của danh mục: màn 02 cố
+/// ý dùng **màu theo thứ hạng** (FR-007).
+class ReportCategoryRow {
+  const ReportCategoryRow({
+    required this.categoryId,
+    required this.name,
+    required this.amount,
+    required this.percent,
+    required this.rank,
+  });
+
+  /// id danh mục **cha**; `null` = dòng gộp **"Khác"**.
+  final int? categoryId;
+  final String name;
+  final int amount;
+
+  /// % trên tổng chi, **đã chia để tổng mọi dòng = 100**.
+  final int percent;
+
+  /// `0…n-1` = hạng (chọn `chartPalette[rank % 5]`); `-1` = "Khác" (chỉ số 5).
+  final int rank;
+}
+
+/// Kết quả dựng màn **Chi tiết theo danh mục** (data-model §1.2) — bất biến.
+class ReportCategoryDetail {
+  const ReportCategoryDetail({
+    required this.period,
+    required this.range,
+    required this.total,
+    required this.hasAnyTxn,
+    required this.rows,
+  });
+
+  final ReportPeriod period;
+  final DateRange range;
+
+  /// Tổng **chi** của kỳ = Σ `rows[i].amount` (0 = không có chi tiêu).
+  final int total;
+
+  /// Kỳ có ít nhất 1 giao dịch **Thu/Chi** (transfer/adjustment không tính).
+  final bool hasAnyTxn;
+
+  /// **Toàn bộ** danh mục chi của kỳ, sắp giảm dần, + "Khác" cuối; rỗng khi
+  /// `total == 0`.
+  final List<ReportCategoryRow> rows;
+
+  bool get isEmpty => total == 0;
+}
+
+/// Số liệu màn **Chi tiết theo danh mục** (FR-006…FR-010) — cùng nguồn nhóm
+/// `_breakdown` với màn 01, chỉ khác là lấy **toàn bộ** danh mục thay vì top 5.
+ReportCategoryDetail reportCategoryDetail({
+  required List<Transaction> transactions,
+  required List<Category> categories,
+  required ReportPeriod period,
+  required DateTime now,
+}) {
+  final range = reportPeriodRange(period, now);
+  final totals = reportTotals(transactions, range);
+  final hasAnyTxn = totals.income > 0 || totals.expense > 0;
+  final data = _breakdown(
+    transactions: transactions,
+    categories: categories,
+    range: range,
+  );
+  if (data.total <= 0) {
+    return ReportCategoryDetail(
+      period: period,
+      range: range,
+      total: 0,
+      hasAnyTxn: hasAnyTxn,
+      rows: const [],
+    );
+  }
+
+  final amounts = [
+    for (final g in data.groups) g.amount,
+    if (data.other > 0) data.other,
+  ];
+  final percents = percentSplit(amounts, data.total);
+  return ReportCategoryDetail(
+    period: period,
+    range: range,
+    total: data.total,
+    hasAnyTxn: hasAnyTxn,
+    rows: [
+      for (var i = 0; i < data.groups.length; i++)
+        ReportCategoryRow(
+          categoryId: data.groups[i].categoryId,
+          name: data.groups[i].name,
+          amount: data.groups[i].amount,
+          percent: percents[i],
+          rank: i,
+        ),
+      if (data.other > 0)
+        ReportCategoryRow(
+          categoryId: null,
+          name: 'Khác'.tr,
+          amount: data.other,
+          percent: percents.last,
+          rank: -1,
+        ),
+    ],
+  );
+}
+
+/// Nhãn **tĩnh** chip kỳ màn 02 (FR-003): `Ngày 12/09/2026` ·
+/// `Tuần 07/09–13/09/2026` (năm theo **ngày cuối kỳ**) · `Tháng 9/2026` ·
+/// `Năm 2026`. Ghép danh từ kỳ **đã có bản dịch** với chuỗi ngày không phụ
+/// thuộc ngôn ngữ.
+String reportPeriodChipLabel(ReportPeriod period, DateRange range) {
+  final last = range.end.subtract(const Duration(days: 1));
+  final start = range.start;
+  return switch (period) {
+    ReportPeriod.day =>
+      '${'Ngày'.tr} ${_two(start.day)}/${_two(start.month)}/${start.year}',
+    ReportPeriod.week =>
+      '${'Tuần'.tr} ${_two(start.day)}/${_two(start.month)}'
+          '–${_two(last.day)}/${_two(last.month)}/${last.year}',
+    ReportPeriod.month => '${'Tháng'.tr} ${start.month}/${start.year}',
+    ReportPeriod.year => '${'Năm'.tr} ${start.year}',
+  };
+}
+
+/// Nhãn giữa vòng tròn màn 02 (FR-004): `Tổng chi ngày/tuần/tháng/năm`.
+String reportExpenseCenterLabel(ReportPeriod period) => switch (period) {
+  ReportPeriod.day => 'Tổng chi ngày'.tr,
+  ReportPeriod.week => 'Tổng chi tuần'.tr,
+  ReportPeriod.month => 'Tổng chi tháng'.tr,
+  ReportPeriod.year => 'Tổng chi năm'.tr,
+};
+
 /// Kết quả dựng màn Tổng quan Báo cáo (data-model §5) — bất biến.
 class ReportView {
   const ReportView({
