@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../core/budget/budget.dart';
 import '../core/category/category.dart';
+import '../core/scan/scan_result.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
 import 'db/app_database.dart';
@@ -276,6 +277,55 @@ class DriftWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<void> addScannedTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required DateTime date,
+    required String receiptImage,
+    required ScanEngine engine,
+    required String rawText,
+    required String parsedJson,
+    Category? category,
+    String note = '',
+    DateTime? createdAt,
+  }) async {
+    // Một db.transaction(): bù balance + giao dịch + phiên quét đi cùng nhau ⇒
+    // phiên quét luôn trỏ đúng giao dịch vừa sinh (R11, data-model §4.5).
+    final signedAmount = type == TxnType.income ? amount : -amount;
+    await _db.transaction(() async {
+      final wallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(walletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(walletId)))
+          .write(WalletsCompanion(balance: Value(wallet.balance + signedAmount)));
+      final txnId = await _db.into(_db.transactions).insert(
+        TransactionsCompanion.insert(
+          walletId: walletId,
+          type: type,
+          amount: signedAmount,
+          category: Value(category?.name ?? ''),
+          note: Value(note),
+          transactionDate: date,
+          categoryId: Value(category?.id),
+          receiptImage: Value(receiptImage),
+          source: const Value(TxnSource.aiScan),
+        ),
+      );
+      await _db.into(_db.scanSessions).insert(
+        ScanSessionsCompanion.insert(
+          imagePath: receiptImage,
+          rawText: rawText,
+          parsedJson: parsedJson,
+          engine: engine,
+          transactionId: Value(txnId),
+          createdAt: createdAt ?? DateTime.now(),
+        ),
+      );
+    });
+  }
+
+  @override
   Future<List<Budget>> budgets() async {
     final rows = await _db.select(_db.budgets).get();
     final list = rows.map(_toBudget).toList();
@@ -355,6 +405,7 @@ class DriftWalletRepository implements WalletRepository {
     tags: r.tags,
     receiptImage: r.receiptImage,
     location: r.location,
+    source: r.source,
   );
 
   Wallet _toWallet(WalletsRow r) => Wallet(

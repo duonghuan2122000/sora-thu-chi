@@ -22,10 +22,18 @@ import 'wallet_transfer_screen.dart';
 /// chỉnh; 4 trường Danh mục/Ví/Ngày giờ/Ghi chú; nút "Lưu giao dịch" cố định.
 /// Stateful + [WalletRepository] inject (không GetX — màn tác vụ một-lần, R11).
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key, this.repository});
+  const AddTransactionScreen({
+    super.key,
+    this.repository,
+    this.initialType = TxnType.expense,
+  });
 
   /// Seam test: mặc định null → [ensureWalletRepository] khi vào (R11).
   final WalletRepository? repository;
+
+  /// Loại mở sẵn (PBI 24 R14) — `transfer` thì màn tự mở luồng chuyển khoản sau
+  /// khi nạp ví xong. Mặc định `expense` = hành vi cũ.
+  final TxnType initialType;
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -35,7 +43,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late final WalletRepository _repository;
   late final DateTime _openedAt = DateTime.now();
 
-  TxnType _type = TxnType.expense;
+  late TxnType _type = widget.initialType;
   int _amount = 0;
   Category? _category;
   Wallet? _wallet;
@@ -46,6 +54,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   List<Wallet> _activeWallets = const [];
   Set<String> _missing = {};
   bool _saving = false;
+
+  /// Chỉ tự mở luồng chuyển khoản **một lần** cho mỗi lần vào màn (R14).
+  bool _autoTransferOpened = false;
 
   bool get _hasActiveWallets => _activeWallets.isNotEmpty;
 
@@ -90,6 +101,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         _wallet = preselect;
         _loading = false;
       });
+      // Vào từ sheet với lựa chọn "Chuyển khoản" → mở luồng chuyển ngay, đúng
+      // một lần (R14); bỏ qua hỏi "bỏ dữ liệu" vì form còn trống.
+      if (widget.initialType == TxnType.transfer && !_autoTransferOpened) {
+        _autoTransferOpened = true;
+        await _openTransferFlow(skipDirtyCheck: true);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -115,8 +132,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   /// Chạm tab "Chuyển khoản" — mở luồng PBI 8; dirty thì xác nhận bỏ (R10).
-  Future<void> _openTransferFlow() async {
-    if (_isDirty) {
+  /// [skipDirtyCheck] dùng cho lần tự mở khi vào màn với `initialType` transfer.
+  Future<void> _openTransferFlow({bool skipDirtyCheck = false}) async {
+    if (!skipDirtyCheck && _isDirty) {
       final leave = await _confirmDiscard();
       if (leave != true || !mounted) return;
     }

@@ -11,6 +11,11 @@ extension TxnTypeLabelX on TxnType {
   };
 }
 
+/// Nguồn tạo giao dịch (PBI 24, schema v8) — `manual` = nhập tay/chuyển khoản/
+/// seed, `aiScan` = tạo qua luồng quét hóa đơn. Đợt này **chỉ lưu**; hiển thị
+/// nhãn nguồn/lọc theo nguồn để PBI sau (data-model §1.1).
+enum TxnSource { manual, aiScan }
+
 /// Giao dịch — subset màn chi tiết ví cần (đợt này chỉ đọc từ bộ mẫu).
 /// [amount] **signed** (VND) = tác động ròng lên ví chứa dòng: thu/`+` tăng số
 /// dư, chi/`-` giảm; chuyển khoản là 2 dòng thuộc 2 ví (nguồn `< 0`, đích `> 0`).
@@ -28,6 +33,7 @@ class Transaction {
     this.tags = '',
     this.receiptImage = '',
     this.location = '',
+    this.source = TxnSource.manual,
   });
 
   final int id;
@@ -62,6 +68,9 @@ class Transaction {
 
   /// Text vị trí rút gọn (tùy chọn). Rỗng = không có vị trí → ẩn hàng (FR-007).
   final String location;
+
+  /// Nguồn tạo giao dịch (schema v8) — xem [TxnSource].
+  final TxnSource source;
 
   String get typeLabel => type.label;
 }

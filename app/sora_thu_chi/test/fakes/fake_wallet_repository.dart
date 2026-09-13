@@ -1,11 +1,39 @@
 import 'package:sora_thu_chi/core/budget/budget.dart';
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/category/category_source.dart';
+import 'package:sora_thu_chi/core/scan/scan_result.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_source.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_source.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+
+/// Tham số một lần gọi [FakeWalletRepository.addScannedTransaction] — test assert.
+class ScannedCall {
+  const ScannedCall({
+    required this.walletId,
+    required this.type,
+    required this.amount,
+    required this.date,
+    required this.receiptImage,
+    required this.engine,
+    required this.rawText,
+    required this.parsedJson,
+    required this.category,
+    required this.note,
+  });
+
+  final int walletId;
+  final TxnType type;
+  final int amount;
+  final DateTime date;
+  final String receiptImage;
+  final ScanEngine engine;
+  final String rawText;
+  final String parsedJson;
+  final Category? category;
+  final String note;
+}
 
 /// Bản map bộ nhớ của [WalletRepository] — dùng cho mọi test widget/controller
 /// (không cần sqlite native). Seed mặc định = [WalletSource.all()] + 11 dòng
@@ -269,6 +297,65 @@ class FakeWalletRepository implements WalletRepository {
         amount: signedAmount,
         date: date,
         categoryId: category.id,
+      ),
+    );
+  }
+
+  /// Tham số của mọi lần [addScannedTransaction] — test assert số lần gọi và
+  /// giá trị truyền xuống (PBI 24 T042).
+  final List<ScannedCall> scannedCalls = [];
+
+  /// Bật để giả lập lỗi ghi (test nhánh "lưu lỗi → thông báo, không pop").
+  bool failOnScanned = false;
+
+  @override
+  Future<void> addScannedTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required DateTime date,
+    required String receiptImage,
+    required ScanEngine engine,
+    required String rawText,
+    required String parsedJson,
+    Category? category,
+    String note = '',
+    DateTime? createdAt,
+  }) async {
+    if (failOnScanned) throw StateError('Lỗi ghi giả lập.');
+    final wallet = _store[walletId];
+    if (wallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    final signedAmount = type == TxnType.income ? amount : -amount;
+    _store[walletId] = wallet.copyWith(balance: wallet.balance + signedAmount);
+    final id = _nextTxnId++;
+    _transactions.add(
+      Transaction(
+        id: id,
+        walletId: walletId,
+        type: type,
+        category: category?.name ?? '',
+        note: note,
+        amount: signedAmount,
+        date: date,
+        categoryId: category?.id,
+        receiptImage: receiptImage,
+        source: TxnSource.aiScan,
+      ),
+    );
+    scannedCalls.add(
+      ScannedCall(
+        walletId: walletId,
+        type: type,
+        amount: amount,
+        date: date,
+        receiptImage: receiptImage,
+        engine: engine,
+        rawText: rawText,
+        parsedJson: parsedJson,
+        category: category,
+        note: note,
       ),
     );
   }

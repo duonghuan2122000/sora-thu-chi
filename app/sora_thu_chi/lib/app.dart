@@ -12,6 +12,7 @@ import 'core/security/pin_store_secure.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/theme/theme_store.dart';
 import 'data/locale_deps.dart';
+import 'data/scan_deps.dart';
 import 'data/theme_deps.dart';
 import 'screens/pin/pin_lock_screen.dart';
 import 'theme/app_theme.dart';
@@ -55,6 +56,9 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
       Get.put(LocaleController(widget.localeStore ?? ensureLocaleStore()));
     }
     Get.find<LocaleController>().load();
+    // Quét hóa đơn (PBI 24): công tắc + chế độ + hồ sơ thiết bị dùng chung cho
+    // sheet FAB và màn Cài đặt ⇒ nạp ở gốc app (R15).
+    ensureScanController().load();
   }
 
   @override

@@ -5,17 +5,28 @@ import 'package:get/get.dart';
 import 'package:sora_thu_chi/core/app_shell.dart';
 import 'package:sora_thu_chi/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sora_thu_chi/core/widgets/screen_header.dart';
+import 'package:sora_thu_chi/core/scan/scan_controller.dart';
+import 'package:sora_thu_chi/core/scan/scan_settings.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/fake_device_probe.dart';
+import 'fakes/fake_scan_settings_store.dart';
 import 'fakes/fake_wallet_repository.dart';
 
 /// Shell giờ không còn là `home` mặc định (luồng boot bị PIN gate chiếm) —
 /// nhóm shell pump `AppShell` trực tiếp, tách khỏi luồng boot. Tab Giao dịch
 /// nạp dữ liệu khi chọn (FR-011) → đăng ký fake repo để không mở drift DB thật.
-Future<void> pumpShell(WidgetTester tester) async {
+/// FAB mở bottom sheet (PBI 24) → đăng ký luôn [ScanController] fake.
+Future<void> pumpShell(WidgetTester tester, {bool scanEnabled = false}) async {
   Get.reset();
   Get.put<WalletRepository>(FakeWalletRepository());
+  final scan = ScanController(
+    FakeScanSettingsStore(stored: ScanSettings(enabled: scanEnabled)),
+    FakeDeviceProbe(),
+  );
+  scan.settings.value = ScanSettings(enabled: scanEnabled);
+  Get.put(scan);
   addTearDown(Get.reset);
   await tester.pumpWidget(
     MaterialApp(theme: AppTheme.themeData, home: const AppShell()),
@@ -77,20 +88,49 @@ void main() {
       }
     });
 
-    testWidgets('Tap FAB → mở màn thêm giao dịch thật (không no-op)', (tester) async {
+    testWidgets('Tap FAB → mở bottom sheet thêm giao dịch (FR-001)', (tester) async {
       useTallView(tester);
       await pumpShell(tester);
 
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
+      // Sheet 3 hàng (tính năng quét đang tắt).
       expect(find.text('Thêm giao dịch'), findsOneWidget);
+      expect(find.text('Khoản Thu'), findsOneWidget);
+      expect(find.text('Khoản Chi'), findsOneWidget);
+      expect(find.text('Chuyển khoản'), findsOneWidget);
+      expect(find.text('Quét hóa đơn (AI)'), findsNothing);
+    });
+
+    testWidgets('Sheet → "Khoản Chi" mở form thêm giao dịch (không no-op)',
+        (tester) async {
+      useTallView(tester);
+      await pumpShell(tester);
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Khoản Chi'));
+      await tester.pumpAndSettle();
+
       expect(find.byType(AppBottomNavBar), findsNothing);
       // App bar: icon đóng X (trái) + check (phải) — không còn BackButton stub.
       expect(find.byIcon(Icons.close), findsOneWidget);
       expect(find.byIcon(Icons.check), findsOneWidget);
       expect(find.text('Chi'), findsOneWidget); // segmented mặc định Chi.
       expect(find.text('Lưu giao dịch'), findsOneWidget);
+    });
+
+    testWidgets('Bật tính năng quét → sheet có thêm hàng "Quét hóa đơn (AI)"',
+        (tester) async {
+      useTallView(tester);
+      await pumpShell(tester, scanEnabled: true);
+
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Quét hóa đơn (AI)'), findsOneWidget);
+      expect(find.text('MỚI'), findsOneWidget);
     });
 
     testWidgets('Quay lại từ màn phụ → đúng tab cũ', (tester) async {
@@ -101,6 +141,8 @@ void main() {
       await tester.tap(find.text('Báo cáo'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Khoản Chi'));
       await tester.pumpAndSettle();
 
       // Đóng bằng icon X (màn sạch → pop thẳng, không dialog) → về đúng tab.
@@ -120,6 +162,8 @@ void main() {
       await tester.tap(find.text('Giao dịch'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Khoản Chi'));
       await tester.pumpAndSettle();
 
       // Nhập khoản chi 90 đ danh mục "Nhà ở" (cha không con → chọn ngay).

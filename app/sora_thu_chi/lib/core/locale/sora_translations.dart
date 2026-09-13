@@ -469,5 +469,116 @@ class SoraTranslations extends Translations {
     'Mở khóa Sora Thu Chi': 'Unlock Sora Thu Chi',
     'Nhiều lần nhập sai. Thử lại sau @giây giây.':
         'Too many failed attempts. Try again in @giây seconds.',
+
+    // ---------------------------------------------------------------------
+    // Quét hóa đơn (PBI 24) — sheet `scan-01`, chụp `scan-02`, xử lý `scan-03`,
+    // xác nhận `scan-04`, kiểm tra cấu hình `scan-10`, Cài đặt `scan-11`
+    // ---------------------------------------------------------------------
+    // Sheet "Thêm giao dịch"
+    'Khoản Thu': 'Income',
+    'Lương, thưởng, thu nhập khác': 'Salary, bonus, other income',
+    'Khoản Chi': 'Expense',
+    'Ăn uống, mua sắm, hóa đơn...': 'Food, shopping, bills...',
+    'Giữa các ví/tài khoản': 'Between wallets/accounts',
+    'Quét hóa đơn (AI)': 'Scan receipt (AI)',
+    'Tự động đọc số tiền, ngày, cửa hàng':
+        'Automatically reads amount, date, merchant',
+    'MỚI': 'NEW',
+
+    // Màn chụp `scan-02`
+    'Quét hóa đơn': 'Scan receipt',
+    'Đặt hóa đơn vừa khung, tránh bóng đổ':
+        'Fit the receipt in the frame, avoid shadows',
+    'Thư viện': 'Library',
+    'Chụp ảnh': 'Take photo',
+    'Bật/tắt đèn flash': 'Toggle flash',
+    'Không mở được camera. Bạn vẫn có thể chọn ảnh từ thư viện.':
+        'Could not open the camera. You can still pick a photo from your library.',
+    'Không chụp được ảnh. Vui lòng thử lại.':
+        'Could not take the photo. Please try again.',
+
+    // Màn xử lý `scan-03`
+    'Đang xử lý hóa đơn...': 'Processing receipt...',
+    'Toàn bộ xử lý diễn ra ngay trên máy của bạn':
+        'All processing happens right on your device',
+    'Đọc & xử lý ảnh hóa đơn': 'Read & prepare the receipt image',
+    'Nhận diện chữ (OCR on-device)': 'Text recognition (on-device OCR)',
+    'Phân tích số tiền, ngày, danh mục': 'Analyse amount, date, category',
+    'Chuẩn bị màn hình xác nhận': 'Prepare the confirmation screen',
+    'Không gửi dữ liệu lên bất kỳ máy chủ nào':
+        'No data is sent to any server',
+    'Không nhận diện được nội dung hóa đơn. Vui lòng chụp lại hoặc nhập tay.':
+        'Could not read the receipt. Please retake the photo or enter it manually.',
+    'Chụp lại': 'Retake',
+    'Nhập tay': 'Enter manually',
+
+    // Màn xác nhận `scan-04`
+    'Xác nhận hóa đơn': 'Confirm receipt',
+    'Xem ảnh gốc': 'View original',
+    'Chạm vào 1 trường bên dưới để khoanh vùng đối chiếu trên ảnh':
+        'Tap a field below to highlight it on the image',
+    'LOẠI GIAO DỊCH': 'TRANSACTION TYPE',
+    'SỐ TIỀN': 'AMOUNT',
+    'NGÀY GIỜ': 'DATE & TIME',
+    'CỬA HÀNG / GHI CHÚ': 'MERCHANT / NOTE',
+    'Tên cửa hàng': 'Merchant name',
+    'DANH MỤC GỢI Ý': 'SUGGESTED CATEGORY',
+    'VÍ ÁP DỤNG': 'WALLET',
+    'Đang tải...': 'Loading...',
+    'Nguồn: Quét hóa đơn (AI) • xử lý hoàn toàn trên máy':
+        'Source: AI receipt scan • processed entirely on device',
+    'Kiểm tra lại': 'Review',
+    'Độ tin cậy cao': 'High confidence',
+    'Độ tin cậy trung bình': 'Medium confidence',
+    'Có thể trùng với giao dịch đã nhập. Bạn vẫn có thể lưu.':
+        'This may duplicate an existing transaction. You can still save it.',
+    'Vui lòng chọn ví trước khi lưu.': 'Please choose a wallet before saving.',
+
+    // Màn kiểm tra cấu hình `scan-10`
+    'Kiểm tra cấu hình máy': 'Check device capability',
+    'ĐANG KIỂM TRA': 'CHECKING',
+    'Bộ nhớ RAM': 'RAM',
+    'Dung lượng trống': 'Free storage',
+    'Hỗ trợ AI trên máy (AICore)': 'On-device AI (AICore)',
+    'Phiên bản hệ điều hành': 'OS version',
+    'Đạt': 'Pass',
+    'Không đạt': 'Fail',
+    'Có': 'Yes',
+    'Không': 'No',
+    'Đủ điều kiện — Tier A': 'Eligible — Tier A',
+    'Dùng ngay Gemini Nano': 'Use Gemini Nano now',
+    'Model do hệ thống Android quản lý — không cần tải thêm, sẵn sàng dùng ngay.':
+        'The model is managed by Android — nothing to download, ready to use.',
+    'Kích hoạt Gemini Nano': 'Activate Gemini Nano',
+    'Đủ điều kiện dùng Gemma 3n E2B': 'Eligible for Gemma 3n E2B',
+    'Cần tải model khoảng 1.8GB qua Wifi':
+        'Needs a ~1.8GB model download over Wifi',
+    'Tải model (1.8GB)': 'Download model (1.8GB)',
+    'Chưa đủ điều kiện dùng AI nâng cao': 'Not eligible for advanced AI',
+    'Bạn vẫn dùng được ở Chế độ cơ bản': 'You can still use Basic mode',
+    'Dùng chế độ cơ bản': 'Use Basic mode',
+    'Hỗ trợ AI trên máy — Không': 'On-device AI — No',
+    'Chip không hỗ trợ tăng tốc AI': 'Chip does not support AI acceleration',
+    'RAM @gb GB — cần tối thiểu 4 GB': 'RAM @gb GB — 4 GB required',
+    'Dung lượng trống @gb GB — cần tối thiểu 2 GB':
+        'Free storage @gb GB — 2 GB required',
+    'Đang tải model... @percent%': 'Downloading model... @percent%',
+    'Tải model thất bại. Bạn vẫn dùng được Chế độ cơ bản.':
+        'Model download failed. You can still use Basic mode.',
+
+    // Mục Cài đặt `scan-11`
+    'QUÉT HÓA ĐƠN AI': 'AI RECEIPT SCAN',
+    'Quét hóa đơn bằng AI': 'AI receipt scan',
+    'Trạng thái AI': 'AI status',
+    'Chế độ cơ bản': 'Basic mode',
+    'Chế độ cơ bản (Tier C)': 'Basic mode (Tier C)',
+    'Lần kiểm tra gần nhất': 'Last checked',
+    'Chưa kiểm tra': 'Not checked yet',
+    'Không xác định': 'Unknown',
+    'Kiểm tra lại cấu hình máy': 'Check device capability again',
+    'Dung lượng model': 'Model size',
+    'Xoá model': 'Delete model',
+    'Kiểm tra cập nhật model': 'Check for model update',
+    'Đã xoá model': 'Model deleted',
   };
 }

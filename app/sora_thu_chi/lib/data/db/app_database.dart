@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/budget/budget.dart';
 import '../../core/category/category.dart';
 import '../../core/category/category_source.dart';
+import '../../core/scan/scan_result.dart';
 import '../../core/transaction/transaction.dart';
 import '../../core/transaction/transaction_source.dart';
 import '../../core/wallet/wallet.dart';
@@ -83,6 +84,27 @@ class Transactions extends Table {
   TextColumn get tags => text().withDefault(const Constant(''))();
   TextColumn get receiptImage => text().withDefault(const Constant(''))();
   TextColumn get location => text().withDefault(const Constant(''))();
+
+  /// Nguồn tạo (schema v8, PBI 24): `manual` cho mọi dòng cũ/nhập tay,
+  /// `aiScan` cho giao dịch tạo qua quét hóa đơn.
+  TextColumn get source =>
+      textEnum<TxnSource>().withDefault(const Constant('manual'))();
+}
+
+/// Bảng phiên quét hóa đơn (data-model §1.2, schema v8 — PBI 24): vết của mỗi
+/// lần quét **đã lưu** (text OCR thô + kết quả trích xuất JSON + engine đã dùng)
+/// để tra cứu/gỡ lỗi và cải thiện bộ luật sau này (FR-034). Không FK — bám nếp
+/// `category_id`/`transfer_group_id` (plain int). Không seed: lần mở đầu tiên
+/// bảng rỗng là đúng nghiệp vụ.
+@DataClassName('ScanSessionsRow')
+class ScanSessions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get imagePath => text()();
+  TextColumn get rawText => text()();
+  TextColumn get parsedJson => text()();
+  TextColumn get engine => textEnum<ScanEngine>()();
+  IntColumn get transactionId => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
 }
 
 /// Bảng cài đặt key-value chung (data-model §AppSettings, schema v5) — nguồn
@@ -124,12 +146,14 @@ QueryExecutor _openConnection() {
   });
 }
 
-@DriftDatabase(tables: [Wallets, Categories, Transactions, AppSettings, Budgets])
+@DriftDatabase(
+  tables: [Wallets, Categories, Transactions, AppSettings, Budgets, ScanSessions],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -180,6 +204,18 @@ class AppDatabase extends _$AppDatabase {
       // kèm sẵn cột) → chỉ thêm cột is_archived, default false cho mọi dòng cũ.
       if (from >= 6 && from < 7) {
         await m.addColumn(budgets, budgets.isArchived);
+      }
+      // from < 8 (PBI 24): thêm cột `source` (default 'manual' — dòng cũ nhận
+      // manual, không cần backfill) + tạo bảng phiên quét (thuần tạo, KHÔNG
+      // seed). Không đụng bảng nào khác.
+      // DB `from < 2` đã tạo mới bảng transactions **kèm sẵn** cột source ở
+      // nhánh trên ⇒ bỏ qua addColumn để tránh duplicate-column (bám nếp
+      // nhánh category_id).
+      if (from < 8) {
+        if (from >= 2) {
+          await m.addColumn(transactions, transactions.source);
+        }
+        await m.createTable(scanSessions);
       }
     },
   );

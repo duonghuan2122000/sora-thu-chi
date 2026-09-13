@@ -1,5 +1,6 @@
 import '../core/budget/budget.dart';
 import '../core/category/category.dart';
+import '../core/scan/scan_result.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
 
@@ -93,6 +94,26 @@ abstract class WalletRepository {
     required Category category,
     required DateTime date,
     String note = '',
+  });
+
+  /// Ghi atomic một giao dịch **quét hóa đơn** (PBI 24, FR-033/FR-034): một
+  /// `db.transaction()` gồm bù `balance` ví theo loại + insert 1 dòng
+  /// `transactions` (`source = aiScan`, `receipt_image`, `note` = merchant,
+  /// `categoryId`/`category` có thể rỗng) + insert 1 dòng `scan_sessions`
+  /// (`transaction_id` vừa sinh, `engine` đã dùng). Ảnh phải được lưu vào kho
+  /// **trước** khi gọi (FR-036) — repository chỉ ghi đường dẫn.
+  Future<void> addScannedTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required DateTime date,
+    required String receiptImage,
+    required ScanEngine engine,
+    required String rawText,
+    required String parsedJson,
+    Category? category,
+    String note = '',
+    DateTime? createdAt,
   });
 
   /// Toàn bộ ngân sách của thiết bị (PBI 20) — **không lọc** theo kỳ/danh mục

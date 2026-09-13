@@ -28,6 +28,12 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Dùng FaceID để mở khóa ứng dụng Sora Thu Chi.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Dùng camera để chụp hóa đơn khi thêm giao dịch bằng quét hóa đơn.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Chọn ảnh hóa đơn có sẵn trong thư viện ảnh để thêm giao dịch.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Ứng dụng không ghi âm; quyền này chỉ do thư viện camera yêu cầu khi mở camera.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

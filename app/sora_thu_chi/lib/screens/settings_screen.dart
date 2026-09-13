@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../core/date_label.dart';
 import '../core/profile/device_profile.dart';
+import '../core/scan/device_tier.dart';
+import '../core/scan/scan_controller.dart';
+import '../core/scan/scan_result.dart';
 import '../core/widgets/screen_header.dart';
+import '../data/scan_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 import 'category_list_screen.dart';
+import 'scan/device_check_screen.dart';
 import 'utilities_screen.dart';
 import 'wallet_list_screen.dart';
 
@@ -124,11 +130,124 @@ class SettingsScreen extends StatelessWidget {
                   color: colors.tabInactive,
                 ),
               ),
+              _SectionLabel('QUÉT HÓA ĐƠN AI'.tr),
+              const _ScanGroup(),
             ],
           ),
         ),
       ],
     );
+  }
+}
+
+/// Nhóm "QUÉT HÓA ĐƠN AI" (PBI 24, mockup `scan-11`): công tắc bật/tắt + khối
+/// trạng thái (tier + mốc kiểm tra) + hàng chạy lại kiểm tra cấu hình. Đọc
+/// `ScanController` qua `Obx` ⇒ đổi công tắc ở đây phản ánh ngay vào sheet FAB
+/// (FR-003/FR-004, R15).
+class _ScanGroup extends StatelessWidget {
+  const _ScanGroup();
+
+  void _openDeviceCheck(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const DeviceCheckScreen()),
+    );
+  }
+
+  /// Xoá model Tier B khỏi máy rồi đưa về Chế độ cơ bản — model không còn thì
+  /// `effectiveEngine` cũng tự rơi về bộ luật (FR-012).
+  Future<void> _deleteModel(BuildContext context, ScanController controller) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ensureScanModelManager().delete();
+    controller.setModelBytes(0);
+    controller.setMode(ScanEngine.ruleBased);
+    messenger.showSnackBar(SnackBar(content: Text('Đã xoá model'.tr)));
+  }
+
+  /// `1.8 GB` / `850 MB` — đơn vị không dịch, chỉ hiển thị.
+  static String formatBytes(int bytes) {
+    if (bytes >= 1000000000) {
+      return '${(bytes / 1000000000).toStringAsFixed(1)} GB';
+    }
+    return '${(bytes / 1000000).toStringAsFixed(0)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
+    final controller = ensureScanController();
+    return Obx(() {
+      final settings = controller.settings.value;
+      final check = settings.deviceCheck;
+      return Column(
+        children: [
+          _SettingsRow(
+            label: 'Quét hóa đơn bằng AI'.tr,
+            trailing: Switch(
+              key: const ValueKey('scan-enabled-switch'),
+              value: settings.enabled,
+              onChanged: controller.setEnabled,
+            ),
+          ),
+          _SettingsRow(
+            label: 'Trạng thái AI'.tr,
+            trailing: Text(
+              _modeLabel(settings.mode, check == null ? null : classifyTier(check)),
+              key: const ValueKey('scan-ai-status'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+          ),
+          _SettingsRow(
+            label: 'Lần kiểm tra gần nhất'.tr,
+            trailing: Text(
+              check == null
+                  ? 'Chưa kiểm tra'.tr
+                  : formatDateTimeLabel(check.checkedAt),
+              key: const ValueKey('scan-last-check'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+            ),
+          ),
+          if (settings.modelBytes > 0)
+            _SettingsRow(
+              label: 'Dung lượng model'.tr,
+              trailing: Text(
+                formatBytes(settings.modelBytes),
+                key: const ValueKey('scan-model-size'),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
+              ),
+            ),
+          if (settings.modelBytes > 0)
+            _SettingsRow(
+              label: 'Xoá model'.tr,
+              onTap: () => _deleteModel(context, controller),
+              trailing: Icon(Icons.delete_outline, color: colors.tabInactive),
+            ),
+          _SettingsRow(
+            label: 'Kiểm tra lại cấu hình máy'.tr,
+            onTap: () => _openDeviceCheck(context),
+            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
+          ),
+          _SettingsRow(
+            label: 'Kiểm tra cập nhật model'.tr,
+            onTap: () => _openDeviceCheck(context),
+            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
+          ),
+        ],
+      );
+    });
+  }
+
+  /// Nhãn trạng thái: chưa kiểm tra → Chế độ cơ bản; đã kiểm tra → theo tier.
+  static String _modeLabel(ScanEngine mode, AiTier? tier) {
+    if (tier == AiTier.a) return 'Gemini Nano (Tier A)';
+    if (tier == AiTier.b) return 'Gemma 3n E2B (Tier B)';
+    if (tier == AiTier.c) return 'Chế độ cơ bản (Tier C)'.tr;
+    return 'Chế độ cơ bản'.tr;
   }
 }
 
@@ -232,9 +351,14 @@ class _SettingsRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: colors.listDivider)),
       ),
+      // `spaceBetween` giữ trailing sát mép phải; cả hai vế đều `Flexible` nên
+      // giá trị dài (trạng thái AI, mốc kiểm tra) vẫn co được, không tràn hàng
+      // khi cỡ chữ lớn (SC-014). Dùng `Expanded` cho nhãn sẽ khiến hàng chia đôi
+      // không gian và đẩy trailing ra giữa màn hình.
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
+          Flexible(
             child: Text(
               label,
               style: TextStyle(
@@ -245,7 +369,7 @@ class _SettingsRow extends StatelessWidget {
           ),
           if (trailing != null) ...[
             const SizedBox(width: 8),
-            trailing!,
+            Flexible(child: trailing!),
           ],
         ],
       ),

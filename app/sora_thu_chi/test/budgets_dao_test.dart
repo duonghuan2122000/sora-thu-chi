@@ -122,6 +122,17 @@ void main() {
           Variable(1788220800),
         ],
       );
+      // DB v6 thật chưa có cột `source` của giao dịch (schema v8, PBI 24) —
+      // bỏ đi để mô phỏng đúng hình dạng cũ.
+      try {
+        await first.customStatement(
+          'ALTER TABLE transactions DROP COLUMN source',
+        );
+      } catch (_) {
+        await first.close();
+        markTestSkipped('sqlite bản này không hỗ trợ DROP COLUMN — bỏ qua.');
+        return;
+      }
       await first.customStatement('PRAGMA user_version = 6');
       await first.close();
 
@@ -311,10 +322,20 @@ void main() {
       });
       final file = File(p.join(dir.path, 'v5.sqlite'));
 
-      // (1) Mở lần đầu (v6) rồi giả lập DB cũ v5: bỏ bảng budgets, hạ version.
+      // (1) Mở lần đầu (v6) rồi giả lập DB cũ v5: bỏ bảng budgets + cột
+      //     `source` của giao dịch (schema v8, PBI 24), hạ version.
       final first = AppDatabase(NativeDatabase.createInBackground(file));
       await first.customSelect('SELECT 1').get();
       await first.customStatement('DROP TABLE budgets');
+      try {
+        await first.customStatement(
+          'ALTER TABLE transactions DROP COLUMN source',
+        );
+      } catch (_) {
+        await first.close();
+        markTestSkipped('sqlite bản này không hỗ trợ DROP COLUMN — bỏ qua.');
+        return;
+      }
       await first.customStatement('PRAGMA user_version = 5');
       await first.close();
 

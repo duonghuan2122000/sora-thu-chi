@@ -12,5 +12,9 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Kênh đo cấu hình máy — thiếu đăng ký thì màn `scan-10` treo ở "Đang kiểm tra…" (R17).
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DeviceProbeChannel") {
+      DeviceProbeChannel.register(messenger: registrar.messenger())
+    }
   }
 }

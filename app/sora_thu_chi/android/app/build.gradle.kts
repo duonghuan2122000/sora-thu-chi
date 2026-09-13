@@ -20,7 +20,8 @@ android {
         applicationId = "com.sorathuchi.sora_thu_chi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // ML Kit GenAI Prompt API (Tier A, PBI 24 chặng 2) yêu cầu API >= 26.
+        minSdk = maxOf(flutter.minSdkVersion, 26)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -31,6 +32,11 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Cần cho ML Kit text recognition (PBI 24) — xem proguard-rules.pro.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
@@ -39,6 +45,13 @@ kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
+}
+
+dependencies {
+    // Tier A — gọi Gemini Nano qua AICore hệ thống (PBI 24 chặng 2, R18).
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
+    // `CoroutineScope(Dispatchers.Main)` cho GenAiChannel — ML Kit chỉ có API `suspend`.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
 
 flutter {

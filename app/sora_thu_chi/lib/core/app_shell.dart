@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import '../screens/add_transaction_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/report_screen.dart';
+import '../screens/scan/add_transaction_sheet.dart';
 import '../screens/settings_screen.dart';
 import '../screens/transaction_screen.dart';
 import '../data/report_deps.dart';
 import '../data/transaction_deps.dart';
+import 'scan/scan_flow.dart';
+import 'transaction/transaction.dart';
 import 'widgets/add_transaction_fab.dart';
 import 'widgets/app_bottom_nav_bar.dart';
 
@@ -47,12 +50,27 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  Future<void> _openAddTransaction(BuildContext context) async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-    );
-    // Lưu thu/chi thành công hoặc xong chuyển khoản (qua tab) đều pop `true` →
-    // làm mới ngay danh sách + card "Thu/Chi tháng này" (FR-013/SC-006, R10).
+  /// FAB → bottom sheet "Thêm giao dịch" (mockup `scan-01`, PBI 24 FR-001) rồi
+  /// điều phối theo lựa chọn. Cờ "đã lưu" giữ nguyên khối làm mới sẵn có.
+  Future<void> _openAddSheet(BuildContext context) async {
+    final choice = await showAddTransactionSheet(context);
+    if (choice == null || !context.mounted) return;
+
+    bool? saved;
+    switch (choice) {
+      case AddSheetChoice.income:
+        saved = await _pushAddForm(TxnType.income);
+      case AddSheetChoice.expense:
+        saved = await _pushAddForm(TxnType.expense);
+      case AddSheetChoice.transfer:
+        saved = await _pushAddForm(TxnType.transfer);
+      case AddSheetChoice.scan:
+        saved = await startScanFlow(context);
+    }
+
+    // Lưu thu/chi thành công, xong chuyển khoản, hoặc lưu giao dịch quét đều
+    // pop/trả `true` → làm mới ngay danh sách + card "Thu/Chi tháng này"
+    // (FR-013/SC-006, R10; PBI 24 SC-015).
     if (saved == true && mounted) {
       ensureTransactionController().load();
       // FAB hiện trên mọi tab: đứng ở tab Báo cáo mà ghi giao dịch thì số liệu
@@ -61,6 +79,12 @@ class _AppShellState extends State<AppShell> {
         ensureReportController().load();
       }
     }
+  }
+
+  Future<bool?> _pushAddForm(TxnType type) {
+    return Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => AddTransactionScreen(initialType: type)),
+    );
   }
 
   @override
@@ -72,7 +96,7 @@ class _AppShellState extends State<AppShell> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: AddTransactionFab(
-        onTap: () => _openAddTransaction(context),
+        onTap: () => _openAddSheet(context),
       ),
       bottomNavigationBar: AppBottomNavBar(
         selectedIndex: _selectedIndex,

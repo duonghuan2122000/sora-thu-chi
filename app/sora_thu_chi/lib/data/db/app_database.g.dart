@@ -1765,6 +1765,16 @@ class $TransactionsTable extends Transactions
     defaultValue: const Constant(''),
   );
   @override
+  late final GeneratedColumnWithTypeConverter<TxnSource, String> source =
+      GeneratedColumn<String>(
+        'source',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('manual'),
+      ).withConverter<TxnSource>($TransactionsTable.$convertersource);
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     walletId,
@@ -1778,6 +1788,7 @@ class $TransactionsTable extends Transactions
     tags,
     receiptImage,
     location,
+    source,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1928,6 +1939,12 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}location'],
       )!,
+      source: $TransactionsTable.$convertersource.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}source'],
+        )!,
+      ),
     );
   }
 
@@ -1938,6 +1955,8 @@ class $TransactionsTable extends Transactions
 
   static JsonTypeConverter2<TxnType, String, String> $convertertype =
       const EnumNameConverter<TxnType>(TxnType.values);
+  static JsonTypeConverter2<TxnSource, String, String> $convertersource =
+      const EnumNameConverter<TxnSource>(TxnSource.values);
 }
 
 class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
@@ -1953,6 +1972,10 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
   final String tags;
   final String receiptImage;
   final String location;
+
+  /// Nguồn tạo (schema v8, PBI 24): `manual` cho mọi dòng cũ/nhập tay,
+  /// `aiScan` cho giao dịch tạo qua quét hóa đơn.
+  final TxnSource source;
   const TransactionsRow({
     required this.id,
     required this.walletId,
@@ -1966,6 +1989,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     required this.tags,
     required this.receiptImage,
     required this.location,
+    required this.source,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1990,6 +2014,11 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     map['tags'] = Variable<String>(tags);
     map['receipt_image'] = Variable<String>(receiptImage);
     map['location'] = Variable<String>(location);
+    {
+      map['source'] = Variable<String>(
+        $TransactionsTable.$convertersource.toSql(source),
+      );
+    }
     return map;
   }
 
@@ -2011,6 +2040,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       tags: Value(tags),
       receiptImage: Value(receiptImage),
       location: Value(location),
+      source: Value(source),
     );
   }
 
@@ -2034,6 +2064,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       tags: serializer.fromJson<String>(json['tags']),
       receiptImage: serializer.fromJson<String>(json['receiptImage']),
       location: serializer.fromJson<String>(json['location']),
+      source: $TransactionsTable.$convertersource.fromJson(
+        serializer.fromJson<String>(json['source']),
+      ),
     );
   }
   @override
@@ -2054,6 +2087,9 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
       'tags': serializer.toJson<String>(tags),
       'receiptImage': serializer.toJson<String>(receiptImage),
       'location': serializer.toJson<String>(location),
+      'source': serializer.toJson<String>(
+        $TransactionsTable.$convertersource.toJson(source),
+      ),
     };
   }
 
@@ -2070,6 +2106,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     String? tags,
     String? receiptImage,
     String? location,
+    TxnSource? source,
   }) => TransactionsRow(
     id: id ?? this.id,
     walletId: walletId ?? this.walletId,
@@ -2085,6 +2122,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     tags: tags ?? this.tags,
     receiptImage: receiptImage ?? this.receiptImage,
     location: location ?? this.location,
+    source: source ?? this.source,
   );
   TransactionsRow copyWithCompanion(TransactionsCompanion data) {
     return TransactionsRow(
@@ -2108,6 +2146,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           ? data.receiptImage.value
           : this.receiptImage,
       location: data.location.present ? data.location.value : this.location,
+      source: data.source.present ? data.source.value : this.source,
     );
   }
 
@@ -2125,7 +2164,8 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           ..write('categoryId: $categoryId, ')
           ..write('tags: $tags, ')
           ..write('receiptImage: $receiptImage, ')
-          ..write('location: $location')
+          ..write('location: $location, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -2144,6 +2184,7 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
     tags,
     receiptImage,
     location,
+    source,
   );
   @override
   bool operator ==(Object other) =>
@@ -2160,7 +2201,8 @@ class TransactionsRow extends DataClass implements Insertable<TransactionsRow> {
           other.categoryId == this.categoryId &&
           other.tags == this.tags &&
           other.receiptImage == this.receiptImage &&
-          other.location == this.location);
+          other.location == this.location &&
+          other.source == this.source);
 }
 
 class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
@@ -2176,6 +2218,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
   final Value<String> tags;
   final Value<String> receiptImage;
   final Value<String> location;
+  final Value<TxnSource> source;
   const TransactionsCompanion({
     this.id = const Value.absent(),
     this.walletId = const Value.absent(),
@@ -2189,6 +2232,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     this.tags = const Value.absent(),
     this.receiptImage = const Value.absent(),
     this.location = const Value.absent(),
+    this.source = const Value.absent(),
   });
   TransactionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2203,6 +2247,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     this.tags = const Value.absent(),
     this.receiptImage = const Value.absent(),
     this.location = const Value.absent(),
+    this.source = const Value.absent(),
   }) : walletId = Value(walletId),
        type = Value(type),
        amount = Value(amount),
@@ -2220,6 +2265,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     Expression<String>? tags,
     Expression<String>? receiptImage,
     Expression<String>? location,
+    Expression<String>? source,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2234,6 +2280,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
       if (tags != null) 'tags': tags,
       if (receiptImage != null) 'receipt_image': receiptImage,
       if (location != null) 'location': location,
+      if (source != null) 'source': source,
     });
   }
 
@@ -2250,6 +2297,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     Value<String>? tags,
     Value<String>? receiptImage,
     Value<String>? location,
+    Value<TxnSource>? source,
   }) {
     return TransactionsCompanion(
       id: id ?? this.id,
@@ -2264,6 +2312,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
       tags: tags ?? this.tags,
       receiptImage: receiptImage ?? this.receiptImage,
       location: location ?? this.location,
+      source: source ?? this.source,
     );
   }
 
@@ -2308,6 +2357,11 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
     if (location.present) {
       map['location'] = Variable<String>(location.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(
+        $TransactionsTable.$convertersource.toSql(source.value),
+      );
+    }
     return map;
   }
 
@@ -2325,7 +2379,8 @@ class TransactionsCompanion extends UpdateCompanion<TransactionsRow> {
           ..write('categoryId: $categoryId, ')
           ..write('tags: $tags, ')
           ..write('receiptImage: $receiptImage, ')
-          ..write('location: $location')
+          ..write('location: $location, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -3006,6 +3061,475 @@ class BudgetsCompanion extends UpdateCompanion<BudgetsRow> {
   }
 }
 
+class $ScanSessionsTable extends ScanSessions
+    with TableInfo<$ScanSessionsTable, ScanSessionsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScanSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _imagePathMeta = const VerificationMeta(
+    'imagePath',
+  );
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+    'image_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rawTextMeta = const VerificationMeta(
+    'rawText',
+  );
+  @override
+  late final GeneratedColumn<String> rawText = GeneratedColumn<String>(
+    'raw_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parsedJsonMeta = const VerificationMeta(
+    'parsedJson',
+  );
+  @override
+  late final GeneratedColumn<String> parsedJson = GeneratedColumn<String>(
+    'parsed_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ScanEngine, String> engine =
+      GeneratedColumn<String>(
+        'engine',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ScanEngine>($ScanSessionsTable.$converterengine);
+  static const VerificationMeta _transactionIdMeta = const VerificationMeta(
+    'transactionId',
+  );
+  @override
+  late final GeneratedColumn<int> transactionId = GeneratedColumn<int>(
+    'transaction_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    imagePath,
+    rawText,
+    parsedJson,
+    engine,
+    transactionId,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scan_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScanSessionsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('image_path')) {
+      context.handle(
+        _imagePathMeta,
+        imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_imagePathMeta);
+    }
+    if (data.containsKey('raw_text')) {
+      context.handle(
+        _rawTextMeta,
+        rawText.isAcceptableOrUnknown(data['raw_text']!, _rawTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rawTextMeta);
+    }
+    if (data.containsKey('parsed_json')) {
+      context.handle(
+        _parsedJsonMeta,
+        parsedJson.isAcceptableOrUnknown(data['parsed_json']!, _parsedJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_parsedJsonMeta);
+    }
+    if (data.containsKey('transaction_id')) {
+      context.handle(
+        _transactionIdMeta,
+        transactionId.isAcceptableOrUnknown(
+          data['transaction_id']!,
+          _transactionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ScanSessionsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScanSessionsRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      imagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_path'],
+      )!,
+      rawText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}raw_text'],
+      )!,
+      parsedJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parsed_json'],
+      )!,
+      engine: $ScanSessionsTable.$converterengine.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}engine'],
+        )!,
+      ),
+      transactionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}transaction_id'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ScanSessionsTable createAlias(String alias) {
+    return $ScanSessionsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<ScanEngine, String, String> $converterengine =
+      const EnumNameConverter<ScanEngine>(ScanEngine.values);
+}
+
+class ScanSessionsRow extends DataClass implements Insertable<ScanSessionsRow> {
+  final int id;
+  final String imagePath;
+  final String rawText;
+  final String parsedJson;
+  final ScanEngine engine;
+  final int? transactionId;
+  final DateTime createdAt;
+  const ScanSessionsRow({
+    required this.id,
+    required this.imagePath,
+    required this.rawText,
+    required this.parsedJson,
+    required this.engine,
+    this.transactionId,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['image_path'] = Variable<String>(imagePath);
+    map['raw_text'] = Variable<String>(rawText);
+    map['parsed_json'] = Variable<String>(parsedJson);
+    {
+      map['engine'] = Variable<String>(
+        $ScanSessionsTable.$converterengine.toSql(engine),
+      );
+    }
+    if (!nullToAbsent || transactionId != null) {
+      map['transaction_id'] = Variable<int>(transactionId);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ScanSessionsCompanion toCompanion(bool nullToAbsent) {
+    return ScanSessionsCompanion(
+      id: Value(id),
+      imagePath: Value(imagePath),
+      rawText: Value(rawText),
+      parsedJson: Value(parsedJson),
+      engine: Value(engine),
+      transactionId: transactionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transactionId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ScanSessionsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScanSessionsRow(
+      id: serializer.fromJson<int>(json['id']),
+      imagePath: serializer.fromJson<String>(json['imagePath']),
+      rawText: serializer.fromJson<String>(json['rawText']),
+      parsedJson: serializer.fromJson<String>(json['parsedJson']),
+      engine: $ScanSessionsTable.$converterengine.fromJson(
+        serializer.fromJson<String>(json['engine']),
+      ),
+      transactionId: serializer.fromJson<int?>(json['transactionId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'imagePath': serializer.toJson<String>(imagePath),
+      'rawText': serializer.toJson<String>(rawText),
+      'parsedJson': serializer.toJson<String>(parsedJson),
+      'engine': serializer.toJson<String>(
+        $ScanSessionsTable.$converterengine.toJson(engine),
+      ),
+      'transactionId': serializer.toJson<int?>(transactionId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ScanSessionsRow copyWith({
+    int? id,
+    String? imagePath,
+    String? rawText,
+    String? parsedJson,
+    ScanEngine? engine,
+    Value<int?> transactionId = const Value.absent(),
+    DateTime? createdAt,
+  }) => ScanSessionsRow(
+    id: id ?? this.id,
+    imagePath: imagePath ?? this.imagePath,
+    rawText: rawText ?? this.rawText,
+    parsedJson: parsedJson ?? this.parsedJson,
+    engine: engine ?? this.engine,
+    transactionId: transactionId.present
+        ? transactionId.value
+        : this.transactionId,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ScanSessionsRow copyWithCompanion(ScanSessionsCompanion data) {
+    return ScanSessionsRow(
+      id: data.id.present ? data.id.value : this.id,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
+      rawText: data.rawText.present ? data.rawText.value : this.rawText,
+      parsedJson: data.parsedJson.present
+          ? data.parsedJson.value
+          : this.parsedJson,
+      engine: data.engine.present ? data.engine.value : this.engine,
+      transactionId: data.transactionId.present
+          ? data.transactionId.value
+          : this.transactionId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScanSessionsRow(')
+          ..write('id: $id, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('rawText: $rawText, ')
+          ..write('parsedJson: $parsedJson, ')
+          ..write('engine: $engine, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    imagePath,
+    rawText,
+    parsedJson,
+    engine,
+    transactionId,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScanSessionsRow &&
+          other.id == this.id &&
+          other.imagePath == this.imagePath &&
+          other.rawText == this.rawText &&
+          other.parsedJson == this.parsedJson &&
+          other.engine == this.engine &&
+          other.transactionId == this.transactionId &&
+          other.createdAt == this.createdAt);
+}
+
+class ScanSessionsCompanion extends UpdateCompanion<ScanSessionsRow> {
+  final Value<int> id;
+  final Value<String> imagePath;
+  final Value<String> rawText;
+  final Value<String> parsedJson;
+  final Value<ScanEngine> engine;
+  final Value<int?> transactionId;
+  final Value<DateTime> createdAt;
+  const ScanSessionsCompanion({
+    this.id = const Value.absent(),
+    this.imagePath = const Value.absent(),
+    this.rawText = const Value.absent(),
+    this.parsedJson = const Value.absent(),
+    this.engine = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ScanSessionsCompanion.insert({
+    this.id = const Value.absent(),
+    required String imagePath,
+    required String rawText,
+    required String parsedJson,
+    required ScanEngine engine,
+    this.transactionId = const Value.absent(),
+    required DateTime createdAt,
+  }) : imagePath = Value(imagePath),
+       rawText = Value(rawText),
+       parsedJson = Value(parsedJson),
+       engine = Value(engine),
+       createdAt = Value(createdAt);
+  static Insertable<ScanSessionsRow> custom({
+    Expression<int>? id,
+    Expression<String>? imagePath,
+    Expression<String>? rawText,
+    Expression<String>? parsedJson,
+    Expression<String>? engine,
+    Expression<int>? transactionId,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (imagePath != null) 'image_path': imagePath,
+      if (rawText != null) 'raw_text': rawText,
+      if (parsedJson != null) 'parsed_json': parsedJson,
+      if (engine != null) 'engine': engine,
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ScanSessionsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? imagePath,
+    Value<String>? rawText,
+    Value<String>? parsedJson,
+    Value<ScanEngine>? engine,
+    Value<int?>? transactionId,
+    Value<DateTime>? createdAt,
+  }) {
+    return ScanSessionsCompanion(
+      id: id ?? this.id,
+      imagePath: imagePath ?? this.imagePath,
+      rawText: rawText ?? this.rawText,
+      parsedJson: parsedJson ?? this.parsedJson,
+      engine: engine ?? this.engine,
+      transactionId: transactionId ?? this.transactionId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
+    if (rawText.present) {
+      map['raw_text'] = Variable<String>(rawText.value);
+    }
+    if (parsedJson.present) {
+      map['parsed_json'] = Variable<String>(parsedJson.value);
+    }
+    if (engine.present) {
+      map['engine'] = Variable<String>(
+        $ScanSessionsTable.$converterengine.toSql(engine.value),
+      );
+    }
+    if (transactionId.present) {
+      map['transaction_id'] = Variable<int>(transactionId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScanSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('rawText: $rawText, ')
+          ..write('parsedJson: $parsedJson, ')
+          ..write('engine: $engine, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3014,6 +3538,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $BudgetsTable budgets = $BudgetsTable(this);
+  late final $ScanSessionsTable scanSessions = $ScanSessionsTable(this);
   late final Index transactionsWalletIdIndex = Index(
     'transactions_wallet_id_index',
     'CREATE INDEX transactions_wallet_id_index ON transactions (wallet_id)',
@@ -3028,6 +3553,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     transactions,
     appSettings,
     budgets,
+    scanSessions,
     transactionsWalletIdIndex,
   ];
 }
@@ -3812,6 +4338,7 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String> tags,
       Value<String> receiptImage,
       Value<String> location,
+      Value<TxnSource> source,
     });
 typedef $$TransactionsTableUpdateCompanionBuilder =
     TransactionsCompanion Function({
@@ -3827,6 +4354,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String> tags,
       Value<String> receiptImage,
       Value<String> location,
+      Value<TxnSource> source,
     });
 
 class $$TransactionsTableFilterComposer
@@ -3898,6 +4426,12 @@ class $$TransactionsTableFilterComposer
     column: $table.location,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<TxnSource, TxnSource, String> get source =>
+      $composableBuilder(
+        column: $table.source,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 }
 
 class $$TransactionsTableOrderingComposer
@@ -3968,6 +4502,11 @@ class $$TransactionsTableOrderingComposer
     column: $table.location,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TransactionsTableAnnotationComposer
@@ -4022,6 +4561,9 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TxnSource, String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 }
 
 class $$TransactionsTableTableManager
@@ -4067,6 +4609,7 @@ class $$TransactionsTableTableManager
                 Value<String> tags = const Value.absent(),
                 Value<String> receiptImage = const Value.absent(),
                 Value<String> location = const Value.absent(),
+                Value<TxnSource> source = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
                 walletId: walletId,
@@ -4080,6 +4623,7 @@ class $$TransactionsTableTableManager
                 tags: tags,
                 receiptImage: receiptImage,
                 location: location,
+                source: source,
               ),
           createCompanionCallback:
               ({
@@ -4095,6 +4639,7 @@ class $$TransactionsTableTableManager
                 Value<String> tags = const Value.absent(),
                 Value<String> receiptImage = const Value.absent(),
                 Value<String> location = const Value.absent(),
+                Value<TxnSource> source = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
                 walletId: walletId,
@@ -4108,6 +4653,7 @@ class $$TransactionsTableTableManager
                 tags: tags,
                 receiptImage: receiptImage,
                 location: location,
+                source: source,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4536,6 +5082,252 @@ typedef $$BudgetsTableProcessedTableManager =
       BudgetsRow,
       PrefetchHooks Function()
     >;
+typedef $$ScanSessionsTableCreateCompanionBuilder =
+    ScanSessionsCompanion Function({
+      Value<int> id,
+      required String imagePath,
+      required String rawText,
+      required String parsedJson,
+      required ScanEngine engine,
+      Value<int?> transactionId,
+      required DateTime createdAt,
+    });
+typedef $$ScanSessionsTableUpdateCompanionBuilder =
+    ScanSessionsCompanion Function({
+      Value<int> id,
+      Value<String> imagePath,
+      Value<String> rawText,
+      Value<String> parsedJson,
+      Value<ScanEngine> engine,
+      Value<int?> transactionId,
+      Value<DateTime> createdAt,
+    });
+
+class $$ScanSessionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ScanSessionsTable> {
+  $$ScanSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rawText => $composableBuilder(
+    column: $table.rawText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parsedJson => $composableBuilder(
+    column: $table.parsedJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<ScanEngine, ScanEngine, String> get engine =>
+      $composableBuilder(
+        column: $table.engine,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<int> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScanSessionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScanSessionsTable> {
+  $$ScanSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rawText => $composableBuilder(
+    column: $table.rawText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parsedJson => $composableBuilder(
+    column: $table.parsedJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get engine => $composableBuilder(
+    column: $table.engine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScanSessionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScanSessionsTable> {
+  $$ScanSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
+  GeneratedColumn<String> get rawText =>
+      $composableBuilder(column: $table.rawText, builder: (column) => column);
+
+  GeneratedColumn<String> get parsedJson => $composableBuilder(
+    column: $table.parsedJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<ScanEngine, String> get engine =>
+      $composableBuilder(column: $table.engine, builder: (column) => column);
+
+  GeneratedColumn<int> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ScanSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScanSessionsTable,
+          ScanSessionsRow,
+          $$ScanSessionsTableFilterComposer,
+          $$ScanSessionsTableOrderingComposer,
+          $$ScanSessionsTableAnnotationComposer,
+          $$ScanSessionsTableCreateCompanionBuilder,
+          $$ScanSessionsTableUpdateCompanionBuilder,
+          (
+            ScanSessionsRow,
+            BaseReferences<_$AppDatabase, $ScanSessionsTable, ScanSessionsRow>,
+          ),
+          ScanSessionsRow,
+          PrefetchHooks Function()
+        > {
+  $$ScanSessionsTableTableManager(_$AppDatabase db, $ScanSessionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScanSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScanSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScanSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> imagePath = const Value.absent(),
+                Value<String> rawText = const Value.absent(),
+                Value<String> parsedJson = const Value.absent(),
+                Value<ScanEngine> engine = const Value.absent(),
+                Value<int?> transactionId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ScanSessionsCompanion(
+                id: id,
+                imagePath: imagePath,
+                rawText: rawText,
+                parsedJson: parsedJson,
+                engine: engine,
+                transactionId: transactionId,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String imagePath,
+                required String rawText,
+                required String parsedJson,
+                required ScanEngine engine,
+                Value<int?> transactionId = const Value.absent(),
+                required DateTime createdAt,
+              }) => ScanSessionsCompanion.insert(
+                id: id,
+                imagePath: imagePath,
+                rawText: rawText,
+                parsedJson: parsedJson,
+                engine: engine,
+                transactionId: transactionId,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ScanSessionsTable, ScanSessionsRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ScanSessionsTable,
+                    ScanSessionsRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScanSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScanSessionsTable,
+      ScanSessionsRow,
+      $$ScanSessionsTableFilterComposer,
+      $$ScanSessionsTableOrderingComposer,
+      $$ScanSessionsTableAnnotationComposer,
+      $$ScanSessionsTableCreateCompanionBuilder,
+      $$ScanSessionsTableUpdateCompanionBuilder,
+      (
+        ScanSessionsRow,
+        BaseReferences<_$AppDatabase, $ScanSessionsTable, ScanSessionsRow>,
+      ),
+      ScanSessionsRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4550,4 +5342,6 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$BudgetsTableTableManager get budgets =>
       $$BudgetsTableTableManager(_db, _db.budgets);
+  $$ScanSessionsTableTableManager get scanSessions =>
+      $$ScanSessionsTableTableManager(_db, _db.scanSessions);
 }

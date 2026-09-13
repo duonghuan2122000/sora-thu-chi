@@ -47,6 +47,13 @@ dependencies:
   flutter_secure_storage: ^11.0.0
   local_auth: ^3.0.2
   crypto: ^3.0.7
+  google_mlkit_text_recognition: ^0.17.1
+  camera: ^0.12.1
+  image_picker: ^1.2.3
+  image: ^4.9.2
+  device_info_plus: ^13.2.0
+  flutter_gemma: ^1.8.1
+  flutter_gemma_litertlm: ^1.6.3
 
 dev_dependencies:
   flutter_test:

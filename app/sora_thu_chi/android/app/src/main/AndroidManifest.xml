@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Quét hóa đơn (PBI 24, FR-013): xin quyền đúng lúc mở màn chụp.
+         `required=false` — máy không có camera vẫn cài được, dùng đường Thư viện. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
     <application
         android:label="Sora Thu Chi"
         android:name="${applicationName}"
