@@ -110,6 +110,13 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 1. **Splash khởi động** (`PinGate`) — nền teal đặc + chữ trắng, xem §Nhận diện thương hiệu.
 2. **Màn chụp hóa đơn `scan-02`** — nền tối cố định (PBI 24).
 
+## So sánh kỳ — màn `03` Báo cáo (PBI 26)
+- **Cặp chip kỳ**: chip **kỳ chính (trái)** = fill thương hiệu `AppColors.teal` + chữ trắng (đúng nghĩa "trạng thái chọn"); chip **kỳ đối chiếu (phải)** = `SoraColors.softCardBg` + chữ `listLabel` + **mũi tên nhỏ `Icons.expand_more`** làm chỉ báo bấm được — **khác biệt cố ý** so với mockup `03` (mockup vẽ chip phải như nhãn tĩnh). Nút hoán đổi ở giữa: tròn `28px`, icon `swap_horiz` màu `tabInactive`.
+- **Cặp cột so sánh** (thẻ Thu nhập / Chi tiêu): `Container` rộng `36`, cao `64 × giá_trị / max` (cột lớn chiếm trọn `64`; cả hai `0` ⇒ **không** vẽ cột) — **không** dùng `BarChart` cho 2 cột tĩnh (mockup cũng vẽ bằng `rect` thường). Cột kỳ chính tô màu **loại giao dịch** (`tealOnNeutral` cho Thu / `coralOnNeutral` cho Chi); cột kỳ đối chiếu `dotEmpty` alpha `0.5`.
+- **Badge %**: chữ `w700`, màu theo **ý nghĩa tốt/xấu** (Thu tăng / Chi giảm = `tealOnNeutral`; ngược lại = `coralOnNeutral`); `0%` để màu `textSecondary`, **không** mũi tên; kỳ đối chiếu rỗng ⇒ **ghi chú chữ** thay badge (không chia 0).
+- **Nền thẻ**: `softCardBg` bo `10` (giống thẻ màn `01`), thẻ Nhận xét `coralLightBg` + icon `error_outline` coral. **Khác biệt cố ý** với mockup `03` (vẽ thẻ nền trắng + viền `#EFEFEF`): repo **không có token** cho cặp trắng-viền đó, dùng token sẵn có để dark mode đúng mà **không** thêm token mới.
+- **Biểu đồ xu hướng**: `fl_chart` **`LineChart`** — kỳ trái nét **liền** `tealOnNeutral`, kỳ phải nét **đứt** `dashArray: [4, 3]` màu `tabInactive`; chỉ bật **trục hoành** (3 nhãn: `1` / giữa kỳ / ngày cuối — `interval: 1` + hàm nhãn tự ẩn mọi mốc khác), **không** trục tung, **không** lưới, đường đáy `divider`; chấm (`FlDotData`) **ẩn**, không `isCurved`.
+
 ## App shell & layout
 - **Bottom nav 5 vị trí**: Tổng quan | Giao dịch | **FAB "Thêm giao dịch" nổi giữa** (nhô lên, hình tròn teal, icon + trắng — hành động lõi) | Báo cáo | Cài đặt.
 - Tab chọn: icon + label teal (in đậm); chưa chọn: xám `#9B9B9B`.
