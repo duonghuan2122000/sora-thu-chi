@@ -1,14 +1,16 @@
 ---
 title: "Design system"
-date: 2026-09-03
+date: 2026-09-13
 tags: [concept, ui, design]
 sources:
   - ../docs/design-system-app-thu-chi.md
   - ../docs/transaction/nghiep-vu-thiet-ke-quan-ly-giao-dich.md
   - ../docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md
   - ../docs/ai/tinh-nang-quet-hoa-don-ai-local.md
+  - ../docs/logo/logo-concepts-sora-thu-chi.md
   - ../../.specify/specs/18/spec.md
   - ../../.specify/specs/24/spec.md
+  - ../../.specify/specs/25/spec.md
 ---
 
 # Design system
@@ -52,6 +54,21 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - Là **token theme** (không hex cứng trong widget) để đạt tương phản ở dark mode; `copyWith`/`lerp` lerp từng phần tử theo chỉ số (độ dài cố định 6).
 - **Cột biểu đồ dòng tiền + 2 số tổng** thì ngược lại: vẫn dùng token teal/coral sẵn có (đúng nghĩa thu/chi), tô bằng `tealOnNeutral`/`coralOnNeutral`.
 
+## Nhận diện thương hiệu — logo & splash (PBI 25)
+> Nguồn: `docs/logo/logo-concepts-sora-thu-chi.md` (⚠ doc gợi ý Concept C cho icon — **quyết định thực tế khác**, xem dưới), `.specify/specs/25`. Sinh asset: `app/sora_thu_chi/tool/gen_brand_assets.dart`.
+
+- **Một logo duy nhất cho mọi ngữ cảnh: Concept A "Coin Flow"** (đồng xu chia đôi — nửa trên teal + mũi tên lên = Thu, nửa dưới coral + mũi tên xuống = Chi, đường phân tách + 2 mũi tên trắng) dùng cho **cả icon launcher lẫn splash**, **thay** gợi ý "Concept C cho icon" trong doc gốc. Lý do: tránh nhảy hình icon → splash và giữ đúng thông điệp lõi Thu/Chi. Hệ quả chấp nhận: rủi ro 2 màu nhoè ở icon nhỏ là **rủi ro đã biết**, phải kiểm bằng mắt. Concept B/C không dùng.
+- **Biến thể đưa vào sản phẩm** (2 thay đổi so với SVG concept):
+  - **Vòng viền trắng quanh đồng xu**, dày `0.03 × D` — nếu không có, **nửa teal chìm vào nền teal** của splash/icon (mất cảm giác "đồng xu chia đôi").
+  - **Nền icon teal đặc `#0F6E56`** — iOS cấm PNG icon trong suốt, và mask bo góc của Android sẽ lộ nền launcher nếu để trong suốt.
+- **Tỉ lệ chốt** (D = đường kính coin): coin/icon = `0.68` (vùng an toàn adaptive icon) · coin/khung splash = `0.88` (lề 6% mỗi cạnh) · đường phân tách `0.021 × D` · mũi tên `0.05 × D` · vòng trắng `0.03 × D`. Không gradient/đổ bóng.
+- **Splash 2 tầng, cùng nền teal + cùng cỡ logo `140dp`** để không "nhảy hình": tầng **native** (Android `launch_background.xml` + `values-v31` SplashScreen API cho Android 12+; iOS `LaunchScreen.storyboard`) rồi tầng **Flutter** (`PinGate` trong `lib/core/boot_gate.dart`).
+  - **Ràng buộc Android 12+ (phát hiện khi QA emulator)**: `windowSplashScreenAnimatedIcon` bị hệ thống scale drawable lên (~277dp) rồi **cắt theo đường tròn** (~192dp) và **không** vẽ được path đường tròn viết dạng rút gọn (`a … 0 1 0 … Z` → ra rỗng). Hệ quả nếu dùng chung một drawable: **mất vòng viền trắng** (nửa teal chìm vào nền — đúng thứ FR-016 cấm) và logo to hơn tầng Flutter ⇒ nhảy hình. Vì vậy: vector **chỉ dùng cung tuyệt đối `A`**, và Android 12+ dùng **drawable riêng** (`splash_logo_masked.xml`, coin `0.44` khung) để logo hiện ra ≈ `123dp` khớp tầng Flutter.
+- **Splash là NGOẠI LỆ thứ 2 về theme (cùng loại với màn chụp `scan-02`)**: nền/chữ dùng **màu bất biến** `AppColors.teal` / `AppColors.white`, **không** đọc `SoraColors.of(context)` ⇒ hiển thị **giống hệt** ở Sáng và Tối.
+- **Nội dung splash chỉ có logo + tên "Sora Thu Chi" trắng**: không app bar, không bottom nav, không nút, không chỉ báo tải, không chữ phụ. Tên app là **tên thương hiệu, không dịch** theo ngôn ngữ.
+- **Vòng đời**: splash hiện ở mỗi **cold start**, chờ song song PIN + giao diện + ngôn ngữ rồi **tự tắt** (trần **5 giây**); **không hiện lại khi resume** (`PinGate` bị gỡ khỏi stack). Kết thúc → màn khóa PIN nếu đã đặt, ngược lại màn thiết lập PIN (khóa app **bắt buộc lần đầu** — PBI 3, không phải Tổng quan).
+- **Logo không xuất hiện trong nội dung app** (header, màn giới thiệu, trạng thái rỗng…) — nhận diện chỉ ở icon + splash.
+
 ## Luồng quét hóa đơn (PBI 24 — chặng 1)
 > Mockup `docs/ai/scan-01…04`, `scan-10`, `scan-11`. Điểm vào: bottom sheet từ FAB.
 
@@ -87,7 +104,11 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 
 **Rule quan trọng — `white` có 2 vai trò** phải phân loại theo từng chỗ dùng, **không đổi tên máy móc**: làm **nền** → token nền (đổi ở dark); đặt **trên** teal/nền màu → giữ trắng. Ô tìm kiếm pill trên app bar teal (màn `05`) là "đảo sáng cố định" — giữ token light ở cả 2 giao diện.
 
-**Phạm vi:** mọi màn/chrome sau mở khóa **và** màn PIN/boot đều đọc `SoraColors.of(context)` (SC-007: không vùng "chìm"), trừ: ảnh hóa đơn/avatar, nội dung người dùng nhập, bảng màu nhận diện danh mục/ví — **không đổi theo theme**. Màn `02` "Giao diện" chi tiết ở [[Hồ sơ & Bảo mật]].
+**Phạm vi:** mọi màn/chrome sau mở khóa **và** màn khóa PIN đều đọc `SoraColors.of(context)` (SC-007: không vùng "chìm"), trừ: ảnh hóa đơn/avatar, nội dung người dùng nhập, bảng màu nhận diện danh mục/ví — **không đổi theo theme**. Màn `02` "Giao diện" chi tiết ở [[Hồ sơ & Bảo mật]].
+
+**Ngoại lệ cố ý (cập nhật PBI 25)** — 2 màn **không** đọc `SoraColors`, giữ một bộ màu cố định ở cả 2 giao diện:
+1. **Splash khởi động** (`PinGate`) — nền teal đặc + chữ trắng, xem §Nhận diện thương hiệu.
+2. **Màn chụp hóa đơn `scan-02`** — nền tối cố định (PBI 24).
 
 ## App shell & layout
 - **Bottom nav 5 vị trí**: Tổng quan | Giao dịch | **FAB "Thêm giao dịch" nổi giữa** (nhô lên, hình tròn teal, icon + trắng — hành động lõi) | Báo cáo | Cài đặt.

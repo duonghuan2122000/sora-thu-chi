@@ -1,6 +1,6 @@
 ---
 title: "Lộ trình phát triển"
-date: 2026-09-12
+date: 2026-09-13
 tags: [concept, roadmap]
 sources:
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
@@ -8,8 +8,10 @@ sources:
   - ../docs/transaction/nghiep-vu-thiet-ke-quan-ly-giao-dich.md
   - ../docs/report/bao-cao-thong-ke-giai-phap.md
   - ../docs/ai/tinh-nang-quet-hoa-don-ai-local.md
+  - ../docs/logo/logo-concepts-sora-thu-chi.md
   - ../../.specify/specs/22/spec.md
   - ../../.specify/specs/24/spec.md
+  - ../../.specify/specs/25/spec.md
 ---
 
 # Lộ trình phát triển
@@ -38,6 +40,8 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
   - **⚠ QUYẾT ĐỊNH MỞ — nguồn phân phối model Tier B**: repo HuggingFace đang trỏ tới là **gated** (cần token) ⇒ chưa dùng được ở bản phát hành; hiện lượt tải thất bại và người dùng ở lại Chế độ cơ bản (an toàn). Phải chốt **nguồn công khai** (tự host / repo không gated) trước khi phát hành Tier B. Chi tiết + vị trí hằng số: [[Hồ sơ & Bảo mật]], [[Stack kỹ thuật]].
   - **Lệch doc đã ghi nhận**: doc §7 xếp *gợi ý danh mục theo từ điển* vào GĐ2 — chặng 1 đã làm sớm (từ điển **tĩnh** ~50 khoá, **không** có `merchant_category_mapping` học theo người dùng như doc §4); doc §4 gợi ý bảng `scan_history` — thực tế dùng **`scan_sessions`** (một bảng, chưa có màn "Scan History").
   - **Ngoài phạm vi đợt này** (đã chốt trong spec): quét hàng loạt/nhiều hóa đơn, **dán văn bản**, **SMS ngân hàng/thông báo ví**, **email sao kê** (doc §10 — GĐ2/GĐ3), trích xuất line items, 2 lối vào quét khác của doc §3.1 (chỉ làm lối FAB).
+- **Nhận diện thương hiệu (logo launcher + splash) — ĐÃ THI CÔNG (PBI 25, 2026-09-13)** — không nằm trong bảng giai đoạn (là PBI **thuần trình bày**, không đụng dữ liệu/nghiệp vụ, schema giữ **v8**): icon launcher Concept A cho Android (adaptive icon, đã **xoá** bộ PNG mặc định) + iOS, splash 2 tầng (native + Flutter `PinGate`) nền teal đặc, trần 5 giây, không hiện lại khi resume. Rule nhận diện + tỉ lệ chốt tại [[Design system]]. **Lệch doc đã ghi nhận**: `docs/logo` gợi ý Concept C cho icon — sản phẩm dùng **Concept A cho cả icon và splash** (chủ ý của người dùng; doc đã được bổ sung mục "Phương án chốt triển khai").
+  - **⚠ Quyết định mở**: kích thước icon **nhỏ nhất** — coin chỉ chiếm 68% cạnh icon (vùng an toàn adaptive icon) nên hai màu + vòng trắng có nguy cơ nhoè thành khối ở cỡ launcher nhỏ. Đây là **rủi ro đã biết và chấp nhận** khi chọn Concept A cho icon; cần **QA mắt trên máy thật** (checklist A–O `quickstart.md`) — chưa chạy trong lượt thi công này. Đổi được bằng **một hằng số** trong `tool/gen_brand_assets.dart` + chạy lại script.
 - **Import CSV/Excel**: mô tả "tùy chọn mở rộng/nâng cao", **vẫn chưa gắn GĐ cụ thể** (transaction doc §1) — ⚠ cần định vị.
 - **Ngân sách GĐ2 chia nhỏ:** 2a (budget danh mục + tiến độ, chưa push) → 2b (budget tổng/theo ví, push, copy) → 2c (so sánh dự kiến–thực tế, tốc độ tiêu — cần ≥2 kỳ lịch sử). Xem [[Ngân sách]].
 - **Ngân sách — phạm vi 2a + 2 màn đầu đã triển khai (PBI 20)** — điểm vào Cài đặt? **không**: điểm vào là tab **Báo cáo** → hàng "Ngân sách" → màn `01` Tổng quan Ngân sách (màn cấp tab, có bottom nav) + màn `02` Thêm/Sửa ngân sách. Bảng drift **`budgets` schema v6** (6 cột, **không seed**, mở rộng `WalletRepository` +3 method); **bỏ bảng snapshot** — "đã chi/%/còn lại" tính lại mỗi lần nạp màn. Chi tiết + rule tại [[Ngân sách]].
