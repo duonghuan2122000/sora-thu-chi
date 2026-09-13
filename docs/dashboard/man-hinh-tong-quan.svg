@@ -1,0 +1,111 @@
+<svg viewBox="0 0 360 800" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Màn hình Tổng quan</title>
+<desc>Header teal số dư tổng + chuông thông báo, 2 card thu/chi tháng này, danh sách giao dịch gần đây (thu/chi/chuyển khoản), bottom nav 5 vùng với FAB thêm giao dịch</desc>
+<defs>
+  <clipPath id="frame"><rect x="0" y="0" width="360" height="800" rx="28" ry="28"/></clipPath>
+</defs>
+<rect x="0" y="0" width="360" height="800" rx="28" ry="28" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="2"/>
+<g clip-path="url(#frame)">
+
+  <!-- Status bar -->
+  <rect x="0" y="0" width="360" height="220" fill="#0F6E56"/>
+  <text x="24" y="38" font-family="Roboto, Arial, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF">9:41</text>
+  <g fill="#FFFFFF">
+    <rect x="290" y="30" width="16" height="9" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.3"/>
+    <rect x="292" y="32" width="10" height="5" fill="#FFFFFF"/>
+    <rect x="270" y="31" width="4" height="8" rx="1"/>
+    <rect x="277" y="28" width="4" height="11" rx="1"/>
+    <rect x="284" y="25" width="4" height="14" rx="1"/>
+  </g>
+
+  <!-- Tiêu đề + chuông thông báo (Trung tâm thông báo PBI 30) -->
+  <text x="24" y="80" font-family="Roboto, Arial, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF">Tổng quan</text>
+  <circle cx="320" cy="74" r="18" fill="rgba(255,255,255,0.15)"/>
+  <path d="M320 64 a8 8 0 0 1 8 8 v5 l3 4 h-22 l3 -4 v-5 a8 8 0 0 1 8 -8 Z" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M316 84 a4 4 0 0 0 8 0" fill="none" stroke="#FFFFFF" stroke-width="1.6"/>
+  <circle cx="330" cy="64" r="4.5" fill="#D85A30" stroke="#0F6E56" stroke-width="1.5"/>
+
+  <!-- Số dư tổng (số tính toán, không sửa tay) -->
+  <text x="24" y="132" font-family="Roboto, Arial, sans-serif" font-size="12" fill="rgba(255,255,255,0.85)">Tổng số dư</text>
+  <text x="24" y="168" font-family="Roboto, Arial, sans-serif" font-size="26" font-weight="600" fill="#FFFFFF">42.500.000 đ</text>
+
+  <!-- Icon con mắt: chuyển privacy mode (che số) -->
+  <g transform="translate(210,151.3)" fill="none" stroke="#FFFFFF" stroke-width="1.5">
+    <path d="M0 6.6 C 4 0, 16 0, 20 6.6 C 16 13.2, 4 13.2, 0 6.6 Z"/>
+    <circle cx="10" cy="6.6" r="3.2" fill="#FFFFFF" stroke="none"/>
+  </g>
+
+  <!-- 2 card thống kê nhanh -->
+  <rect x="24" y="240" width="150" height="76" rx="10" fill="#F1EFE8"/>
+  <rect x="186" y="240" width="150" height="76" rx="10" fill="#F1EFE8"/>
+
+  <path d="M42 280 v-16 M36 270 l6 -6 l6 6" stroke="#0F6E56" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="58" y="266" font-family="Roboto, Arial, sans-serif" font-size="11" fill="#5F5E5A">Thu tháng này</text>
+  <text x="40" y="296" font-family="Roboto, Arial, sans-serif" font-size="16" font-weight="600" fill="#1A1A1A">18.000.000 đ</text>
+
+  <path d="M204 264 v16 M198 274 l6 6 l6 -6" stroke="#D85A30" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="220" y="266" font-family="Roboto, Arial, sans-serif" font-size="11" fill="#5F5E5A">Chi tháng này</text>
+  <text x="202" y="296" font-family="Roboto, Arial, sans-serif" font-size="16" font-weight="600" fill="#D85A30">9.200.000 đ</text>
+
+  <!-- Giao dịch gần đây -->
+  <text x="24" y="360" font-family="Roboto, Arial, sans-serif" font-size="13" font-weight="600" fill="#1A1A1A">Giao dịch gần đây</text>
+  <text x="336" y="360" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="end" fill="#0F6E56">Xem tất cả</text>
+
+  <!-- Hàng 1: chi -->
+  <circle cx="44" cy="400" r="18" fill="#F1EFE8"/>
+  <path d="M44 392 v16 M38 402 l6 6 l6 -6" stroke="#D85A30" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="396" font-family="Roboto, Arial, sans-serif" font-size="13" fill="#1A1A1A">Ăn uống</text>
+  <text x="72" y="412" font-family="Roboto, Arial, sans-serif" font-size="11" fill="#9B9B9B">Hôm nay</text>
+  <text x="336" y="404" font-family="Roboto, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="end" fill="#D85A30">-85.000 đ</text>
+  <line x1="24" y1="432" x2="336" y2="432" stroke="#EFEFEF" stroke-width="1"/>
+
+  <!-- Hàng 2: thu -->
+  <circle cx="44" cy="460" r="18" fill="#F1EFE8"/>
+  <path d="M44 468 v-16 M38 458 l6 -6 l6 6" stroke="#0F6E56" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="456" font-family="Roboto, Arial, sans-serif" font-size="13" fill="#1A1A1A">Lương</text>
+  <text x="72" y="472" font-family="Roboto, Arial, sans-serif" font-size="11" fill="#9B9B9B">Hôm qua</text>
+  <text x="336" y="464" font-family="Roboto, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="end" fill="#0F6E56">+15.000.000 đ</text>
+  <line x1="24" y1="492" x2="336" y2="492" stroke="#EFEFEF" stroke-width="1"/>
+
+  <!-- Hàng 3: chi -->
+  <circle cx="44" cy="520" r="18" fill="#F1EFE8"/>
+  <path d="M44 512 v16 M38 522 l6 6 l6 -6" stroke="#D85A30" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="516" font-family="Roboto, Arial, sans-serif" font-size="13" fill="#1A1A1A">Di chuyển</text>
+  <text x="72" y="532" font-family="Roboto, Arial, sans-serif" font-size="11" fill="#9B9B9B">Hôm qua</text>
+  <text x="336" y="524" font-family="Roboto, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="end" fill="#D85A30">-40.000 đ</text>
+  <line x1="24" y1="552" x2="336" y2="552" stroke="#EFEFEF" stroke-width="1"/>
+
+  <!-- Hàng 4: chuyển khoản nội bộ (không tính thu/chi -> icon trung tính) -->
+  <circle cx="44" cy="580" r="18" fill="#F1EFE8"/>
+  <path d="M36 576 h16 M48 572 l4 4 l-4 4 M52 584 h-16 M40 588 l-4 -4 l4 -4" stroke="#5F5E5A" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="72" y="576" font-family="Roboto, Arial, sans-serif" font-size="13" fill="#1A1A1A">Chuyển sang Ví tiết kiệm</text>
+  <text x="72" y="592" font-family="Roboto, Arial, sans-serif" font-size="11" fill="#9B9B9B">Hôm qua</text>
+  <text x="336" y="584" font-family="Roboto, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="end" fill="#5F5E5A">2.000.000 đ</text>
+
+  <!-- Bottom nav 5 vùng + FAB giữa -->
+  <rect x="0" y="716" width="360" height="84" fill="#FFFFFF" stroke="#EFEFEF" stroke-width="1"/>
+  <circle cx="180" cy="716" r="28" fill="#0F6E56"/>
+  <line x1="180" y1="705" x2="180" y2="727" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <line x1="169" y1="716" x2="191" y2="716" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+
+  <g>
+    <rect x="61" y="732" width="18" height="18" fill="none" stroke="#0F6E56" stroke-width="2" rx="2"/>
+    <text x="70" y="770" font-family="Roboto, Arial, sans-serif" font-size="9" text-anchor="middle" fill="#0F6E56" font-weight="600">Tổng quan</text>
+  </g>
+  <g>
+    <line x1="131" y1="736" x2="149" y2="736" stroke="#9B9B9B" stroke-width="2"/>
+    <line x1="131" y1="743" x2="149" y2="743" stroke="#9B9B9B" stroke-width="2"/>
+    <line x1="131" y1="750" x2="149" y2="750" stroke="#9B9B9B" stroke-width="2"/>
+    <text x="150" y="770" font-family="Roboto, Arial, sans-serif" font-size="9" text-anchor="middle" fill="#9B9B9B">Giao dịch</text>
+  </g>
+  <g>
+    <path d="M210 751 A10 10 0 1 1 210 731 L210 741 Z" fill="#9B9B9B"/>
+    <text x="210" y="770" font-family="Roboto, Arial, sans-serif" font-size="9" text-anchor="middle" fill="#9B9B9B">Báo cáo</text>
+  </g>
+  <g>
+    <circle cx="290" cy="741" r="9" fill="none" stroke="#9B9B9B" stroke-width="2"/>
+    <circle cx="290" cy="741" r="3" fill="#9B9B9B"/>
+    <text x="290" y="770" font-family="Roboto, Arial, sans-serif" font-size="9" text-anchor="middle" fill="#9B9B9B">Cài đặt</text>
+  </g>
+</g>
+</svg>
