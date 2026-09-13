@@ -75,6 +75,27 @@
 
 ---
 
+## Phương án chốt triển khai (PBI 25 — 2026-09-13)
+
+> Mục này ghi lại **quyết định thực tế đã đưa vào sản phẩm**, khác với gợi ý ở trên. Đây là chủ ý của người dùng, không phải sai sót tài liệu.
+
+**Concept A dùng cho cả icon launcher và splash** — thay vì khuyến nghị "C cho icon, A cho splash" ở bảng so sánh. Lý do: giữ **một** hình ảnh nhận diện duy nhất cho toàn app (icon → splash liền mạch, không "nhảy" hình), và mã hoá đúng thông điệp lõi Thu/Chi.
+
+**Biến thể đưa vào sản phẩm** (`logo-concept-a-coin-flow.svg` + 2 thay đổi):
+
+| Thay đổi | Chi tiết |
+|---|---|
+| **Vòng viền trắng** quanh đồng xu | Dày `0.03 × D` (D = đường kính coin). Cần thiết vì nửa teal của coin sẽ **chìm vào nền teal** nếu không có nét trắng phân tách |
+| **Nền icon teal đặc** `#0F6E56` | iOS không nhận PNG icon trong suốt, và mask bo góc của Android sẽ lộ nền launcher nếu để trong suốt |
+
+**Hệ quả đã cân nhắc:** coin chỉ chiếm **68%** cạnh icon (vùng an toàn của adaptive icon) nên có viền teal quanh đồng xu; ở kích thước icon nhỏ nhất, rủi ro hai màu nhoè thành khối là **rủi ro đã biết và chấp nhận** — cần kiểm bằng mắt ở bước QA tương ứng.
+
+**Nguồn sinh asset:** `app/sora_thu_chi/tool/gen_brand_assets.dart` (Dart, chạy `dart run tool/gen_brand_assets.dart`) — một nguồn hình học duy nhất sinh icon Android (VectorDrawable adaptive icon) + iOS (PNG) + logo splash Flutter (PNG). SVG concept **không** được đưa vào app (còn chứa dòng chú thích trình bày). Chạy lại script sau khi sửa hằng số hình học.
+
+**Bảng màu/tỉ lệ chốt:** xem `.specify/specs/25/contracts/brand-assets.md`.
+
+---
+
 ## File đính kèm
 - `logo-concept-a-coin-flow.svg`
 - `logo-concept-b-wallet-pulse.svg`
