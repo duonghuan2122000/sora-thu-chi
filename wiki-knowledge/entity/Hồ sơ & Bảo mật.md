@@ -1,6 +1,6 @@
 ---
 title: "Hồ sơ & Bảo mật"
-date: 2026-09-03
+date: 2026-09-13
 tags: [module, auth, security, pin, entity]
 sources:
   - ../docs/auth/chi-tiet-quan-ly-tai-khoan-nguoi-dung.md
@@ -20,6 +20,8 @@ sources:
   - ../docs/notification/notification-solution.md
   - ../../.specify/specs/28/spec.md
   - ../../.specify/specs/28/data-model.md
+  - ../../.specify/specs/29/spec.md
+  - ../../.specify/specs/29/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -153,8 +155,37 @@ Bất biến hàng: mỗi hàng có **đúng một** điều khiển — tổng 
 
 **Lệch doc đã ghi nhận (có lý do):**
 - **Không dựng bảng `NotificationRule`/`NotificationLog`** như `docs/notification/notification-solution.md §3.1`: cả hai phục vụ **engine** (lịch, chống bắn trùng qua `lastFiredAt`) và **Trung tâm thông báo** — đều ngoài phạm vi (Q1=A). Khi engine ra đời, row `notificationPrefs` là nguồn để migrate.
-- **Không lưu** "các ngày trong tuần" của nhắc hàng ngày (mockup cố định "mỗi ngày", chưa có UI chọn ngày — màn `02` là PBI sau), **chu kỳ + mốc % của mục tiêu** (là cấu hình **per-mục-tiêu** thuộc module GĐ3, không phải cấp màn), **thứ của tổng kết tuần** (mockup cố định Chủ nhật), ngưỡng riêng từng ngân sách. Thêm trường sau này **không phá** dữ liệu cũ nhờ parse tolerant.
+- **Không lưu** ~~"các ngày trong tuần" của nhắc hàng ngày~~ (**đã bổ sung ở PBI 29** — khoá `dailyWeekdays`, xem mục dưới), **chu kỳ + mốc % của mục tiêu** (là cấu hình **per-mục-tiêu** thuộc module GĐ3, không phải cấp màn), **thứ của tổng kết tuần** (mockup cố định Chủ nhật), ngưỡng riêng từng ngân sách. Thêm trường sau này **không phá** dữ liệu cũ nhờ parse tolerant.
 - **Đường kẻ giữa các hàng** chỉ kẻ **trong** nhóm (khuôn màn Tiện ích) — mockup vẽ 4 đường không nhất quán; không bám lỗi đồ hoạ.
+
+## Màn `02` "Nhắc nhập giao dịch" — đã triển khai PBI 29
+> **PBI 29 (2026-09-13)**: dựng **màn cấu hình nhắc hàng ngày** theo mockup `docs/notification/02-cau-hinh-nhac-nhap-giao-dich.svg` (doc §3.1 `config.weekdays`, §4 mockup `02`). `SubPageScaffold` app bar teal + back, **không** bottom nav/FAB; `bottomNavigationBar` chỉ ghim nút **"Lưu thay đổi"**. Kế thừa PBI 28 (row `notificationPrefs` + seam `NotificationStore`). **Vẫn không có engine**: 0 plugin, 0 quyền, 0 lịch (FR-014/SC-009).
+
+**Điểm vào — hai vùng chạm trên MỘT hàng** (FR-001): hàng "Nhắc nhập giao dịch hằng ngày" ở màn `01` nay **mở màn `02`** khi chạm **cụm icon + tiêu đề + dòng phụ**; **công tắc nằm ngoài** mọi `InkWell` ⇒ chạm công tắc **không** mở màn. Hệ quả đã chấp nhận: 2 hàng chevron (vẫn no-op) mất phản hồi mực ở đúng icon chevron. **Hàng này KHÔNG thêm chevron** (mockup `01` giữ nguyên).
+
+**Bố cục màn `02` — 3 nhãn nhóm + 1 hàng công tắc + nút Lưu**:
+- **THỜI GIAN NHẮC** — khối nền `softCardBg` bo `10` chứa **2 trục** giờ/phút ngăn bởi `:`; mỗi trục = **mũi tên ▲/▼ + lân cận trên + giá trị đang chọn (nền teal alpha 0.10, chữ 26px `tealOnNeutral`) + lân cận dưới**; mũi tên đổi **±1** và **quay vòng** `%24`/`%60` (23↔00, 00↔59). **Không** dùng trục cuộn quán tính/`showTimePicker`.
+- **LẶP LẠI VÀO CÁC NGÀY** — **7 chip tròn `36px`** T2→CN trong `Wrap`: chọn = nền `AppColors.teal` + chữ trắng; không chọn = nền `colors.surface` + viền `divider` + chữ `tabInactive`. Nhãn chip **clamp cỡ chữ ≤1.4×** để 7 chip đủ chỗ một hàng ở 360px.
+- *(hàng công tắc)* — "Chỉ nhắc nếu chưa ghi giao dịch" + dòng phụ mô tả; **đúng 1 công tắc** trên màn (màn `02` **không** có công tắc bật/tắt loại nhắc — việc đó vẫn ở màn `01`).
+- **XEM TRƯỚC THÔNG BÁO** — thẻ bo `10` viền `divider`: vòng `28px` `tealLightBg` + chữ `'S'` + "Sora Thu Chi" (không dịch) + câu nội dung + **giờ góc phải** đọc **trực tiếp từ bản nháp** ⇒ đổi ngay cùng nhịp chạm mũi tên.
+
+**Ngữ nghĩa ghi — bản nháp, chỉ ghi khi bấm Lưu** (FR-007/SC-014, chốt Q2=A): mở màn **chỉ đọc** (`load()`, **không** ghi lại như màn `01` — không cần seed); mọi thao tác chỉ đổi `_draft`; **back bỏ thay đổi, 0 hộp thoại hỏi lại**; bấm Lưu mới `save(_draft)` rồi pop (lỗi ghi bỏ qua, vẫn pop — đồng bộ cách chịu lỗi màn `01`); bấm Lưu khi không đổi gì vẫn pop, không thông báo. Về màn `01` có **đọc lại** store để dòng phụ phản ánh giá trị vừa lưu.
+
+**Lưu trữ — vẫn 1 row JSON `notificationPrefs`, nay 17 khoá** (thêm `dailyWeekdays`; 16 khoá cũ **không đổi** miền/mặc định) — **schema giữ v8**, không migration, không `build_runner`, 0 dependency. `dailyWeekdays`: `List<int>`, **1 = Thứ Hai … 7 = Chủ Nhật** (ISO, tuần bắt đầu Thứ Hai — đồng bộ ngân sách/báo cáo), **khác rỗng, đã sắp tăng, không trùng**.
+- **Parse tolerant** (không bao giờ ném): thiếu khoá / sai kiểu → **cả 7 ngày**; list rỗng / toàn phần tử sai (ngoài 1…7, `null`, số thực, chuỗi) → **cả 7 ngày**; **lọc bỏ** phần tử lạ, bỏ trùng, **sắp tăng**; ghi ra **không bao giờ** là `[]`. Row cũ PBI 28 (thiếu khoá) đọc ra **đủ 7 ngày** mà **không mất** giờ/cờ ⇒ không cần code migrate.
+- **Bất biến "luôn ≥1 ngày" đặt ở tầng MODEL** (FR-009): `toggleDay(d)` — tắt ngày **bật cuối cùng** → trả về **chính object cũ** (`identical`), 0 thay đổi ⇒ **không tồn tại trạng thái 0 ngày** ở mọi đường ghi (màn hôm nay, engine/backup sau này). Thêm `isEveryDay` (đủ 7 ngày) và `isDayEnabled`.
+- **Dòng phụ màn `01` nay theo tập ngày** (FR-011): đủ 7 ngày → giữ nguyên chuỗi cũ **"@giờ mỗi ngày"**; thiếu ngày → **"@giờ vào @ngày"**, `@ngày` **nén dải liên tiếp dài ≥3** (`[1..6]` → `T2–T7`, `[1,2,3,5]` → `T2–T4, T6`) và **Chủ Nhật luôn liệt kê riêng** (`[1..7]` → `T2–T7, CN`). Hậu tố " · chỉ nhắc nếu chưa ghi" giữ nguyên. Hai hàm thuần dùng chung cho **cả hai màn**: `dayLabel(int)` + `daysLabel(List<int>)` ở `lib/core/date_label.dart`; nhãn ngày viết **literal trước `.tr`** để test dịch còn ràng buộc (`T2`…`CN` → `Mon`…`Sun`).
+
+**Lệch so với plan/kế hoạch kỹ thuật (có lý do, đã kiểm chứng bằng test)**:
+1. **Điều hướng bằng `Navigator.push`/`pop`**, không `Get.to`/`Get.back` như plan viết — repo **không** dùng `Get.to` ở bất kỳ màn nào (GetX chỉ dùng cho state/DI/i18n) và test pump `MaterialApp` thường (không `GetMaterialApp`).
+2. **Thêm bước đọc lại store khi về màn `01`** (`_openDailyConfig` await push rồi `load()` im lặng) — plan không nói, nhưng nếu không thì dòng phụ màn `01` giữ giá trị cũ sau khi Lưu (kịch bản 13/14 của spec đòi hiện giá trị mới ngay).
+3. **Chủ Nhật không gộp vào dải nén** — phép nén "dải liên tiếp ≥3" thuần sẽ cho `[1..7]` → `T2–CN`; chốt theo đúng ví dụ của spec là `T2–T7, CN` (tuần đọc `T2…T7` + `CN`).
+4. **Khối thời gian bọc `FittedBox(scaleDown)`** — bề rộng 2 trục là cố định theo mockup nên ở cỡ chữ hệ thống 2.0 sẽ tràn ngang (`RenderFlex overflowed by 89 pixels`); thu nhỏ cả khối giữ đúng bố cục (FR-017).
+5. **Không dựng bảng `NotificationRule`** — giữ nguyên quyết định PBI 28 (bảng đó phục vụ engine, ngoài phạm vi); `dailyWeekdays` **chính là** `config.weekdays` của doc nhưng nằm trong row JSON đã có.
+
+**Kiểm thử**: 1 file test mới (`daily_reminder_config_screen_test` 17 ca: bố cục, mũi tên ±1/quay vòng, chip, bản nháp–Lưu–back, nhánh lỗi, English, cỡ chữ 2.0@360×640) + sửa 4 file (`notification_prefs_test` +6 nhóm luật tập ngày, `date_label_test` +2 nhóm nhãn ngày, `notification_settings_screen_test` +7 ca hai vùng chạm/dòng phụ, `dark_theme_smoke_test` +1 màn 02). **`flutter analyze` sạch; 1052 pass + 1 test đỏ CÓ SẴN** `transactions_dao_test` (PBI 11) — baseline PBI 28 là 1004 pass, **số đỏ không tăng**.
+
+**QA tay trên emulator nhóm A–M ĐÃ ĐẠT** (2026-09-13) — người dùng chạy theo `.specify/specs/29/quickstart.md` §2 (hai vùng chạm; đối chiếu mockup `02`; mũi tên quay vòng + xem trước tức thì; chip ngày & chip cuối không tắt được; bản nháp–Lưu–back; DB cũ **thiếu khoá** `dailyWeekdays`; dòng phụ nén dải; **0 thông báo & 0 lần hỏi quyền**; không ảnh hưởng dữ liệu/loại nhắc khác; English; theme Tối; cỡ chữ lớn/màn hẹp). **iOS chưa QA** (PBI không đụng native/config ⇒ Android là đủ).
 
 ## Hồ sơ cá nhân
 | Trường | Chốt |

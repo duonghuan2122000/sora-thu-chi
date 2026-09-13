@@ -15,6 +15,7 @@ sources:
   - ../../.specify/specs/26/spec.md
   - ../docs/notification/notification-solution.md
   - ../../.specify/specs/28/spec.md
+  - ../../.specify/specs/29/spec.md
 ---
 
 # Lộ trình phát triển
@@ -25,7 +26,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 | Giai đoạn | Tính năng trọng tâm | Phụ thuộc |
 |---|---|---|
 | **MVP** | Khóa app (PIN/sinh trắc), Quản lý ví, Thêm/sửa/xóa giao dịch, Danh mục, Báo cáo cơ bản (pie/bar) — **màn `01` Tổng quan (PBI 22) + màn `02` Chi tiết theo danh mục (PBI 23) + màn `03` So sánh kỳ (PBI 26) đã xong** | — |
-| **GĐ2** | Ngân sách, Giao dịch định kỳ, Nhắc nhở, Xuất báo cáo Excel/PDF — **màn `04` Xuất báo cáo (PBI 27) đã xong (cả 3 định dạng)**; **Nhắc nhở: chỉ màn cấu hình đã xong (PBI 28), chưa có engine** | Giao dịch + Danh mục (MVP); Ngân sách cần module Thông báo (cùng GĐ2) |
+| **GĐ2** | Ngân sách, Giao dịch định kỳ, Nhắc nhở, Xuất báo cáo Excel/PDF — **màn `04` Xuất báo cáo (PBI 27) đã xong (cả 3 định dạng)**; **Nhắc nhở: màn cấu hình `01` (PBI 28) + màn `02` nhắc hàng ngày (PBI 29) đã xong, chưa có engine** | Giao dịch + Danh mục (MVP); Ngân sách cần module Thông báo (cùng GĐ2) |
 | **GĐ3** | Mục tiêu tiết kiệm, Quản lý nợ, **Backup/Restore JSON** | — |
 
 ### Ghi chú giai đoạn
@@ -61,10 +62,13 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 - **Thông báo & nhắc nhở (GĐ2) — màn CÀI ĐẶT đã triển khai (PBI 28, 2026-09-13)** — điểm vào Cài đặt nhóm KHÁC → "Thông báo & nhắc nhở" (ngay sau "Tiện ích & Cá nhân hóa"); 5 nhóm/8 hàng mockup `01`, **6 công tắc độc lập + 2 hàng chevron chạm không mở gì**; lưu **1 row JSON `notificationPrefs`** (16 trường) trong bảng `AppSettings` **v5** — **schema giữ v8**, 0 dependency, **0 plugin thông báo**. Chi tiết + 3 chốt phạm vi (Q1/Q2/Q3) tại [[Hồ sơ & Bảo mật]].
   - **⚠ ĐÂY CHỈ LÀ MÀN CẤU HÌNH — chưa có ENGINE**: đợt này **không bắn thông báo nào**, **không xin quyền** (chốt Q1=A). Toàn bộ phần "chạy thật" của module vẫn còn nguyên:
     - **Engine bắn thông báo** (chọn plugin, lịch chạy, **chống bắn trùng** khi đã ghi giao dịch, nội dung nhắc theo từng loại, **không bắn khi đang ở màn liên quan**, **quyền thông báo** + channel) — chưa có PBI.
-    - **Màn `02`–`04` của `docs/notification/notification-solution.md`** (chỉnh tham số nhắc hàng ngày: chọn ngày trong tuần; cấu hình ngưỡng cảnh báo; cấu hình nhắc trước) — **chính là đích của 2 hàng chevron** đang no-op; chưa có PBI.
+    - **Màn `03`–`04` của `docs/notification/notification-solution.md`** (cấu hình ngưỡng cảnh báo; cấu hình nhắc trước) — **chính là đích của 2 hàng chevron** đang no-op; chưa có PBI. *(Màn `02` chỉnh tham số nhắc hàng ngày **đã xong ở PBI 29**.)*
     - **Trung tâm thông báo** (lịch sử, màn `03` của doc) + bảng `NotificationLog` — chưa có PBI.
     - **Cấu hình per-mục-tiêu** (chu kỳ đóng góp + mốc %) thuộc module **Mục tiêu tiết kiệm (GĐ3)** — chưa có module, chưa có PBI.
   - **QA tay trên emulator nhóm A–K ĐÃ ĐẠT** (2026-09-13) — người dùng chạy theo `quickstart.md`. **iOS chưa QA** (PBI không đụng native/config ⇒ Android là đủ).
+- **Thông báo & nhắc nhở (GĐ2) — màn `02` "Nhắc nhập giao dịch" đã triển khai (PBI 29, 2026-09-13)** — màn con của màn `01`, điểm vào là **vùng tiêu đề/dòng phụ/icon** hàng "Nhắc nhập giao dịch hằng ngày" (**công tắc nằm ngoài vùng chạm**) — **màn con đầu tiên kích hoạt điểm nối "no-op" của module**. Nội dung: khối **THỜI GIAN NHẮC** 2 trục ▲/▼ quay vòng `%24`/`%60`, **7 chip ngày T2→CN** (đảo trạng thái tức thì, **không tắt được chip cuối**), công tắc "chỉ nhắc nếu chưa ghi", **thẻ xem trước** đọc giờ trực tiếp từ bản nháp; nút **"Lưu thay đổi" ghim đáy** — **bản nháp**: back **bỏ** thay đổi, chỉ ghi khi bấm Lưu. Row `notificationPrefs` nay **17 khoá** (thêm `dailyWeekdays`), **schema giữ v8**; **dòng phụ màn `01` nay phản ánh tập ngày** (nén dải `T2–T7, CN`). Chi tiết + 5 lệch đã ghi nhận tại [[Hồ sơ & Bảo mật]], token UI tại [[Design system]].
+  - **QA tay nhóm A–M ĐÃ ĐẠT** (2026-09-13) — người dùng chạy theo `.specify/specs/29/quickstart.md` (hai vùng chạm; **DB cũ PBI 28 thiếu khoá `dailyWeekdays`**; `dailyWeekdays` sửa tay thành `[]`/`[0,9,"x"]`; dòng phụ nén dải; **0 thông báo & 0 lần hỏi quyền**; English; theme Tối; cỡ chữ lớn/màn hẹp). **iOS chưa QA** (không đụng native/config). PBI 29 **hoàn tất 25/25 task**.
+  - **Vẫn còn nguyên**: engine bắn thông báo (plugin, lịch, chống trùng, quyền/channel, nội dung) · **màn `03`–`04`** của doc (đích 2 hàng chevron no-op) · **Trung tâm thông báo** + `NotificationLog` · cấu hình per-mục-tiêu (GĐ3).
 - Mục tiêu tiết kiệm & quản lý nợ (GĐ3): chỉ liệt kê ở doc tính năng tổng, **chưa có đặc tả module riêng** — nguồn thiếu, cần bổ sung khi triển khai.
 
 ## Module & data dependency (từ đặc tả)
