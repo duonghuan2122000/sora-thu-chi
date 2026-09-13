@@ -402,6 +402,8 @@ class SoraTranslations extends Translations {
     'Đã dùng @p% ngày nhưng chi @q% ngân sách':
         '@p% of days passed but @q% of budget spent',
     'GIAO DỊCH TRONG KỲ': 'TRANSACTIONS IN PERIOD',
+    'Tổng số dư': 'Total balance',
+    'Giao dịch gần đây': 'Recent transactions',
     'Xem tất cả': 'See all',
     'Chưa có giao dịch Chi nào trong kỳ.': 'No expenses in this period.',
     'Chi tiêu thuộc danh mục này sẽ hiện tại đây.':

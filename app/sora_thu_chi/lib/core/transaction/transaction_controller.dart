@@ -2,16 +2,24 @@ import 'package:get/get.dart';
 
 import '../../data/wallet_repository.dart';
 import '../category/category.dart';
+import '../wallet/wallet.dart';
 import 'transaction.dart';
 import 'transaction_filter.dart';
 import 'transaction_list.dart';
 
 /// Dữ liệu màn Giao dịch sau một lần [TransactionController.load] — bất biến.
 class TransactionView {
-  const TransactionView({required this.groups, required this.stat});
+  const TransactionView({
+    required this.groups,
+    required this.stat,
+    this.walletTotal = 0,
+  });
 
   final List<DayGroup> groups;
   final MonthStat stat;
+
+  /// Tổng số dư ví đang hoạt động ([activeTotal]) — dùng cho màn Tổng quan (PBI 33).
+  final int walletTotal;
 }
 
 /// View phụ khi đang áp dụng bộ lọc — sort ngày giữ nhóm ngày ([groups]) hoặc
@@ -86,6 +94,7 @@ class TransactionController extends GetxController {
           now: _now,
         ),
         stat: monthlyIncomeExpense(_all, _now),
+        walletTotal: activeTotal(wallets),
       );
       _rebuildFiltered();
     } catch (_) {

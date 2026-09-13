@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../core/money_format.dart';
 import '../core/notification/notification_history_store.dart';
+import '../core/transaction/transaction_controller.dart';
+import '../core/widgets/month_stat_row.dart';
 import '../core/widgets/screen_header.dart';
+import '../core/widgets/txn_row_tile.dart';
 import '../data/notification_history_deps.dart';
+import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
+import '../theme/sora_colors.dart';
 import 'notification_center_screen.dart';
 
-/// Màn Tổng quan — hiện có vùng tiêu đề teal + **chuông thông báo** (FR-001);
-/// nội dung nghiệp vụ gắn sau (PBI module).
+/// Màn Tổng quan — vùng tiêu đề teal (tổng số dư + **chuông thông báo**,
+/// FR-001), 2 thẻ thu/chi tháng này, 5 giao dịch gần nhất (PBI 33).
 ///
 /// Chấm đỏ là state **cục bộ** ([_unread]) chứ không GetX controller: trạng thái
 /// đọc chỉ đổi được ở màn Trung tâm, mà màn đó mở từ chính màn này ⇒ `await
@@ -19,7 +25,8 @@ class DashboardScreen extends StatefulWidget {
   /// Seam test: mặc định null → [ensureNotificationHistoryStore] khi vào.
   final NotificationHistoryStore? store;
 
-  /// Đích "tổng kết kỳ" là tab Báo cáo **trong shell** — shell bơm xuống.
+  /// Đích "tổng kết kỳ"/"Xem tất cả" là tab Giao dịch/Báo cáo **trong
+  /// shell** — shell bơm xuống.
   final ValueChanged<int>? onSelectTab;
 
   @override
@@ -35,6 +42,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _store = widget.store ?? ensureNotificationHistoryStore();
     _refresh();
+    // Tab mặc định lúc boot — không đi qua AppShell._onTabSelected nên tự
+    // nạp ở đây (FR-001); các lần quay lại sau do AppShell nạp (FR-007).
+    ensureTransactionController().load();
   }
 
   /// Đếm mục chưa đọc. Đọc lỗi ⇒ **0** (không chấm, không crash) — chuông vẫn
@@ -67,14 +77,118 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = ensureTransactionController();
     return Column(
       children: [
         ScreenHeader(
           title: 'Tổng quan'.tr,
           trailing: _BellButton(unread: _unread, onTap: _openCenter),
+          bottom: Obx(() {
+            final view = controller.data.value;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tổng số dư'.tr,
+                  style: const TextStyle(
+                    color: Color(0xD9FFFFFF),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  formatMoney(view?.walletTotal ?? 0),
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            );
+          }),
         ),
-        const Expanded(child: SizedBox()),
+        Expanded(
+          child: Obx(() {
+            final view = controller.data.value;
+            if (view == null) return const SizedBox.expand();
+            return _DashboardContent(
+              view: view,
+              onSelectTab: widget.onSelectTab,
+            );
+          }),
+        ),
       ],
+    );
+  }
+}
+
+/// Nội dung dưới header: thẻ thu/chi + 5 giao dịch gần nhất (FR-002 → FR-006).
+class _DashboardContent extends StatelessWidget {
+  const _DashboardContent({required this.view, required this.onSelectTab});
+
+  final TransactionView view;
+  final ValueChanged<int>? onSelectTab;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = view.groups.expand((g) => g.rows).take(5).toList();
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 96),
+      children: [
+        MonthStatRow(stat: view.stat),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Giao dịch gần đây'.tr,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => onSelectTab?.call(1),
+                child: Text('Xem tất cả'.tr),
+              ),
+            ],
+          ),
+        ),
+        if (recent.isEmpty)
+          const _RecentEmptyState()
+        else
+          for (final row in recent) TxnRowTile(row: row),
+      ],
+    );
+  }
+}
+
+/// Trạng thái rỗng khu "Giao dịch gần đây" (FR-006) — chưa từng có giao dịch.
+class _RecentEmptyState extends StatelessWidget {
+  const _RecentEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Icon(Icons.receipt_long_outlined, color: colors.tabInactive, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            'Chưa có giao dịch nào.'.tr,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

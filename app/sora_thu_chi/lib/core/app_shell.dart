@@ -73,6 +73,11 @@ class _AppShellState extends State<AppShell> {
 
   void _onTabSelected(int index) {
     setState(() => _selectedIndex = index);
+    // Tab Tổng quan cũng build sẵn offstage từ boot — nạp lại mỗi lần quay
+    // lại để số dư/thẻ thu-chi/giao dịch gần đây phản ánh dữ liệu mới (FR-007).
+    if (index == 0) {
+      ensureTransactionController().load();
+    }
     // Màn Giao dịch đã build sẵn (IndexedStack) từ boot — nạp dữ liệu ngay lúc
     // chọn tab: lần đầu cũng là lần nạp đầu, mỗi lần quay lại tự làm mới
     // (FR-011). Fire-and-forget — không chặn đổi tab (R6).
