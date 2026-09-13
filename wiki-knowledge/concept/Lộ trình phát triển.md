@@ -64,7 +64,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
     - **Màn `02`–`04` của `docs/notification/notification-solution.md`** (chỉnh tham số nhắc hàng ngày: chọn ngày trong tuần; cấu hình ngưỡng cảnh báo; cấu hình nhắc trước) — **chính là đích của 2 hàng chevron** đang no-op; chưa có PBI.
     - **Trung tâm thông báo** (lịch sử, màn `03` của doc) + bảng `NotificationLog` — chưa có PBI.
     - **Cấu hình per-mục-tiêu** (chu kỳ đóng góp + mốc %) thuộc module **Mục tiêu tiết kiệm (GĐ3)** — chưa có module, chưa có PBI.
-  - **Chưa QA tay trên emulator** (nhóm A–K `quickstart.md`) tại thời điểm ghi wiki này — xem log.
+  - **QA tay trên emulator nhóm A–K ĐÃ ĐẠT** (2026-09-13) — người dùng chạy theo `quickstart.md`. **iOS chưa QA** (PBI không đụng native/config ⇒ Android là đủ).
 - Mục tiêu tiết kiệm & quản lý nợ (GĐ3): chỉ liệt kê ở doc tính năng tổng, **chưa có đặc tả module riêng** — nguồn thiếu, cần bổ sung khi triển khai.
 
 ## Module & data dependency (từ đặc tả)
