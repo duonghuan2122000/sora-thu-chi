@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/locale/sora_translations.dart';
 import 'package:sora_thu_chi/core/notification/notification_prefs.dart';
+import 'package:sora_thu_chi/screens/daily_reminder_config_screen.dart';
 import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
@@ -420,6 +421,156 @@ void main() {
         isFalse,
         reason: 'UI khớp trạng thái cuối',
       );
+    });
+  });
+
+  group('NotificationSettingsScreen — US2 (PBI 29): điểm vào màn 02 + dòng phụ', () {
+    testWidgets('Chạm vùng tiêu đề/dòng phụ hàng nhắc hàng ngày → đúng 1 route', (
+      tester,
+    ) async {
+      final observer = _RecordingObserver();
+      await pumpScreen(
+        tester,
+        store: FakeNotificationStore(),
+        observer: observer,
+      );
+
+      final before = observer.pushes;
+      await tester.tap(find.text('Nhắc nhập giao dịch hằng ngày'));
+      await tester.pumpAndSettle();
+
+      expect(observer.pushes, before + 1);
+      expect(find.byType(DailyReminderConfigScreen), findsOneWidget);
+      expect(find.text('THỜI GIAN NHẮC'), findsOneWidget);
+    });
+
+    testWidgets('Chạm dòng phụ hoặc icon cũng mở màn 02 (cả hàng trừ công tắc)', (
+      tester,
+    ) async {
+      final observer = _RecordingObserver();
+      await pumpScreen(
+        tester,
+        store: FakeNotificationStore(),
+        observer: observer,
+      );
+
+      final before = observer.pushes;
+      await tester.tap(
+        find.text('20:30 mỗi ngày · chỉ nhắc nếu chưa ghi'),
+      );
+      await tester.pumpAndSettle();
+      expect(observer.pushes, before + 1, reason: 'dòng phụ cũng là vùng chạm');
+    });
+
+    testWidgets('Chạm CÔNG TẮC hàng nhắc hàng ngày → 0 route mới, chỉ đổi trạng thái', (
+      tester,
+    ) async {
+      final observer = _RecordingObserver();
+      final store = FakeNotificationStore();
+      await pumpScreen(tester, store: store, observer: observer);
+
+      final before = observer.pushes;
+      final dailySwitch = find.descendant(
+        of: rowOf('Nhắc nhập giao dịch hằng ngày'),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(dailySwitch);
+      await tester.pumpAndSettle();
+
+      expect(observer.pushes, before, reason: 'chạm công tắc không mở màn');
+      expect(find.byType(DailyReminderConfigScreen), findsNothing);
+      expect(tester.widget<Switch>(dailySwitch).value, isFalse);
+      expect(store.storedPrefs.dailyEnabled, isFalse);
+    });
+
+    testWidgets('5 hàng công tắc còn lại không mở màn nào', (tester) async {
+      final observer = _RecordingObserver();
+      await pumpScreen(
+        tester,
+        store: FakeNotificationStore(),
+        observer: observer,
+      );
+
+      final before = observer.pushes;
+      for (final title in const [
+        'Cảnh báo vượt ngân sách',
+        'Nhắc hóa đơn sắp đến hạn',
+        'Nhắc đóng góp mục tiêu',
+        'Tổng kết cuối tuần',
+        'Tổng kết cuối tháng',
+      ]) {
+        await tester.tap(find.text(title));
+        await tester.pumpAndSettle();
+      }
+      expect(observer.pushes, before, reason: 'chỉ hàng nhắc hàng ngày mở màn 02');
+    });
+
+    testWidgets('Dòng phụ theo tập ngày: mỗi ngày / T2–T7 / T2–T4, T6 / T2, CN', (
+      tester,
+    ) async {
+      const cases = <List<int>, String>{
+        [1, 2, 3, 4, 5, 6, 7]: '20:30 mỗi ngày',
+        [1, 2, 3, 4, 5, 6]: '20:30 vào T2–T7',
+        [1, 2, 3, 5]: '20:30 vào T2–T4, T6',
+        [1, 7]: '20:30 vào T2, CN',
+      };
+      for (final entry in cases.entries) {
+        // Gỡ màn cũ trước mỗi lượt — nếu không, `State` giữ lại store của lượt
+        // trước (cùng loại widget, không key) và dòng phụ không nạp lại.
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+        await pumpScreen(
+          tester,
+          store: FakeNotificationStore(
+            storedPrefs: NotificationPrefs(
+              dailyWeekdays: entry.key,
+              dailyOnlyIfNoTxnToday: false,
+            ),
+          ),
+        );
+        expect(
+          find.text(entry.value),
+          findsOneWidget,
+          reason: 'tập ${entry.key} → "${entry.value}"',
+        );
+        // Các hàng khác không bị ảnh hưởng.
+        expect(find.text('Sớm: 80% · Vượt mức: 100%'), findsOneWidget);
+      }
+    });
+
+    testWidgets('Dòng phụ dạng liệt kê giữ hậu tố "chỉ nhắc nếu chưa ghi"', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        store: FakeNotificationStore(
+          storedPrefs: const NotificationPrefs(dailyWeekdays: [1, 7]),
+        ),
+      );
+      expect(
+        find.text('20:30 vào T2, CN · chỉ nhắc nếu chưa ghi'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Lưu ở màn 02 → quay về màn 01, dòng phụ đọc lại theo giá trị mới', (
+      tester,
+    ) async {
+      final store = FakeNotificationStore();
+      await pumpScreen(tester, store: store);
+
+      await tester.tap(find.text('Nhắc nhập giao dịch hằng ngày'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_up).at(0));
+      await tester.tap(find.text('CN'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lưu thay đổi'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationSettingsScreen), findsOneWidget);
+      expect(find.text('21:30 vào T2–T7 · chỉ nhắc nếu chưa ghi'), findsOneWidget);
+      expect(store.storedPrefs.dailyWeekdays, [1, 2, 3, 4, 5, 6]);
     });
   });
 

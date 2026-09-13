@@ -15,6 +15,7 @@ import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/daily_reminder_config_screen.dart';
 import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
@@ -26,6 +27,7 @@ import 'package:sora_thu_chi/screens/scan/scan_confirm_screen.dart';
 import 'package:sora_thu_chi/screens/theme_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
+import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 
@@ -612,6 +614,65 @@ void main() {
       );
       // 6 công tắc dựng ra ở tối, đều có nhãn bật/tắt rõ (không mất chấm).
       expect(find.byType(Switch), findsNWidgets(6));
+
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'Màn Nhắc nhập giao dịch (PBI 29) ở tối: nền/khối thời gian/chip/công tắc '
+    'đọc token tối, không overflow',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        darkApp(DailyReminderConfigScreen(store: FakeNotificationStore())),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(
+        find.byType(DailyReminderConfigScreen),
+      );
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+
+      bool hasContainerFilled(Color color) => tester
+          .widgetList<Container>(find.byType(Container))
+          .any((c) => (c.decoration as BoxDecoration?)?.color == color);
+
+      // Khối thời gian dùng `softCardBg` tối (không phải beige sáng).
+      expect(hasContainerFilled(SoraColors.dark.softCardBg), isTrue);
+
+      /// Nền vòng tròn của chip ngày [label].
+      Color? chipColor(String label) {
+        final ink = find
+            .ancestor(of: find.text(label), matching: find.byType(InkWell))
+            .first;
+        final container = tester.widget<Container>(
+          find.descendant(of: ink, matching: find.byType(Container)).first,
+        );
+        return (container.decoration as BoxDecoration?)?.color;
+      }
+
+      // Chip đang chọn = fill teal (bất biến); chip không chọn = surface tối ⇒
+      // phân biệt được ở theme tối.
+      expect(chipColor('T2'), AppColors.teal);
+      await tester.tap(find.text('CN'));
+      await tester.pumpAndSettle();
+      expect(chipColor('CN'), SoraColors.dark.surface);
+      expect(chipColor('T2'), AppColors.teal);
+
+      // Chữ giá trị đang chọn lấy `tealOnNeutral` của theme tối.
+      expect(
+        tester.widget<Text>(find.text('20')).style?.color,
+        SoraColors.dark.tealOnNeutral,
+      );
+      expect(find.byType(Switch), findsOneWidget);
 
       for (var i = 0; i < 3; i++) {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));

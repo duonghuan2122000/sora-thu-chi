@@ -5,9 +5,10 @@ import 'package:flutter/foundation.dart';
 /// Khóa row cấu hình thông báo trong bảng key-value `AppSettings`.
 const String kKeyNotificationPrefs = 'notificationPrefs';
 
-/// Cấu hình 5 loại nhắc nhở của màn "Thông báo & nhắc nhở" (16 trường — đủ cho
-/// 8 hàng của mockup `01`). Bất biến: mọi thay đổi qua [copyWith], mỗi lần đổi
-/// **chỉ** chạm trường của loại được truyền ⇒ không có cơ chế "bật/tắt tất cả".
+/// Cấu hình 5 loại nhắc nhở của màn "Thông báo & nhắc nhở" (17 trường — đủ cho
+/// 8 hàng của mockup `01` + tham số ngày của màn cấu hình nhắc hàng ngày). Bất
+/// biến: mọi thay đổi qua [copyWith], mỗi lần đổi **chỉ** chạm trường của loại
+/// được truyền ⇒ không có cơ chế "bật/tắt tất cả".
 ///
 /// Lưu **nguyên khối** dưới dạng 1 row JSON (data-model §1.3): [toSettings] gói
 /// `jsonEncode`, [fromSettings] parse **tolerant, không bao giờ ném** — row vắng
@@ -21,6 +22,7 @@ class NotificationPrefs {
     this.dailyHour = 20,
     this.dailyMinute = 30,
     this.dailyOnlyIfNoTxnToday = true,
+    this.dailyWeekdays = const [1, 2, 3, 4, 5, 6, 7],
     this.budgetEnabled = true,
     this.budgetEarlyPercent = 80,
     this.budgetOverPercent = 100,
@@ -47,6 +49,29 @@ class NotificationPrefs {
 
   /// Chỉ nhắc nếu hôm nay chưa ghi giao dịch nào.
   final bool dailyOnlyIfNoTxnToday;
+
+  /// Các ngày trong tuần được nhắc: `1` = Thứ Hai … `7` = Chủ Nhật (ISO-8601).
+  /// Bất biến: **khác rỗng**, phần tử ∈ 1…7, **đã sắp tăng**, không trùng.
+  final List<int> dailyWeekdays;
+
+  /// Đủ cả 7 ngày ⇒ dòng phụ màn "Thông báo & nhắc nhở" dùng chuỗi "mỗi ngày".
+  bool get isEveryDay => dailyWeekdays.length == 7;
+
+  /// Trạng thái một chip ngày ở màn cấu hình nhắc hàng ngày.
+  bool isDayEnabled(int weekday) => dailyWeekdays.contains(weekday);
+
+  /// Đảo trạng thái **một** ngày; tắt ngày bật cuối cùng → trả **chính object
+  /// này** (`identical`) để không tồn tại trạng thái 0 ngày (FR-009).
+  NotificationPrefs toggleDay(int weekday) {
+    if (weekday < 1 || weekday > 7) return this;
+    if (!dailyWeekdays.contains(weekday)) {
+      return copyWith(dailyWeekdays: [...dailyWeekdays, weekday]..sort());
+    }
+    if (dailyWeekdays.length <= 1) return this;
+    return copyWith(
+      dailyWeekdays: dailyWeekdays.where((d) => d != weekday).toList(),
+    );
+  }
 
   /// Cảnh báo vượt ngân sách.
   final bool budgetEnabled;
@@ -81,6 +106,7 @@ class NotificationPrefs {
     'dailyHour': dailyHour,
     'dailyMinute': dailyMinute,
     'dailyOnlyIfNoTxnToday': dailyOnlyIfNoTxnToday,
+    'dailyWeekdays': dailyWeekdays,
     'budgetEnabled': budgetEnabled,
     'budgetEarlyPercent': budgetEarlyPercent,
     'budgetOverPercent': budgetOverPercent,
@@ -116,6 +142,7 @@ class NotificationPrefs {
       dailyHour: _int(decoded['dailyHour'], 20, 0, 23),
       dailyMinute: _int(decoded['dailyMinute'], 30, 0, 59),
       dailyOnlyIfNoTxnToday: _bool(decoded['dailyOnlyIfNoTxnToday'], true),
+      dailyWeekdays: _weekdays(decoded['dailyWeekdays']),
       budgetEnabled: _bool(decoded['budgetEnabled'], true),
       budgetEarlyPercent: _int(decoded['budgetEarlyPercent'], 80, 0, 100),
       budgetOverPercent: _int(decoded['budgetOverPercent'], 100, 0, 100),
@@ -139,6 +166,17 @@ class NotificationPrefs {
   static int _int(Object? raw, int fallback, int min, int max) =>
       raw is int && raw >= min && raw <= max ? raw : fallback;
 
+  /// Chuẩn hoá tập ngày, **không bao giờ ném**: không phải `List` → cả 7 ngày;
+  /// phần tử không phải `int` hoặc ngoài 1…7 → lọc bỏ; bỏ trùng và sắp tăng;
+  /// tập rỗng (kể cả list rỗng/toàn phần tử sai) → cả 7 ngày — không tồn tại
+  /// trạng thái 0 ngày (FR-009). Giá trị ghi ra luôn đã chuẩn hoá.
+  static List<int> _weekdays(Object? raw) {
+    if (raw is! List) return const [1, 2, 3, 4, 5, 6, 7];
+    final days = raw.whereType<int>().where((d) => d >= 1 && d <= 7).toSet().toList()
+      ..sort();
+    return days.isEmpty ? const [1, 2, 3, 4, 5, 6, 7] : days;
+  }
+
   /// Chỉ đổi trường được truyền — tắt một loại **không** chạm tham số của loại
   /// đó (bật lại đọc ra đúng tham số cũ).
   NotificationPrefs copyWith({
@@ -146,6 +184,7 @@ class NotificationPrefs {
     int? dailyHour,
     int? dailyMinute,
     bool? dailyOnlyIfNoTxnToday,
+    List<int>? dailyWeekdays,
     bool? budgetEnabled,
     int? budgetEarlyPercent,
     int? budgetOverPercent,
@@ -163,6 +202,7 @@ class NotificationPrefs {
     dailyHour: dailyHour ?? this.dailyHour,
     dailyMinute: dailyMinute ?? this.dailyMinute,
     dailyOnlyIfNoTxnToday: dailyOnlyIfNoTxnToday ?? this.dailyOnlyIfNoTxnToday,
+    dailyWeekdays: dailyWeekdays ?? this.dailyWeekdays,
     budgetEnabled: budgetEnabled ?? this.budgetEnabled,
     budgetEarlyPercent: budgetEarlyPercent ?? this.budgetEarlyPercent,
     budgetOverPercent: budgetOverPercent ?? this.budgetOverPercent,
@@ -184,6 +224,7 @@ class NotificationPrefs {
       other.dailyHour == dailyHour &&
       other.dailyMinute == dailyMinute &&
       other.dailyOnlyIfNoTxnToday == dailyOnlyIfNoTxnToday &&
+      listEquals(other.dailyWeekdays, dailyWeekdays) &&
       other.budgetEnabled == budgetEnabled &&
       other.budgetEarlyPercent == budgetEarlyPercent &&
       other.budgetOverPercent == budgetOverPercent &&
@@ -203,6 +244,7 @@ class NotificationPrefs {
     dailyHour,
     dailyMinute,
     dailyOnlyIfNoTxnToday,
+    Object.hashAll(dailyWeekdays),
     budgetEnabled,
     budgetEarlyPercent,
     budgetOverPercent,

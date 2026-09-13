@@ -8,7 +8,7 @@ Map<String, String> _row(String value) => {kKeyNotificationPrefs: value};
 
 void main() {
   group('Luật 1 — mặc định (FR-008)', () {
-    test('constructor mặc định = defaults, đủ 16 trường', () {
+    test('constructor mặc định = defaults, đủ 17 trường', () {
       const p = NotificationPrefs();
       expect(p, NotificationPrefs.defaults);
       expect(p.dailyEnabled, isTrue);
@@ -27,7 +27,8 @@ void main() {
       expect(p.monthlyEnabled, isTrue);
       expect(p.monthlyHour, 20);
       expect(p.monthlyMinute, 0);
-      expect(p.toJson().length, 16);
+      expect(p.dailyWeekdays, const [1, 2, 3, 4, 5, 6, 7]);
+      expect(p.toJson().length, 17);
     });
 
     test('row vắng → cả bộ mặc định', () {
@@ -216,6 +217,123 @@ void main() {
         NotificationPrefs.fromSettings(allOff.toSettings()),
         allOff,
       );
+    });
+  });
+
+  group('Luật 1–7 (PBI 29) — tập ngày: mặc định & parse chịu lỗi', () {
+    test('mặc định cả 7 ngày, sắp tăng', () {
+      expect(NotificationPrefs.defaults.dailyWeekdays, [1, 2, 3, 4, 5, 6, 7]);
+      expect(NotificationPrefs.defaults.isEveryDay, isTrue);
+    });
+
+    test('row PBI 28 thiếu khoá → cả 7 ngày, các trường khác giữ nguyên', () {
+      final p = NotificationPrefs.fromSettings(
+        _row('{"dailyHour":8,"dailyMinute":5,"dailyOnlyIfNoTxnToday":false}'),
+      );
+      expect(p.dailyWeekdays, [1, 2, 3, 4, 5, 6, 7]);
+      expect(p.dailyHour, 8);
+      expect(p.dailyMinute, 5);
+      expect(p.dailyOnlyIfNoTxnToday, isFalse);
+    });
+
+    test('sai kiểu (không phải List) → cả 7 ngày, không ném', () {
+      for (final raw in ['null', '"T2"', '5', '{}', 'true']) {
+        expect(
+          NotificationPrefs.fromSettings(_row('{"dailyWeekdays":$raw}')).dailyWeekdays,
+          [1, 2, 3, 4, 5, 6, 7],
+          reason: 'raw = $raw',
+        );
+      }
+    });
+
+    test('list rỗng / toàn phần tử sai → cả 7 ngày (không có trạng thái 0 ngày)', () {
+      for (final raw in ['[]', '[0,9]', '["T2","T3"]', '[null]', '[1.5,8.5]']) {
+        expect(
+          NotificationPrefs.fromSettings(_row('{"dailyWeekdays":$raw}')).dailyWeekdays,
+          [1, 2, 3, 4, 5, 6, 7],
+          reason: 'raw = $raw',
+        );
+      }
+    });
+
+    test('phần tử lạ bị lọc bỏ, phần còn lại giữ nguyên (không rơi về mặc định)', () {
+      final p = NotificationPrefs.fromSettings(
+        _row('{"dailyWeekdays":[3,null,0,"T2",8,1.5,5]}'),
+      );
+      expect(p.dailyWeekdays, [3, 5]);
+    });
+
+    test('trùng lặp bị bỏ + ghi ra luôn sắp tăng', () {
+      final p = NotificationPrefs.fromSettings(
+        _row('{"dailyWeekdays":[5,1,1,5]}'),
+      );
+      expect(p.dailyWeekdays, [1, 5]);
+      expect(p.toJson()['dailyWeekdays'], [1, 5]);
+    });
+
+    test('tập 1 ngày đọc ra đúng 1 ngày (không bị coi là rỗng)', () {
+      final p = NotificationPrefs.fromSettings(_row('{"dailyWeekdays":[4]}'));
+      expect(p.dailyWeekdays, [4]);
+      expect(p.isEveryDay, isFalse);
+    });
+  });
+
+  group('Luật 8–9 (PBI 29) — round-trip tập ngày', () {
+    test('fromSettings(toSettings(p)) == p với tập ngày đã đổi', () {
+      const p = NotificationPrefs(
+        dailyHour: 7,
+        dailyMinute: 5,
+        dailyOnlyIfNoTxnToday: false,
+        dailyWeekdays: [2, 4, 6],
+      );
+      final back = NotificationPrefs.fromSettings(p.toSettings());
+      expect(back, p);
+      expect(back.dailyWeekdays, [2, 4, 6]);
+      expect(back.hashCode, p.hashCode, reason: 'hashCode phải tính cả tập ngày');
+    });
+  });
+
+  group('Luật 10–14 (PBI 29) — toggleDay / isEveryDay / isDayEnabled', () {
+    const base = NotificationPrefs();
+
+    test('ngày đang tắt → thêm vào, giữ thứ tự sắp tăng', () {
+      final p = base.copyWith(dailyWeekdays: [1, 3]).toggleDay(2);
+      expect(p.dailyWeekdays, [1, 2, 3]);
+    });
+
+    test('ngày đang bật, còn ≥2 ngày → bỏ ngày đó', () {
+      final p = base.copyWith(dailyWeekdays: [1, 2, 3]).toggleDay(2);
+      expect(p.dailyWeekdays, [1, 3]);
+      expect(p.isDayEnabled(2), isFalse);
+      expect(p.isDayEnabled(1), isTrue);
+    });
+
+    test('tắt ngày bật cuối cùng → trả CHÍNH object cũ (identical), không có 0 ngày', () {
+      final p = base.copyWith(dailyWeekdays: [6]);
+      expect(identical(p, p.toggleDay(6)), isTrue);
+      expect(p.toggleDay(6).dailyWeekdays, [6]);
+    });
+
+    test('toggleDay chỉ chạm dailyWeekdays — 16 trường còn lại nguyên', () {
+      final p = base.copyWith(dailyWeekdays: [1, 2, 3]).toggleDay(2);
+      final diff = <String>[];
+      final a = base.copyWith(dailyWeekdays: [1, 2, 3]).toJson();
+      final b = p.toJson();
+      for (final key in a.keys) {
+        if (a[key].toString() != b[key].toString()) diff.add(key);
+      }
+      expect(diff, ['dailyWeekdays']);
+    });
+
+    test('ngoài miền 1…7 → không đổi gì', () {
+      final p = base.copyWith(dailyWeekdays: [1, 2]);
+      expect(identical(p, p.toggleDay(0)), isTrue);
+      expect(identical(p, p.toggleDay(8)), isTrue);
+    });
+
+    test('isEveryDay chỉ đúng với tập đủ 7 ngày', () {
+      expect(base.copyWith(dailyWeekdays: [1, 2, 3, 4, 5, 6, 7]).isEveryDay, isTrue);
+      expect(base.copyWith(dailyWeekdays: [1, 2, 3, 4, 5, 6]).isEveryDay, isFalse);
     });
   });
 

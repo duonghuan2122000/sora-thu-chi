@@ -670,5 +670,29 @@ class SoraTranslations extends Translations {
         'Follows the schedule set for each goal',
     'Chủ nhật hằng tuần, @giờ': 'Every Sunday, @giờ',
     'Ngày cuối tháng, @giờ': 'Last day of the month, @giờ',
+
+    // ---------------------------------------------------------------------
+    // Cấu hình nhắc nhập giao dịch hằng ngày (PBI 29) — màn `02`. Nhãn ngày
+    // T2…CN viết literal trước `.tr` trong `date_label.dart`; giờ `HH:mm`,
+    // dấu `:`/`–`, tên app "Sora Thu Chi" **không** dịch (FR-015).
+    // ---------------------------------------------------------------------
+    'T2': 'Mon',
+    'T3': 'Tue',
+    'T4': 'Wed',
+    'T5': 'Thu',
+    'T6': 'Fri',
+    'T7': 'Sat',
+    'CN': 'Sun',
+    'Nhắc nhập giao dịch': 'Transaction reminder',
+    '@giờ vào @ngày': 'At @giờ on @ngày',
+    'THỜI GIAN NHẮC': 'REMINDER TIME',
+    'LẶP LẠI VÀO CÁC NGÀY': 'REPEAT ON DAYS',
+    'Chỉ nhắc nếu chưa ghi giao dịch': 'Only remind if nothing is logged',
+    'Bỏ qua nhắc nhở nếu hôm nay bạn đã nhập':
+        'Skip the reminder if you already logged today',
+    'XEM TRƯỚC THÔNG BÁO': 'NOTIFICATION PREVIEW',
+    'Đừng quên ghi lại thu chi hôm nay nhé!':
+        "Don't forget to log today's income and expenses!",
+    'Lưu thay đổi': 'Save changes',
   };
 }

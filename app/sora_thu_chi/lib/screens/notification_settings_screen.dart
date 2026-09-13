@@ -7,6 +7,7 @@ import '../core/notification/notification_store.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/notification_deps.dart';
 import '../theme/sora_colors.dart';
+import 'daily_reminder_config_screen.dart';
 
 /// Màn "Thông báo & nhắc nhở" (mockup `01`, PBI 28) — màn con từ Cài đặt: app
 /// bar + nút back, **không** bottom nav, **không** FAB (FR-002).
@@ -107,6 +108,26 @@ class _NotificationSettingsScreenState
   void _toggleMonthly(bool value) =>
       _setPrefs(_prefs.copyWith(monthlyEnabled: value));
 
+  /// Mở màn cấu hình nhắc hàng ngày, truyền **chính** store của màn này (giữ
+  /// đúng 1 connection drift; test bơm fake qua màn `01` được).
+  Future<void> _openDailyConfig() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DailyReminderConfigScreen(store: _store),
+      ),
+    );
+    if (!mounted) return;
+    // Về màn `01`: đọc lại để dòng phụ phản ánh giá trị vừa lưu (FR-011, kịch
+    // bản 13/14) — chỉ đọc, không ghi lại như lúc mở màn.
+    try {
+      final prefs = await _store.load();
+      if (!mounted) return;
+      setState(() => _prefs = prefs);
+    } catch (_) {
+      // Đọc lỗi: giữ nguyên trạng thái đang hiển thị.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
@@ -144,6 +165,7 @@ class _NotificationSettingsScreenState
             subtitle: _dailySubtitle(),
             value: _prefs.dailyEnabled,
             onChanged: _toggleDaily,
+            onTap: _openDailyConfig,
           ),
         ]),
         _SectionLabel('NGÂN SÁCH'.tr),
@@ -229,11 +251,18 @@ class _NotificationSettingsScreenState
   }
 
   /// Dòng phụ hàng nhắc hàng ngày — ghép **2 khoá dịch** (không nối chuỗi thủ
-  /// công vào giữa khoá) để trật tự từ dịch được theo từng ngôn ngữ.
+  /// công vào giữa khoá) để trật tự từ dịch được theo từng ngôn ngữ. Đủ 7 ngày
+  /// giữ chuỗi "mỗi ngày" (PBI 28 không đổi); thiếu ngày → liệt kê tập ngày đã
+  /// nén dải (FR-011).
   String _dailySubtitle() {
-    final clock = '@giờ mỗi ngày'.trParams({
-      'giờ': formatClock(_prefs.dailyHour, _prefs.dailyMinute),
-    });
+    final clock = _prefs.isEveryDay
+        ? '@giờ mỗi ngày'.trParams({
+            'giờ': formatClock(_prefs.dailyHour, _prefs.dailyMinute),
+          })
+        : '@giờ vào @ngày'.trParams({
+            'giờ': formatClock(_prefs.dailyHour, _prefs.dailyMinute),
+            'ngày': daysLabel(_prefs.dailyWeekdays),
+          });
     if (!_prefs.dailyOnlyIfNoTxnToday) return clock;
     return '$clock${' · chỉ nhắc nếu chưa ghi'.tr}';
   }
@@ -259,6 +288,7 @@ class _NotificationSettingsScreenState
     required bool value,
     required ValueChanged<bool> onChanged,
     bool coral = false,
+    VoidCallback? onTap,
   }) {
     return _itemRow(
       colors: colors,
@@ -267,6 +297,7 @@ class _NotificationSettingsScreenState
       subtitle: subtitle,
       coral: coral,
       trailing: Switch(value: value, onChanged: onChanged),
+      onTap: onTap,
     );
   }
 
@@ -293,6 +324,10 @@ class _NotificationSettingsScreenState
   /// Hàng danh sách: vòng tròn 36 px + tiêu đề (1 dòng, ellipsis) + dòng phụ
   /// wrap tự nhiên; `trailing` nằm **ngoài** `Expanded` nên cỡ chữ lớn không
   /// đè lên điều khiển (FR-017). [coral] dành **riêng** nhóm NGÂN SÁCH (FR-004).
+  ///
+  /// [onTap] (FR-001) đặt **hai** vùng chạm tách biệt trên **một** hàng: icon và
+  /// khối tiêu đề/dòng phụ cùng gọi [onTap], còn `trailing` (công tắc/chevron)
+  /// nằm **ngoài** mọi `InkWell` — chạm công tắc **không** mở màn con.
   Widget _itemRow({
     required SoraColors colors,
     required IconData icon,
@@ -302,55 +337,64 @@ class _NotificationSettingsScreenState
     bool coral = false,
     VoidCallback? onTap,
   }) {
-    final inner = Padding(
+    final iconCircle = Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: coral ? colors.coralLightBg : colors.tealLightBg,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icon,
+        color: coral ? colors.coralOnNeutral : colors.tealOnNeutral,
+        size: 20,
+      ),
+    );
+    final texts = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: TextStyle(color: colors.textSecondary, fontSize: 12),
+        ),
+      ],
+    );
+    final handler = onTap;
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: coral ? colors.coralLightBg : colors.tealLightBg,
-              shape: BoxShape.circle,
+          if (handler == null)
+            iconCircle
+          else
+            InkWell(
+              onTap: handler,
+              customBorder: const CircleBorder(),
+              child: iconCircle,
             ),
-            child: Icon(
-              icon,
-              color: coral ? colors.coralOnNeutral : colors.tealOnNeutral,
-              size: 20,
-            ),
-          ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: colors.textSecondary, fontSize: 12),
-                ),
-              ],
-            ),
+            child: handler == null
+                ? texts
+                : InkWell(onTap: handler, child: texts),
           ),
           const SizedBox(width: 8),
           trailing,
         ],
       ),
     );
-    final handler = onTap;
-    if (handler == null) return inner;
-    return InkWell(onTap: handler, child: inner);
   }
 }
 

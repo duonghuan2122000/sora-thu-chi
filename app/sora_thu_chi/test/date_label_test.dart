@@ -94,6 +94,54 @@ void main() {
     });
   });
 
+  group('dayLabel — nhãn ngày ISO (1 = Thứ Hai)', () {
+    test('1→T2 … 7→CN', () {
+      const expected = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      for (var d = 1; d <= 7; d++) {
+        expect(dayLabel(d), expected[d - 1]);
+      }
+    });
+
+    test('ngoài miền 1…7 → chuỗi rỗng', () {
+      expect(dayLabel(0), '');
+      expect(dayLabel(8), '');
+      expect(dayLabel(-1), '');
+    });
+  });
+
+  group('daysLabel — nén dải liên tiếp ≥3 (FR-011)', () {
+    test('đủ 7 ngày → "T2–T7, CN" (dải 6 ngày + ngày rời)', () {
+      expect(daysLabel([1, 2, 3, 4, 5, 6, 7]), 'T2–T7, CN');
+    });
+
+    test('[1..6] → "T2–T7"', () {
+      expect(daysLabel([1, 2, 3, 4, 5, 6]), 'T2–T7');
+    });
+
+    test('[1,2,3,5] → "T2–T4, T6" (dải 3 + ngày rời)', () {
+      expect(daysLabel([1, 2, 3, 5]), 'T2–T4, T6');
+    });
+
+    test('2 ngày rời không nén: [1,7] → "T2, CN"', () {
+      expect(daysLabel([1, 7]), 'T2, CN');
+    });
+
+    test('[3] → "T4"; rỗng → ""', () {
+      expect(daysLabel([3]), 'T4');
+      expect(daysLabel(const []), '');
+    });
+
+    test('Chủ Nhật luôn liệt kê riêng, không gộp vào dải', () {
+      expect(daysLabel([5, 6, 7]), 'T6, T7, CN');
+      expect(daysLabel([1, 2, 3, 4, 5, 6, 7]), 'T2–T7, CN');
+    });
+
+    test('đầu vào lộn xộn/trùng vẫn cho kết quả chuẩn', () {
+      expect(daysLabel([5, 7, 6, 5]), 'T6, T7, CN');
+      expect(daysLabel([7, 1, 2, 3]), 'T2–T4, CN');
+    });
+  });
+
   group('formatDayGroupHeader — tiêu đề nhóm ngày (FR-005)', () {
     test('cùng ngày lịch → "HÔM NAY - dd/MM/yyyy"', () {
       expect(

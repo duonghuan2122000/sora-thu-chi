@@ -35,6 +35,48 @@ String formatDayGroupHeader(DateTime date, {DateTime? now}) {
 String formatDateTimeLabel(DateTime d) =>
     '${_two(d.day)}/${_two(d.month)}/${d.year} ${_two(d.hour)}:${_two(d.minute)}';
 
+/// Nhãn ngày viết tắt theo ISO (`1` = Thứ Hai … `7` = Chủ Nhật): `'T2'`…`'CN'`
+/// (EN: `Mon`…`Sun`); ngoài miền → chuỗi rỗng. Viết literal ngay trước `.tr` để
+/// test dịch còn ràng buộc được (R11).
+String dayLabel(int weekday) => switch (weekday) {
+  1 => 'T2'.tr,
+  2 => 'T3'.tr,
+  3 => 'T4'.tr,
+  4 => 'T5'.tr,
+  5 => 'T6'.tr,
+  6 => 'T7'.tr,
+  7 => 'CN'.tr,
+  _ => '',
+};
+
+/// Tập ngày → chuỗi cho dòng phụ màn "Thông báo & nhắc nhở" (FR-011): dải liên
+/// tiếp trong tuần (T2…T7) dài **≥3** nén thành `'T2–T7'`, ngày rời liệt kê
+/// riêng, phân cách `', '` (`[1,2,3,5]` → `'T2–T4, T6'`). **Chủ Nhật luôn liệt
+/// kê riêng** — tuần đọc là `T2…T7` + `CN` (`[1..7]` → `'T2–T7, CN'`). Rỗng →
+/// chuỗi rỗng.
+String daysLabel(List<int> weekdays) {
+  final days = weekdays.toSet().toList()..sort();
+  final week = days.where((d) => d != 7).toList();
+  final parts = <String>[];
+  var i = 0;
+  while (i < week.length) {
+    var j = i;
+    while (j + 1 < week.length && week[j + 1] == week[j] + 1) {
+      j++;
+    }
+    if (j - i + 1 >= 3) {
+      parts.add('${dayLabel(week[i])}–${dayLabel(week[j])}');
+    } else {
+      for (var k = i; k <= j; k++) {
+        parts.add(dayLabel(week[k]));
+      }
+    }
+    i = j + 1;
+  }
+  if (days.contains(7)) parts.add(dayLabel(7));
+  return parts.join(', ');
+}
+
 /// Giờ `'HH:mm'` 24h, mỗi số 2 chữ số — dùng chung cho mọi dòng hiển thị giờ.
 /// Không đổi theo ngôn ngữ (FR-015).
 String formatClock(int hour, int minute) => '${_two(hour)}:${_two(minute)}';
