@@ -15,6 +15,7 @@ import '../theme/sora_colors.dart';
 import 'budget_overview_screen.dart';
 import 'report_category_detail_screen.dart';
 import 'report_comparison_screen.dart';
+import 'report_export_screen.dart';
 
 /// Màn Tổng quan tab Báo cáo (mockup `01`, PBI 22): khu đầu màn teal
 /// (tiêu đề + segmented control 4 kỳ + 2 số tổng) rồi các thẻ số liệu.
@@ -61,6 +62,14 @@ class ReportScreen extends StatelessWidget {
     );
   }
 
+  /// Biểu tượng xuất trên vùng tiêu đề → màn `04` Xuất báo cáo (FR-001). Nút
+  /// này **luôn** bấm được (kể cả kỳ rỗng) — khác nút so sánh (FR-018).
+  Future<void> _openExport(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ReportExportScreen()),
+    );
+  }
+
   /// Biểu tượng so sánh trên vùng tiêu đề (FR-001). Người dùng **chưa từng** có
   /// giao dịch Thu/Chi nào trước kỳ đang xem ⇒ không mở màn, chỉ giải thích
   /// (FR-017); màn 03 vì thế luôn có ít nhất một kỳ có dữ liệu.
@@ -91,16 +100,22 @@ class ReportScreen extends StatelessWidget {
         children: [
           ScreenHeader(
             title: 'Báo cáo'.tr,
-            trailing: _CompareButton(
-              enabled: controller.hasAnyTxnBefore(
-                (view?.range ??
-                        reportPeriodRange(
-                          controller.period.value,
-                          controller.now,
-                        ))
-                    .start,
-              ),
-              onTap: () => _openComparison(context),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _CompareButton(
+                  enabled: controller.hasAnyTxnBefore(
+                    (view?.range ??
+                            reportPeriodRange(
+                              controller.period.value,
+                              controller.now,
+                            ))
+                        .start,
+                  ),
+                  onTap: () => _openComparison(context),
+                ),
+                _ExportButton(onTap: () => _openExport(context)),
+              ],
             ),
             bottom: _HeaderSummary(
               period: controller.period.value,
@@ -174,6 +189,32 @@ class _CompareButton extends StatelessWidget {
             size: 24,
             color: enabled ? AppColors.white : colors.tealLightText,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Nút tròn 48 px trên vùng tiêu đề mở màn Xuất báo cáo (màn `04`, FR-001).
+/// **Luôn** bấm được — kỳ rỗng vẫn xuất được tệp (danh sách rỗng ⇒ nút xuất
+/// trong màn 04 tự vô hiệu hoá), khác nút so sánh.
+class _ExportButton extends StatelessWidget {
+  const _ExportButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Xuất'.tr,
+      child: InkWell(
+        key: const ValueKey('report-export-entry'),
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(Icons.ios_share, size: 22, color: AppColors.white),
         ),
       ),
     );

@@ -18,6 +18,7 @@ import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
 import 'package:sora_thu_chi/screens/report_comparison_screen.dart';
+import 'package:sora_thu_chi/screens/report_export_screen.dart';
 import 'package:sora_thu_chi/screens/report_screen.dart';
 import 'package:sora_thu_chi/screens/scan/device_check_screen.dart';
 import 'package:sora_thu_chi/screens/scan/scan_confirm_screen.dart';
@@ -448,6 +449,92 @@ void main() {
       expect(
         find.byKey(const ValueKey('device-check-use-basic')),
         findsOneWidget,
+      );
+
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'Màn Xuất báo cáo (PBI 27) ở tối: chip/thẻ định dạng/hộp tóm tắt/cảnh báo '
+    'đọc token tối, không overflow',
+    (tester) async {
+      registerTheme();
+      Get.put<WalletRepository>(
+        FakeWalletRepository.withCategories(
+          transactions: [
+            Transaction(
+              id: 1,
+              walletId: 1,
+              type: TxnType.expense,
+              category: 'Ăn uống',
+              amount: -300000,
+              date: DateTime(2026, 3, 10),
+              categoryId: 1,
+            ),
+          ],
+          categoriesSeed: [
+            Category(
+              id: 1,
+              name: 'Ăn uống',
+              type: CategoryType.expense,
+              icon: 'restaurant',
+              color: 0xFF0F6E56,
+            ),
+          ],
+        ),
+      );
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controller = ensureReportController();
+      await controller.load(now: DateTime(2026, 3, 15));
+      await tester.pumpWidget(darkApp(const ReportExportScreen()));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ReportExportScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+
+      /// Container đầu tiên bên trong widget mang [key] — nơi đặt nền/viền.
+      Color? surfaceColorOf(Key key) {
+        final container = tester.widget<Container>(
+          find
+              .descendant(of: find.byKey(key), matching: find.byType(Container))
+              .first,
+        );
+        return (container.decoration as BoxDecoration?)?.color;
+      }
+
+      /// Nền của Container mang [key] (hộp tóm tắt, dòng cảnh báo…).
+      Color? decorationColorOf(Key key) {
+        final container = tester.widget<Container>(find.byKey(key));
+        return (container.decoration as BoxDecoration?)?.color;
+      }
+
+      // Chip chưa chọn + thẻ định dạng + hộp tóm tắt + dòng cảnh báo lấy token tối.
+      // (Chip "Tất cả" đang chọn nên nền teal — kiểm chip ví chưa chọn.)
+      expect(
+        surfaceColorOf(const ValueKey('export-wallet-1')),
+        SoraColors.dark.softCardBg,
+      );
+      expect(
+        surfaceColorOf(const ValueKey('export-format-pdf')),
+        SoraColors.dark.surface,
+      );
+      expect(
+        decorationColorOf(const ValueKey('export-summary')),
+        SoraColors.dark.softCardBg,
+      );
+      expect(
+        decorationColorOf(const ValueKey('export-privacy-warning')),
+        SoraColors.dark.coralLightBg,
       );
 
       for (var i = 0; i < 3; i++) {

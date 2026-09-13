@@ -54,12 +54,21 @@ dependencies:
   device_info_plus: ^13.2.0
   flutter_gemma: ^1.8.1
   flutter_gemma_litertlm: ^1.6.3
+  # Xuất báo cáo (PBI 27) — sinh PDF/XLSX + mở bảng chia sẻ hệ thống.
+  pdf: ^3.13.0
+  # `excel_community` là bản fork của `excel` (mở `archive >=4.0.9`) —
+  # `excel` gốc xung đột `archive` với `image ^4.9.2` của PBI 25 (research R8).
+  excel_community: ^2.4.0
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   drift_dev: ^2.34.4
   build_runner: ^2.4.15
+  # Test PBI 27 mở lại tệp .xlsx để kiểm cấu trúc (đã có sẵn trong cây phụ thuộc
+  # qua `excel_community` — khai báo tường minh vì test import trực tiếp).
+  archive: ^4.0.9
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -82,6 +91,9 @@ flutter:
   # Asset nhận diện (PBI 25) — sinh bằng `dart run tool/gen_brand_assets.dart`.
   assets:
     - assets/brand/
+    # Font nhúng cho tệp PDF xuất báo cáo (PBI 27) — Roboto (Apache-2.0); font
+    # mặc định của `pdf` không có dấu tiếng Việt.
+    - assets/fonts/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

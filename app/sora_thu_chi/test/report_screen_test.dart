@@ -14,6 +14,7 @@ import 'package:sora_thu_chi/data/transaction_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
 import 'package:sora_thu_chi/screens/report_comparison_screen.dart';
+import 'package:sora_thu_chi/screens/report_export_screen.dart';
 import 'package:sora_thu_chi/screens/report_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
@@ -99,6 +100,12 @@ FakeWalletRepository _transferOnlyRepo() => FakeWalletRepository.withCategories(
       transferGroupId: 1,
     ),
   ],
+  categoriesSeed: [_cat(1, 'Ăn uống')],
+);
+
+/// Kỳ không có giao dịch nào (PBI 27 — lối vào xuất vẫn mở được).
+FakeWalletRepository _emptyRepo() => FakeWalletRepository.withCategories(
+  transactions: const [],
   categoriesSeed: [_cat(1, 'Ăn uống')],
 );
 
@@ -490,6 +497,48 @@ void main() {
 
       expect(find.text('Chưa có giao dịch nào trong kỳ này'), findsNWidgets(3));
       expect(find.byKey(const ValueKey('report-flow-chart')), findsNothing);
+    });
+  });
+
+  group('ReportScreen — lối vào Xuất báo cáo (PBI 27, FR-001)', () {
+    testWidgets('có icon xuất trên vùng tiêu đề', (tester) async {
+      await _pump(tester, _seededRepo());
+
+      expect(find.byKey(const ValueKey('report-export-entry')), findsOneWidget);
+      expect(find.byKey(const ValueKey('report-compare-entry')), findsOneWidget);
+    });
+
+    testWidgets('chạm icon ⇒ mở màn 04 Xuất báo cáo', (tester) async {
+      await _pump(tester, _seededRepo());
+
+      await tester.tap(find.byKey(const ValueKey('report-export-entry')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportExportScreen), findsOneWidget);
+    });
+
+    testWidgets('kỳ rỗng ⇒ icon xuất VẪN mở màn 04 (khác nút so sánh)', (
+      tester,
+    ) async {
+      await _pump(tester, _emptyRepo());
+
+      await tester.tap(find.byKey(const ValueKey('report-export-entry')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportExportScreen), findsOneWidget);
+      expect(find.text('Chưa có dữ liệu để so sánh'), findsNothing);
+    });
+
+    testWidgets('back từ màn 04 ⇒ về lại màn 01', (tester) async {
+      await _pump(tester, _seededRepo());
+
+      await tester.tap(find.byKey(const ValueKey('report-export-entry')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportExportScreen), findsNothing);
+      expect(find.text('Báo cáo'), findsOneWidget);
     });
   });
 }

@@ -308,7 +308,7 @@ List<Transaction> filterTransactions(
   List<Category> catalog,
 ) {
   if (all.isEmpty) return const [];
-  final effective = _effectiveCategoryIds(filter.categoryIds, catalog);
+  final effective = effectiveCategoryIds(filter.categoryIds, catalog);
   final effectiveNames = _normalizedNames(effective, catalog);
 
   final keep = List<bool>.generate(
@@ -394,7 +394,8 @@ bool _matches(
 
 /// Tập id hiệu lực: id đã chọn + toàn bộ **con cháu** của cha được chọn
 /// (descendant closure trên [catalog]) — chọn cha tự gộp con (R7/SC-008).
-Set<int> _effectiveCategoryIds(Set<int> chosen, List<Category> catalog) {
+/// Dùng chung với bộ lọc màn Xuất báo cáo (PBI 27, FR-006).
+Set<int> effectiveCategoryIds(Set<int> chosen, List<Category> catalog) {
   if (chosen.isEmpty || catalog.isEmpty) return chosen;
   final childByParent = <int, List<int>>{};
   for (final c in catalog) {

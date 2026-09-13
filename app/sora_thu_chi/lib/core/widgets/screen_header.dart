@@ -61,10 +61,10 @@ class ScreenHeader extends StatelessWidget {
     // Không có tham số tuỳ chọn → giữ nguyên layout cũ (tiêu đề trái, thẳng).
     if (!centerTitle && !hasTrailing) return titleText;
 
-    // Ô nút bên phải rộng cố định 48 — đệm trái chừa đúng bằng đó để khi có
-    // [trailing], tiêu đề căn giữa thật sự (không lệch sang trái).
+    // Ô nút bên phải cao 48, **rộng theo nội dung** — một nút tròn 48 giữ đúng
+    // bề rộng cũ (PBI 26), nhiều nút cạnh nhau (màn Báo cáo: so sánh + xuất,
+    // PBI 27) thì tiêu đề co lại thay vì tràn.
     Widget trailingSlot() => SizedBox(
-      width: 48,
       height: 48,
       child: Align(alignment: Alignment.center, child: trailing),
     );

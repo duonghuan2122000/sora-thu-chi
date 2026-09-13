@@ -476,6 +476,43 @@ class SoraTranslations extends Translations {
     'kỳ sau': 'the following period',
 
     // ---------------------------------------------------------------------
+    // Báo cáo (PBI 27) — màn Xuất báo cáo `04`
+    // ---------------------------------------------------------------------
+    'Xuất báo cáo': 'Export report',
+    'Xuất': 'Export',
+    'KHOẢNG THỜI GIAN': 'TIME RANGE',
+    'Từ ngày': 'From',
+    'Đến ngày': 'To',
+    'VÍ': 'WALLETS',
+    'TAG': 'TAG',
+    'Nhập tag để lọc (VD: #dulich)': 'Enter a tag to filter (e.g. #travel)',
+    'ĐỊNH DẠNG XUẤT': 'EXPORT FORMAT',
+    'Có biểu đồ': 'With charts',
+    'Bảng dữ liệu': 'Spreadsheet',
+    'Dữ liệu thô': 'Raw data',
+    '@count giao dịch • @from – @to': '@count transactions • @from – @to',
+    '@from – @to': '@from – @to',
+    'Định dạng: @format (@hint)': 'Format: @format (@hint)',
+    '@count khác': '@count more',
+    'Bộ lọc hiện không có giao dịch nào':
+        'No transactions match the current filters',
+    'Tệp xuất ra không còn được app bảo vệ. Hãy cẩn thận khi chia sẻ.':
+        'Exported files are no longer protected by the app. Share with care.',
+    'Đang tạo tệp…': 'Creating file…',
+    'Đã tạo tệp': 'File created',
+    'Không tạo được tệp báo cáo': 'Could not create the report file',
+    'Không đọc được dữ liệu để xuất báo cáo':
+        'Could not read data to export the report',
+    'Báo cáo thu chi': 'Income & expense report',
+    'Chênh lệch': 'Difference',
+    'Danh sách giao dịch': 'Transactions',
+    'Tổng hợp': 'Summary',
+    'Phân bổ chi theo danh mục': 'Spending by category',
+    'Dòng tiền': 'Cash flow',
+    'Số tiền': 'Amount',
+    'Loại': 'Type',
+
+    // ---------------------------------------------------------------------
     // Bảo mật PIN & khung Tổng quan/Báo cáo
     // ---------------------------------------------------------------------
     'Nhập lại mã PIN': 'Re-enter PIN',
