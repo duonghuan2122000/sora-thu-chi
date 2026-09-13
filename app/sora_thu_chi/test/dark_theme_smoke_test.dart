@@ -17,6 +17,7 @@ import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
+import 'package:sora_thu_chi/screens/report_comparison_screen.dart';
 import 'package:sora_thu_chi/screens/report_screen.dart';
 import 'package:sora_thu_chi/screens/scan/device_check_screen.dart';
 import 'package:sora_thu_chi/screens/scan/scan_confirm_screen.dart';
@@ -55,7 +56,9 @@ void registerTheme() {
 }
 
 void main() {
-  testWidgets('Màn con "Giao diện": card đọc token tối, không overflow', (tester) async {
+  testWidgets('Màn con "Giao diện": card đọc token tối, không overflow', (
+    tester,
+  ) async {
     registerTheme();
     await tester.binding.setSurfaceSize(const Size(390, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -68,16 +71,18 @@ void main() {
     expect(SoraColors.of(context).background, SoraColors.dark.background);
 
     // Card "Tối" (chưa chọn) tô nền surface tối — không còn trắng.
-    final box = tester
-        .widget<Container>(
-          find
-              .descendant(
-                of: find.byKey(const ValueKey('theme-option-dark')),
-                matching: find.byType(Container),
-              )
-              .first,
-        )
-        .decoration as BoxDecoration;
+    final box =
+        tester
+                .widget<Container>(
+                  find
+                      .descendant(
+                        of: find.byKey(const ValueKey('theme-option-dark')),
+                        matching: find.byType(Container),
+                      )
+                      .first,
+                )
+                .decoration
+            as BoxDecoration;
     expect(box.color, SoraColors.dark.surface);
 
     for (final label in ['Sáng', 'Tối', 'Theo hệ thống']) {
@@ -86,7 +91,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Màn "Tiện ích & Cá nhân hóa": hàng + trailing đọc được ở tối', (tester) async {
+  testWidgets('Màn "Tiện ích & Cá nhân hóa": hàng + trailing đọc được ở tối', (
+    tester,
+  ) async {
     registerTheme();
     await tester.binding.setSurfaceSize(const Size(390, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -125,7 +132,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Màn danh sách ví ở tối: cuộn hết danh sách, không overflow', (tester) async {
+  testWidgets('Màn danh sách ví ở tối: cuộn hết danh sách, không overflow', (
+    tester,
+  ) async {
     Get.reset();
     final controller = WalletController(FakeWalletRepository());
     Get.put(controller);
@@ -133,7 +142,9 @@ void main() {
     addTearDown(Get.reset);
 
     tester.binding.platformDispatcher.textScaleFactorTestValue = 2.0;
-    addTearDown(tester.binding.platformDispatcher.clearTextScaleFactorTestValue);
+    addTearDown(
+      tester.binding.platformDispatcher.clearTextScaleFactorTestValue,
+    );
     await tester.binding.setSurfaceSize(const Size(360, 640));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -184,9 +195,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       final controller = ensureReportController();
-      await tester.pumpWidget(
-        darkApp(const Scaffold(body: ReportScreen())),
-      );
+      await tester.pumpWidget(darkApp(const Scaffold(body: ReportScreen())));
       await controller.load(now: DateTime(2026, 3, 15));
       await tester.pumpAndSettle();
 
@@ -244,9 +253,7 @@ void main() {
 
       final controller = ensureReportController();
       await controller.load(now: DateTime(2026, 3, 15));
-      await tester.pumpWidget(
-        darkApp(const ReportCategoryDetailScreen()),
-      );
+      await tester.pumpWidget(darkApp(const ReportCategoryDetailScreen()));
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(ReportCategoryDetailScreen));
@@ -270,6 +277,81 @@ void main() {
   );
 
   testWidgets(
+    'Màn So sánh kỳ ở tối: hai đường + thẻ Nhận xét đọc token tối, không overflow',
+    (tester) async {
+      registerTheme();
+      Get.put<WalletRepository>(
+        FakeWalletRepository.withCategories(
+          transactions: [
+            Transaction(
+              id: 1,
+              walletId: 1,
+              type: TxnType.expense,
+              category: 'Ăn uống',
+              amount: -12300000,
+              date: DateTime(2026, 3, 10),
+              categoryId: 1,
+            ),
+            Transaction(
+              id: 2,
+              walletId: 1,
+              type: TxnType.expense,
+              category: 'Ăn uống',
+              amount: -9000000,
+              date: DateTime(2025, 3, 10),
+              categoryId: 1,
+            ),
+          ],
+          categoriesSeed: [
+            Category(
+              id: 1,
+              name: 'Ăn uống',
+              type: CategoryType.expense,
+              icon: 'restaurant',
+              color: 0xFF0F6E56,
+            ),
+          ],
+        ),
+      );
+      await tester.binding.setSurfaceSize(const Size(390, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = ensureReportController();
+      await controller.load(now: DateTime(2026, 3, 15));
+      await tester.pumpWidget(darkApp(const ReportComparisonScreen()));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ReportComparisonScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+
+      // Hai đường lấy **đúng** token tối — kể cả nét đứt `tabInactive` (SC-014).
+      final chart = tester.widget<LineChart>(
+        find.byKey(const ValueKey('report-compare-trend')),
+      );
+      expect(chart.data.lineBarsData[0].color, SoraColors.dark.tealOnNeutral);
+      expect(chart.data.lineBarsData[1].color, SoraColors.dark.tabInactive);
+      expect(chart.data.lineBarsData[1].dashArray, [4, 3]);
+
+      // Thẻ Nhận xét dùng nền cam **tối**.
+      final card =
+          tester
+                  .widget<Container>(
+                    find.byKey(const ValueKey('report-compare-insight')),
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(card.color, SoraColors.dark.coralLightBg);
+
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'Màn xác nhận hóa đơn ở tối: 6 trường + nút lưu đọc bảng màu tối, không overflow',
     (tester) async {
       registerTheme();
@@ -283,7 +365,10 @@ void main() {
         darkApp(
           ScanConfirmScreen(
             extraction: ScanExtraction(
-              amount: const ScanField(value: 55000, confidence: FieldConfidence.high),
+              amount: const ScanField(
+                value: 55000,
+                confidence: FieldConfidence.high,
+              ),
               date: ScanField(
                 value: DateTime(2026, 9, 12, 8, 24),
                 confidence: FieldConfidence.high,
@@ -292,7 +377,10 @@ void main() {
                 value: 'CIRCLE K',
                 confidence: FieldConfidence.low,
               ),
-              category: const ScanField(value: null, confidence: FieldConfidence.low),
+              category: const ScanField(
+                value: null,
+                confidence: FieldConfidence.low,
+              ),
               engine: ScanEngine.ruleBased,
             ),
             imagePath: '/tmp/hoa-don.jpg',
@@ -304,7 +392,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final context = tester.element(find.byKey(const ValueKey('scan-confirm-screen')));
+      final context = tester.element(
+        find.byKey(const ValueKey('scan-confirm-screen')),
+      );
       expect(Theme.of(context).brightness, Brightness.dark);
       expect(SoraColors.of(context).background, SoraColors.dark.background);
 
@@ -318,7 +408,9 @@ void main() {
       );
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('scan-confidence-merchant')))
+            .widget<Text>(
+              find.byKey(const ValueKey('scan-confidence-merchant')),
+            )
             .style
             ?.color,
         SoraColors.dark.coralOnNeutral,
@@ -332,31 +424,37 @@ void main() {
     },
   );
 
-  testWidgets('Màn kiểm tra cấu hình máy ở tối: 3 thẻ kết quả đọc token tối, không overflow', (
-    tester,
-  ) async {
-    registerTheme();
-    Get.put<ScanController>(
-      ScanController(FakeScanSettingsStore(), FakeDeviceProbe()),
-    );
-    tester.view.physicalSize = const Size(900, 2400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'Màn kiểm tra cấu hình máy ở tối: 3 thẻ kết quả đọc token tối, không overflow',
+    (tester) async {
+      registerTheme();
+      Get.put<ScanController>(
+        ScanController(FakeScanSettingsStore(), FakeDeviceProbe()),
+      );
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(darkApp(const DeviceCheckScreen()));
-    await tester.pumpAndSettle();
-
-    final context = tester.element(find.byKey(const ValueKey('device-check-tier-c')));
-    expect(Theme.of(context).brightness, Brightness.dark);
-    expect(SoraColors.of(context).background, SoraColors.dark.background);
-    expect(find.text('Chưa đủ điều kiện dùng AI nâng cao'), findsOneWidget);
-    expect(find.byKey(const ValueKey('device-check-use-basic')), findsOneWidget);
-
-    for (var i = 0; i < 3; i++) {
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pumpWidget(darkApp(const DeviceCheckScreen()));
       await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    }
-  });
+
+      final context = tester.element(
+        find.byKey(const ValueKey('device-check-tier-c')),
+      );
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+      expect(find.text('Chưa đủ điều kiện dùng AI nâng cao'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('device-check-use-basic')),
+        findsOneWidget,
+      );
+
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 }

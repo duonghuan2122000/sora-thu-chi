@@ -13,8 +13,11 @@ import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/transaction_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
+import 'package:sora_thu_chi/screens/report_comparison_screen.dart';
 import 'package:sora_thu_chi/screens/report_screen.dart';
+import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
+import 'package:sora_thu_chi/theme/sora_colors.dart';
 
 import 'fakes/fake_wallet_repository.dart';
 
@@ -77,28 +80,27 @@ FakeWalletRepository _seededRepo() => FakeWalletRepository.withCategories(
 );
 
 /// Kỳ chỉ có chuyển khoản nội bộ — không tính là thu/chi (biên spec).
-FakeWalletRepository _transferOnlyRepo() =>
-    FakeWalletRepository.withCategories(
-      transactions: [
-        Transaction(
-          id: 1,
-          walletId: 1,
-          type: TxnType.transfer,
-          amount: -500000,
-          date: DateTime(2026, 3, 11),
-          transferGroupId: 1,
-        ),
-        Transaction(
-          id: 2,
-          walletId: 2,
-          type: TxnType.transfer,
-          amount: 500000,
-          date: DateTime(2026, 3, 11),
-          transferGroupId: 1,
-        ),
-      ],
-      categoriesSeed: [_cat(1, 'Ăn uống')],
-    );
+FakeWalletRepository _transferOnlyRepo() => FakeWalletRepository.withCategories(
+  transactions: [
+    Transaction(
+      id: 1,
+      walletId: 1,
+      type: TxnType.transfer,
+      amount: -500000,
+      date: DateTime(2026, 3, 11),
+      transferGroupId: 1,
+    ),
+    Transaction(
+      id: 2,
+      walletId: 2,
+      type: TxnType.transfer,
+      amount: 500000,
+      date: DateTime(2026, 3, 11),
+      transferGroupId: 1,
+    ),
+  ],
+  categoriesSeed: [_cat(1, 'Ăn uống')],
+);
 
 class _ThrowingRepo extends FakeWalletRepository {
   @override
@@ -142,22 +144,24 @@ void main() {
   tearDown(Get.reset);
 
   group('ReportScreen — khu đầu màn (US1)', () {
-    testWidgets('tiêu đề, 4 lựa chọn kỳ (mặc định Tháng), 2 số tổng, hàng Ngân sách',
-        (tester) async {
-      await _pump(tester, _seededRepo());
+    testWidgets(
+      'tiêu đề, 4 lựa chọn kỳ (mặc định Tháng), 2 số tổng, hàng Ngân sách',
+      (tester) async {
+        await _pump(tester, _seededRepo());
 
-      expect(find.text('Báo cáo'), findsOneWidget);
-      expect(find.text('Ngày'), findsOneWidget);
-      expect(find.text('Tuần'), findsOneWidget);
-      expect(find.text('Tháng'), findsOneWidget);
-      expect(find.text('Năm'), findsOneWidget);
-      expect(find.text('Tổng thu'), findsOneWidget);
-      // "Tổng chi" dùng ở cả khu đầu màn lẫn giữa vòng tròn phân bổ.
-      expect(find.text('Tổng chi'), findsNWidgets(2));
-      expect(find.text('900.000 đ'), findsOneWidget);
-      expect(find.text('300.000 đ'), findsWidgets); // transfer bị loại
-      expect(find.text('Ngân sách'), findsOneWidget);
-    });
+        expect(find.text('Báo cáo'), findsOneWidget);
+        expect(find.text('Ngày'), findsOneWidget);
+        expect(find.text('Tuần'), findsOneWidget);
+        expect(find.text('Tháng'), findsOneWidget);
+        expect(find.text('Năm'), findsOneWidget);
+        expect(find.text('Tổng thu'), findsOneWidget);
+        // "Tổng chi" dùng ở cả khu đầu màn lẫn giữa vòng tròn phân bổ.
+        expect(find.text('Tổng chi'), findsNWidgets(2));
+        expect(find.text('900.000 đ'), findsOneWidget);
+        expect(find.text('300.000 đ'), findsWidgets); // transfer bị loại
+        expect(find.text('Ngân sách'), findsOneWidget);
+      },
+    );
 
     testWidgets('KHÔNG có nút biểu tượng lịch (FR-002)', (tester) async {
       await _pump(tester, _seededRepo());
@@ -165,7 +169,9 @@ void main() {
       expect(find.byIcon(Icons.calendar_month), findsNothing);
     });
 
-    testWidgets('mặc định kỳ Tháng, đổi sang Năm → số liệu tính lại', (tester) async {
+    testWidgets('mặc định kỳ Tháng, đổi sang Năm → số liệu tính lại', (
+      tester,
+    ) async {
       final controller = await _pump(tester, _seededRepo());
       expect(controller.period.value, ReportPeriod.month);
       expect(controller.data.value!.range.start, DateTime(2026, 3, 1));
@@ -174,7 +180,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.period.value, ReportPeriod.year);
-      expect(find.text('400.000 đ'), findsWidgets); // đầu màn + tâm vòng tròn + dòng top
+      expect(
+        find.text('400.000 đ'),
+        findsWidgets,
+      ); // đầu màn + tâm vòng tròn + dòng top
     });
 
     testWidgets('lỗi đọc → thông báo + nút Thử lại', (tester) async {
@@ -187,7 +196,9 @@ void main() {
   });
 
   group('ReportScreen — biểu đồ dòng tiền (US2)', () {
-    testWidgets('tiêu đề theo kỳ + chú giải Thu/Chi + 6 nhóm cột', (tester) async {
+    testWidgets('tiêu đề theo kỳ + chú giải Thu/Chi + 6 nhóm cột', (
+      tester,
+    ) async {
       await _pump(tester, _seededRepo());
 
       expect(find.text('Dòng tiền 6 tháng gần đây'), findsOneWidget);
@@ -217,10 +228,7 @@ void main() {
     testWidgets('kỳ rỗng → cả 3 thẻ hiện thông điệp rỗng', (tester) async {
       await _pump(tester, _transferOnlyRepo());
 
-      expect(
-        find.text('Chưa có giao dịch nào trong kỳ này'),
-        findsNWidgets(3),
-      );
+      expect(find.text('Chưa có giao dịch nào trong kỳ này'), findsNWidgets(3));
       expect(find.byKey(const ValueKey('report-flow-chart')), findsNothing);
       expect(find.byKey(const ValueKey('report-donut')), findsNothing);
     });
@@ -233,8 +241,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('nhãn "Tổng chi" giữa vòng tròn + chú giải giảm dần kèm %',
-        (tester) async {
+    testWidgets('nhãn "Tổng chi" giữa vòng tròn + chú giải giảm dần kèm %', (
+      tester,
+    ) async {
       final repo = FakeWalletRepository.withCategories(
         transactions: [
           _expense(1, 3000000, DateTime(2026, 3, 5), categoryId: 1),
@@ -245,15 +254,22 @@ void main() {
       await _pump(tester, repo);
 
       expect(find.text('Phân bổ chi tiêu theo danh mục'), findsOneWidget);
-      expect(find.text('Tổng chi'), findsNWidgets(2)); // đầu màn + tâm vòng tròn
-      expect(find.text('4.000.000 đ'), findsNWidgets(2)); // đầu màn + tâm vòng tròn
+      expect(
+        find.text('Tổng chi'),
+        findsNWidgets(2),
+      ); // đầu màn + tâm vòng tròn
+      expect(
+        find.text('4.000.000 đ'),
+        findsNWidgets(2),
+      ); // đầu màn + tâm vòng tròn
       expect(find.text('75%'), findsOneWidget);
       expect(find.text('25%'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('chạm dòng chú giải danh mục → đặt bộ lọc Chi + kỳ + đổi tab',
-        (tester) async {
+    testWidgets('chạm dòng chú giải danh mục → đặt bộ lọc Chi + kỳ + đổi tab', (
+      tester,
+    ) async {
       final repo = _seededRepo();
       Get.put<WalletRepository>(repo);
       final txController = ensureTransactionController();
@@ -271,8 +287,9 @@ void main() {
       expect(tabs, [1]);
     });
 
-    testWidgets('chạm nhóm "Khác" → không đổi bộ lọc, không đổi tab',
-        (tester) async {
+    testWidgets('chạm nhóm "Khác" → không đổi bộ lọc, không đổi tab', (
+      tester,
+    ) async {
       final repo = FakeWalletRepository.withCategories(
         transactions: [
           _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
@@ -293,7 +310,9 @@ void main() {
   });
 
   group('ReportScreen — top danh mục chi tiêu (US4)', () {
-    testWidgets('3 danh mục chi → 3 dòng, mỗi dòng có thanh tiến độ', (tester) async {
+    testWidgets('3 danh mục chi → 3 dòng, mỗi dòng có thanh tiến độ', (
+      tester,
+    ) async {
       final repo = FakeWalletRepository.withCategories(
         transactions: [
           _expense(1, 2000000, DateTime(2026, 3, 5), categoryId: 1),
@@ -313,19 +332,22 @@ void main() {
       expect(find.byKey(const ValueKey('report-top-2')), findsOneWidget);
       expect(find.byKey(const ValueKey('report-top-3')), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsNWidgets(3));
-      expect(find.text('2.000.000 đ'), findsOneWidget); // dòng top (tổng chi 3.500.000)
+      expect(
+        find.text('2.000.000 đ'),
+        findsOneWidget,
+      ); // dòng top (tổng chi 3.500.000)
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('> 5 danh mục → đúng 5 dòng, KHÔNG có dòng "Khác"', (tester) async {
+    testWidgets('> 5 danh mục → đúng 5 dòng, KHÔNG có dòng "Khác"', (
+      tester,
+    ) async {
       final repo = FakeWalletRepository.withCategories(
         transactions: [
           for (var i = 1; i <= 6; i++)
             _expense(i, 100000 * (7 - i), DateTime(2026, 3, 5), categoryId: i),
         ],
-        categoriesSeed: [
-          for (var i = 1; i <= 6; i++) _cat(i, 'Danh mục $i'),
-        ],
+        categoriesSeed: [for (var i = 1; i <= 6; i++) _cat(i, 'Danh mục $i')],
       );
       await _pump(tester, repo);
 
@@ -346,7 +368,10 @@ void main() {
       await _pump(tester, repo);
 
       // 3.000.000 đ: dòng top + tâm vòng tròn (tổng chi bằng đúng lát cắt).
-      expect(find.text('3.000.000 đ'), findsOneWidget); // dòng top (tổng chi 4.000.000)
+      expect(
+        find.text('3.000.000 đ'),
+        findsOneWidget,
+      ); // dòng top (tổng chi 4.000.000)
       expect(find.text('1.000.000 đ'), findsOneWidget);
       expect(find.text('75%'), findsOneWidget);
     });
@@ -363,8 +388,9 @@ void main() {
       expect(find.byKey(const ValueKey('report-see-all')), findsNothing);
     });
 
-    testWidgets('chạm "Xem tất cả" → mở màn Chi tiêu theo danh mục',
-        (tester) async {
+    testWidgets('chạm "Xem tất cả" → mở màn Chi tiêu theo danh mục', (
+      tester,
+    ) async {
       await _pump(tester, _seededRepo());
 
       await tester.tap(find.byKey(const ValueKey('report-see-all')));
@@ -374,6 +400,58 @@ void main() {
       expect(find.text('Chi tiêu theo danh mục'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('ReportScreen — điểm vào màn So sánh kỳ (PBI 26)', () {
+    testWidgets('vùng tiêu đề có biểu tượng so sánh; chạm → mở màn 03', (
+      tester,
+    ) async {
+      await _pump(tester, _seededRepo());
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.compare_arrows));
+      expect(icon.color, AppColors.white); // có dữ liệu kỳ trước ⇒ bật
+
+      await tester.tap(find.byKey(const ValueKey('report-compare-entry')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReportComparisonScreen), findsOneWidget);
+      expect(find.text('So sánh kỳ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('chưa từng có thu/chi trước kỳ ⇒ mờ, chạm chỉ hiện SnackBar', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        FakeWalletRepository.withCategories(
+          transactions: [_income(1, 900000, DateTime(2026, 3, 5))],
+          categoriesSeed: [_cat(1, 'Ăn uống')],
+        ),
+      );
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.compare_arrows));
+      expect(icon.color, SoraColors.light.tealLightText);
+
+      await tester.tap(find.byKey(const ValueKey('report-compare-entry')));
+      await tester.pump();
+
+      expect(find.text('Chưa có dữ liệu để so sánh'), findsOneWidget);
+      expect(find.byType(ReportComparisonScreen), findsNothing);
+    });
+
+    testWidgets(
+      'kỳ chỉ có chuyển khoản ⇒ vẫn vô hiệu hoá (transfer không tính)',
+      (tester) async {
+        await _pump(tester, _transferOnlyRepo());
+
+        await tester.tap(find.byKey(const ValueKey('report-compare-entry')));
+        await tester.pump();
+
+        expect(find.text('Chưa có dữ liệu để so sánh'), findsOneWidget);
+        expect(find.byType(ReportComparisonScreen), findsNothing);
+      },
+    );
   });
 
   group('ReportScreen — trạng thái rỗng (US5)', () {
@@ -392,8 +470,9 @@ void main() {
       expect(find.text('Ngân sách'), findsOneWidget);
     });
 
-    testWidgets('kỳ chỉ có Thu → biểu đồ vẫn vẽ, 2 thẻ chi tiêu rỗng',
-        (tester) async {
+    testWidgets('kỳ chỉ có Thu → biểu đồ vẫn vẽ, 2 thẻ chi tiêu rỗng', (
+      tester,
+    ) async {
       final repo = FakeWalletRepository.withCategories(
         transactions: [_income(1, 900000, DateTime(2026, 3, 5))],
         categoriesSeed: [_cat(1, 'Ăn uống')],

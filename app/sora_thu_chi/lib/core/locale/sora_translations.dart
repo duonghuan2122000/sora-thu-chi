@@ -453,6 +453,29 @@ class SoraTranslations extends Translations {
         'Tap a category to see its transactions',
 
     // ---------------------------------------------------------------------
+    // Báo cáo (PBI 26) — màn So sánh kỳ `03`
+    // ---------------------------------------------------------------------
+    'So sánh kỳ': 'Compare periods',
+    'So sánh': 'Compare',
+    'Xu hướng chi tiêu theo ngày': 'Daily spending trend',
+    'Nhận xét': 'Insight',
+    'Kỳ đối chiếu không có dữ liệu để so sánh':
+        'The reference period has no data to compare',
+    'Chưa có giao dịch nào trong hai kỳ này':
+        'No transactions in either period',
+    'Chưa có dữ liệu để so sánh': 'No data to compare yet',
+    'Hai kỳ đều chưa có chi tiêu.': 'Neither period has spending yet.',
+    'Kỳ này bạn chi @amount, kỳ đối chiếu chưa có chi tiêu để so sánh.':
+        'You spent @amount this period; the reference period has no spending to compare.',
+    'Bạn chi nhiều hơn @ref @percent%.': 'You spent @percent% more than @ref.',
+    'Bạn chi ít hơn @ref @percent%.': 'You spent @percent% less than @ref.',
+    'Bạn chi tiêu bằng @ref.': 'Your spending matches @ref.',
+    ' Chủ yếu do danh mục @category tăng mạnh.':
+        ' Mostly driven by a sharp rise in @category.',
+    'kỳ trước': 'the previous period',
+    'kỳ sau': 'the following period',
+
+    // ---------------------------------------------------------------------
     // Bảo mật PIN & khung Tổng quan/Báo cáo
     // ---------------------------------------------------------------------
     'Nhập lại mã PIN': 'Re-enter PIN',
@@ -460,7 +483,8 @@ class SoraTranslations extends Translations {
     'Nhập lại mã PIN lần hai để xác nhận': 'Re-enter your PIN to confirm',
     'Tạo mã PIN 4 số để bảo vệ dữ liệu':
         'Create a 4-digit PIN to protect your data',
-    'Mã PIN không khớp. Vui lòng thử lại.': "PINs don't match. Please try again.",
+    'Mã PIN không khớp. Vui lòng thử lại.':
+        "PINs don't match. Please try again.",
     'Mã PIN này dễ đoán. Vẫn dùng mã PIN này?':
         'This PIN is easy to guess. Use it anyway?',
     'Tiếp tục': 'Continue',
@@ -505,8 +529,7 @@ class SoraTranslations extends Translations {
     'Nhận diện chữ (OCR on-device)': 'Text recognition (on-device OCR)',
     'Phân tích số tiền, ngày, danh mục': 'Analyse amount, date, category',
     'Chuẩn bị màn hình xác nhận': 'Prepare the confirmation screen',
-    'Không gửi dữ liệu lên bất kỳ máy chủ nào':
-        'No data is sent to any server',
+    'Không gửi dữ liệu lên bất kỳ máy chủ nào': 'No data is sent to any server',
     'Không nhận diện được nội dung hóa đơn. Vui lòng chụp lại hoặc nhập tay.':
         'Could not read the receipt. Please retake the photo or enter it manually.',
     'Chụp lại': 'Retake',

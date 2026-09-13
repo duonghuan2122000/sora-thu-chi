@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:sora_thu_chi/core/category/category.dart';
+import 'package:sora_thu_chi/core/date_range.dart';
 import 'package:sora_thu_chi/core/report/report_view.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 
@@ -68,7 +69,10 @@ void main() {
 
   group('reportPeriodRange — kỳ dương lịch nửa mở', () {
     test('Ngày: [00:00 anchor, +1 ngày)', () {
-      final r = reportPeriodRange(ReportPeriod.day, DateTime(2026, 3, 15, 14, 30));
+      final r = reportPeriodRange(
+        ReportPeriod.day,
+        DateTime(2026, 3, 15, 14, 30),
+      );
       expect(r.start, DateTime(2026, 3, 15));
       expect(r.end, DateTime(2026, 3, 16));
     });
@@ -127,7 +131,10 @@ void main() {
     });
 
     test('Ngày: 6 ngày liền trước, kỳ đang chọn ở cuối', () {
-      final series = reportPeriodSeries(ReportPeriod.day, DateTime(2026, 3, 15));
+      final series = reportPeriodSeries(
+        ReportPeriod.day,
+        DateTime(2026, 3, 15),
+      );
       expect(series, hasLength(6));
       expect(series.first.start, DateTime(2026, 3, 10));
       expect(series.last.start, DateTime(2026, 3, 15));
@@ -366,19 +373,22 @@ void main() {
       expect(slices.map((s) => s.percent).reduce((a, b) => a + b), 100);
     });
 
-    test('tiền chi không gắn danh mục ⇒ vào "Khác" (kể cả khi ≤ 5 danh mục)', () {
-      final slices = reportBreakdown(
-        transactions: [
-          _expense(1, 100000, DateTime(2026, 3, 2), categoryId: 1),
-          _expense(2, 50000, DateTime(2026, 3, 3)),
-        ],
-        categories: categories,
-        range: range,
-      );
-      expect(slices, hasLength(2));
-      expect(slices.last.categoryId, isNull);
-      expect(slices.last.amount, 50000);
-    });
+    test(
+      'tiền chi không gắn danh mục ⇒ vào "Khác" (kể cả khi ≤ 5 danh mục)',
+      () {
+        final slices = reportBreakdown(
+          transactions: [
+            _expense(1, 100000, DateTime(2026, 3, 2), categoryId: 1),
+            _expense(2, 50000, DateTime(2026, 3, 3)),
+          ],
+          categories: categories,
+          range: range,
+        );
+        expect(slices, hasLength(2));
+        expect(slices.last.categoryId, isNull);
+        expect(slices.last.amount, 50000);
+      },
+    );
 
     test('danh mục ẨN vẫn được tính', () {
       final slices = reportBreakdown(
@@ -421,7 +431,10 @@ void main() {
         range: range,
       );
       final total = reportTotals(txns, range);
-      expect(slices.map((s) => s.amount).reduce((a, b) => a + b), total.expense);
+      expect(
+        slices.map((s) => s.amount).reduce((a, b) => a + b),
+        total.expense,
+      );
       expect(total.expense, 100000);
     });
 
@@ -439,9 +452,7 @@ void main() {
 
     test('kỳ không có chi ⇒ rỗng', () {
       final slices = reportBreakdown(
-        transactions: [
-          _income(1, 100000, DateTime(2026, 3, 2), categoryId: 1),
-        ],
+        transactions: [_income(1, 100000, DateTime(2026, 3, 2), categoryId: 1)],
         categories: categories,
         range: range,
       );
@@ -580,86 +591,107 @@ void main() {
       now: now ?? DateTime(2026, 3, 15),
     );
 
-    test('7 danh mục ⇒ đủ 7 dòng (không cắt ở 5), Σ tiền = total, Σ % = 100', () {
-      final categories = [for (var i = 1; i <= 7; i++) _cat(i, 'Danh mục $i')];
-      final detail = build([
-        for (var i = 1; i <= 7; i++)
-          _expense(i, 100000 * (8 - i), DateTime(2026, 3, 5), categoryId: i),
-      ], categories);
+    test(
+      '7 danh mục ⇒ đủ 7 dòng (không cắt ở 5), Σ tiền = total, Σ % = 100',
+      () {
+        final categories = [
+          for (var i = 1; i <= 7; i++) _cat(i, 'Danh mục $i'),
+        ];
+        final detail = build([
+          for (var i = 1; i <= 7; i++)
+            _expense(i, 100000 * (8 - i), DateTime(2026, 3, 5), categoryId: i),
+        ], categories);
 
-      expect(detail.rows, hasLength(7));
-      expect(detail.total, 100000 * 28);
-      var sum = 0;
-      var percents = 0;
-      for (final row in detail.rows) {
-        sum += row.amount;
-        percents += row.percent;
-      }
-      expect(sum, detail.total);
-      expect(percents, 100);
-      expect(detail.hasAnyTxn, isTrue);
-      expect(detail.isEmpty, isFalse);
-    });
+        expect(detail.rows, hasLength(7));
+        expect(detail.total, 100000 * 28);
+        var sum = 0;
+        var percents = 0;
+        for (final row in detail.rows) {
+          sum += row.amount;
+          percents += row.percent;
+        }
+        expect(sum, detail.total);
+        expect(percents, 100);
+        expect(detail.hasAnyTxn, isTrue);
+        expect(detail.isEmpty, isFalse);
+      },
+    );
 
-    test('dòng "Khác" xếp cuối và CHỈ có khi có tiền chi không gắn danh mục', () {
-      final withOther = build([
-        _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
-        _expense(2, 50000, DateTime(2026, 3, 6)),
-      ], [_cat(1, 'Ăn uống')]);
-      expect(withOther.rows, hasLength(2));
-      expect(withOther.rows.last.categoryId, isNull);
-      expect(withOther.rows.last.amount, 50000);
-      expect(withOther.rows.last.rank, -1);
+    test(
+      'dòng "Khác" xếp cuối và CHỈ có khi có tiền chi không gắn danh mục',
+      () {
+        final withOther = build(
+          [
+            _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
+            _expense(2, 50000, DateTime(2026, 3, 6)),
+          ],
+          [_cat(1, 'Ăn uống')],
+        );
+        expect(withOther.rows, hasLength(2));
+        expect(withOther.rows.last.categoryId, isNull);
+        expect(withOther.rows.last.amount, 50000);
+        expect(withOther.rows.last.rank, -1);
 
-      final withoutOther = build([
-        _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
-      ], [_cat(1, 'Ăn uống')]);
-      expect(withoutOther.rows, hasLength(1));
-      expect(withoutOther.rows.single.categoryId, 1);
+        final withoutOther = build(
+          [_expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1)],
+          [_cat(1, 'Ăn uống')],
+        );
+        expect(withoutOther.rows, hasLength(1));
+        expect(withoutOther.rows.single.categoryId, 1);
 
-      // "Khác" lớn hơn mọi danh mục thật vẫn nằm cuối (luật 9).
-      final bigOther = build([
-        _expense(1, 10000, DateTime(2026, 3, 5), categoryId: 1),
-        _expense(2, 90000, DateTime(2026, 3, 6)),
-      ], [_cat(1, 'Ăn uống')]);
-      expect(bigOther.rows.first.categoryId, 1);
-      expect(bigOther.rows.last.categoryId, isNull);
-    });
+        // "Khác" lớn hơn mọi danh mục thật vẫn nằm cuối (luật 9).
+        final bigOther = build(
+          [
+            _expense(1, 10000, DateTime(2026, 3, 5), categoryId: 1),
+            _expense(2, 90000, DateTime(2026, 3, 6)),
+          ],
+          [_cat(1, 'Ăn uống')],
+        );
+        expect(bigOther.rows.first.categoryId, 1);
+        expect(bigOther.rows.last.categoryId, isNull);
+      },
+    );
 
-    test('gộp con → cha; danh mục ẩn vẫn tính; con mồ côi nhóm theo chính nó', () {
-      final categories = [
-        _cat(1, 'Ăn uống'),
-        _cat(2, 'Cà phê', parentId: 1),
-        _cat(3, 'Ẩn', isHidden: true),
-        _cat(9, 'Mồ côi', parentId: 99),
-      ];
-      final detail = build([
-        _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
-        _expense(2, 50000, DateTime(2026, 3, 6), categoryId: 2),
-        _expense(3, 30000, DateTime(2026, 3, 7), categoryId: 3),
-        _txn(
-          id: 4,
-          type: TxnType.expense,
-          amount: -20000,
-          date: DateTime(2026, 3, 8),
-          categoryId: 9,
-          category: 'Mồ côi',
-        ),
-      ], categories);
+    test(
+      'gộp con → cha; danh mục ẩn vẫn tính; con mồ côi nhóm theo chính nó',
+      () {
+        final categories = [
+          _cat(1, 'Ăn uống'),
+          _cat(2, 'Cà phê', parentId: 1),
+          _cat(3, 'Ẩn', isHidden: true),
+          _cat(9, 'Mồ côi', parentId: 99),
+        ];
+        final detail = build([
+          _expense(1, 100000, DateTime(2026, 3, 5), categoryId: 1),
+          _expense(2, 50000, DateTime(2026, 3, 6), categoryId: 2),
+          _expense(3, 30000, DateTime(2026, 3, 7), categoryId: 3),
+          _txn(
+            id: 4,
+            type: TxnType.expense,
+            amount: -20000,
+            date: DateTime(2026, 3, 8),
+            categoryId: 9,
+            category: 'Mồ côi',
+          ),
+        ], categories);
 
-      final byId = {for (final r in detail.rows) r.categoryId: r};
-      expect(byId[1]!.amount, 150000); // con gộp vào cha
-      expect(byId[3]!.amount, 30000); // danh mục ẩn vẫn tính
-      expect(byId[9]!.amount, 20000); // mồ côi nhóm theo chính nó
-      expect(byId.containsKey(null), isFalse);
-      expect(detail.total, 200000);
-    });
+        final byId = {for (final r in detail.rows) r.categoryId: r};
+        expect(byId[1]!.amount, 150000); // con gộp vào cha
+        expect(byId[3]!.amount, 30000); // danh mục ẩn vẫn tính
+        expect(byId[9]!.amount, 20000); // mồ côi nhóm theo chính nó
+        expect(byId.containsKey(null), isFalse);
+        expect(detail.total, 200000);
+      },
+    );
 
     test('đồng hạng → tên tăng dần theo thứ tự chữ Việt; rank = chỉ số', () {
-      final detail = build([
-        _expense(1, 50000, DateTime(2026, 3, 5), categoryId: 1),
-        _expense(2, 50000, DateTime(2026, 3, 6), categoryId: 2),
-      ], [_cat(1, 'Nhà cửa'), _cat(2, 'Ăn uống')]);
+      final detail = build(
+        [
+          _expense(1, 50000, DateTime(2026, 3, 5), categoryId: 1),
+          _expense(2, 50000, DateTime(2026, 3, 6), categoryId: 2),
+        ],
+        [_cat(1, 'Nhà cửa'), _cat(2, 'Ăn uống')],
+      );
 
       expect(detail.rows.map((r) => r.name).toList(), ['Ăn uống', 'Nhà cửa']);
       expect(detail.rows[0].rank, 0);
@@ -667,9 +699,10 @@ void main() {
     });
 
     test('1 danh mục ⇒ 1 dòng 100%', () {
-      final detail = build([
-        _expense(1, 4200000, DateTime(2026, 3, 5), categoryId: 1),
-      ], [_cat(1, 'Ăn uống')]);
+      final detail = build(
+        [_expense(1, 4200000, DateTime(2026, 3, 5), categoryId: 1)],
+        [_cat(1, 'Ăn uống')],
+      );
 
       expect(detail.rows, hasLength(1));
       expect(detail.rows.single.percent, 100);
@@ -685,9 +718,10 @@ void main() {
     });
 
     test('kỳ chỉ Thu ⇒ total 0 nhưng hasAnyTxn true', () {
-      final detail = build([
-        _income(1, 500000, DateTime(2026, 3, 5)),
-      ], [_cat(1, 'Ăn uống')]);
+      final detail = build(
+        [_income(1, 500000, DateTime(2026, 3, 5))],
+        [_cat(1, 'Ăn uống')],
+      );
       expect(detail.total, 0);
       expect(detail.rows, isEmpty);
       expect(detail.hasAnyTxn, isTrue);
@@ -751,5 +785,331 @@ void main() {
       expect(reportExpenseCenterLabel(ReportPeriod.month), 'Tổng chi tháng');
       expect(reportExpenseCenterLabel(ReportPeriod.year), 'Tổng chi năm');
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // So sánh kỳ (PBI 26) — màn 03
+  // -------------------------------------------------------------------------
+  group('So sánh kỳ (PBI 26) — reportRefRange', () {
+    DateRange ref(ReportPeriod period, DateTime anchor, CompareMode mode) =>
+        reportRefRange(period, reportPeriodRange(period, anchor), mode);
+
+    test('kỳ liền trước: Ngày / Tuần / Tháng / Năm', () {
+      final anchor = DateTime(2026, 3, 15);
+      final day = ref(ReportPeriod.day, anchor, CompareMode.previous);
+      expect(day.start, DateTime(2026, 3, 14));
+      expect(day.end, DateTime(2026, 3, 15));
+      // Tuần lùi 7 ngày nhưng vẫn bắt **Thứ Hai** (tuần chứa 15/3 là 9/3–16/3).
+      final week = ref(ReportPeriod.week, anchor, CompareMode.previous);
+      expect(week.start, DateTime(2026, 3, 2));
+      expect(week.start.weekday, DateTime.monday);
+      expect(week.end, DateTime(2026, 3, 9));
+      expect(
+        ref(ReportPeriod.month, anchor, CompareMode.previous).start,
+        DateTime(2026, 2, 1),
+      );
+      expect(
+        ref(ReportPeriod.year, anchor, CompareMode.previous).start,
+        DateTime(2025, 1, 1),
+      );
+    });
+
+    test('tháng 2/2024 nhuận: kỳ trước là tháng 1/2024 (31 ngày)', () {
+      final r = ref(
+        ReportPeriod.month,
+        DateTime(2024, 2, 10),
+        CompareMode.previous,
+      );
+      expect(r.start, DateTime(2024, 1, 1));
+      expect(r.end, DateTime(2024, 2, 1));
+    });
+
+    test('cùng kỳ năm trước: 4 loại kỳ', () {
+      final anchor = DateTime(2026, 3, 15);
+      expect(
+        ref(ReportPeriod.day, anchor, CompareMode.lastYear).start,
+        DateTime(2025, 3, 15),
+      );
+      final week = ref(ReportPeriod.week, anchor, CompareMode.lastYear);
+      expect(week.start, DateTime(2025, 3, 3));
+      expect(week.start.weekday, DateTime.monday);
+      expect(
+        ref(ReportPeriod.month, anchor, CompareMode.lastYear).start,
+        DateTime(2025, 3, 1),
+      );
+      expect(
+        ref(ReportPeriod.year, anchor, CompareMode.lastYear).start,
+        DateTime(2025, 1, 1),
+      );
+    });
+
+    test('cùng kỳ năm trước từ 29/02/2024 ⇒ kẹp 28/02/2023', () {
+      final r = ref(
+        ReportPeriod.day,
+        DateTime(2024, 2, 29),
+        CompareMode.lastYear,
+      );
+      expect(r.start, DateTime(2023, 2, 28));
+    });
+  });
+
+  group('So sánh kỳ (PBI 26) — reportDailyExpense', () {
+    final march = reportPeriodRange(ReportPeriod.month, DateTime(2026, 3, 15));
+
+    test('độ dài đúng bằng số ngày của kỳ; kỳ rỗng ⇒ toàn 0', () {
+      expect(reportDailyExpense(const [], march), hasLength(31));
+      expect(reportDailyExpense(const [], march).every((v) => v == 0), isTrue);
+      // Tháng 2/2024 nhuận ⇒ 29 điểm.
+      expect(
+        reportDailyExpense(
+          const [],
+          reportPeriodRange(ReportPeriod.month, DateTime(2024, 2, 10)),
+        ),
+        hasLength(29),
+      );
+    });
+
+    test('mỗi phần tử là tổng chi **riêng ngày đó**, không luỹ kế', () {
+      final daily = reportDailyExpense([
+        _expense(1, 100000, DateTime(2026, 3, 5)),
+        _expense(2, 250000, DateTime(2026, 3, 5)),
+        _expense(3, 70000, DateTime(2026, 3, 9)),
+      ], march);
+
+      expect(daily[4], 350000); // ngày 5 (index 4)
+      expect(daily[8], 70000); // ngày 9 — không cộng dồn 350.000
+      expect(daily[9], 0);
+    });
+
+    test('chỉ tính Chi — Thu, transfer, adjustment đều bị loại', () {
+      final daily = reportDailyExpense([
+        _income(1, 900000, DateTime(2026, 3, 5)),
+        _expense(2, 100000, DateTime(2026, 3, 5)),
+        _txn(
+          id: 3,
+          type: TxnType.transfer,
+          amount: -500000,
+          date: DateTime(2026, 3, 5),
+        ),
+        _txn(
+          id: 4,
+          type: TxnType.adjustment,
+          amount: -200000,
+          date: DateTime(2026, 3, 5),
+        ),
+        _expense(5, 999999, DateTime(2026, 4, 1)), // ngoài kỳ
+      ], march);
+
+      expect(daily[4], 100000);
+      expect(daily.reduce((a, b) => a + b), 100000);
+    });
+  });
+
+  group('So sánh kỳ (PBI 26) — compareDelta', () {
+    test('tăng / giảm / 0% / ref == 0', () {
+      final up = compareDelta(main: 115, ref: 100, higherIsGood: true);
+      expect(up.percent, 15);
+      expect(up.direction, 1);
+      expect(up.isGood, isTrue);
+
+      final down = compareDelta(main: 85, ref: 100, higherIsGood: true);
+      expect(down.percent, -15);
+      expect(down.direction, -1);
+      expect(down.isGood, isFalse);
+
+      final same = compareDelta(main: 100, ref: 100, higherIsGood: true);
+      expect(same.percent, 0);
+      expect(same.direction, 0);
+      expect(same.isGood, isNull);
+
+      final noRef = compareDelta(main: 100, ref: 0, higherIsGood: true);
+      expect(noRef.percent, isNull);
+      expect(noRef.direction, 0);
+      expect(noRef.isGood, isNull);
+    });
+
+    test('màu theo **ý nghĩa**: Thu tăng & Chi giảm ⇒ tốt', () {
+      expect(
+        compareDelta(main: 120, ref: 100, higherIsGood: true).isGood,
+        isTrue,
+      );
+      expect(
+        compareDelta(main: 80, ref: 100, higherIsGood: false).isGood,
+        isTrue,
+      );
+      expect(
+        compareDelta(main: 80, ref: 100, higherIsGood: true).isGood,
+        isFalse,
+      );
+      expect(
+        compareDelta(main: 120, ref: 100, higherIsGood: false).isGood,
+        isFalse,
+      );
+    });
+  });
+
+  group('So sánh kỳ (PBI 26) — reportComparison', () {
+    ReportComparison build(
+      List<Transaction> txs, {
+      List<Category> cats = const [],
+      ReportPeriod period = ReportPeriod.month,
+      DateTime? left,
+      DateTime? right,
+    }) => reportComparison(
+      transactions: txs,
+      categories: cats,
+      period: period,
+      leftAnchor: left ?? DateTime(2026, 3, 15),
+      rightAnchor: right ?? DateTime(2026, 2, 15),
+    );
+
+    test('hai vế cùng loại kỳ; ngày kỳ đối chiếu là tháng liền trước', () {
+      final c = build(const []);
+      expect(c.period, ReportPeriod.month);
+      expect(c.left.range.start, DateTime(2026, 3, 1));
+      expect(c.right.range.start, DateTime(2026, 2, 1));
+      expect(c.dayCount, 31);
+    });
+
+    test('isEmpty khi cả hai vế chỉ có transfer; dayCount theo kỳ dài hơn', () {
+      final c = build(
+        [
+          _txn(
+            id: 1,
+            type: TxnType.transfer,
+            amount: -500000,
+            date: DateTime(2026, 3, 5),
+          ),
+        ],
+        left: DateTime(2026, 2, 15),
+        right: DateTime(2026, 1, 15),
+      );
+      expect(c.isEmpty, isTrue);
+      expect(c.hasExpense, isFalse);
+      // T2 (28 ngày) vs T1 (31 ngày) ⇒ trục 31.
+      expect(c.dayCount, 31);
+    });
+
+    test('hasExpense khi chỉ một vế có chi tiêu; so sánh đúng bản chụp kỳ', () {
+      final c = build(
+        [
+          _expense(1, 300000, DateTime(2026, 3, 5), categoryId: 1),
+          _income(2, 900000, DateTime(2026, 3, 6)),
+          _expense(3, 100000, DateTime(2026, 2, 7), categoryId: 1),
+        ],
+        cats: [_cat(1, 'Ăn uống')],
+      );
+
+      expect(c.left.expense, 300000);
+      expect(c.right.expense, 100000);
+      expect(c.left.income, 900000);
+      expect(c.hasExpense, isTrue);
+      expect(c.expenseDelta.percent, 200);
+      expect(c.expenseDelta.isGood, isFalse); // chi tăng ⇒ xấu
+      expect(c.incomeDelta.percent, isNull); // kỳ đối chiếu không có thu
+    });
+
+    test('câu Nhận xét: 4 biến thể chính', () {
+      // 1. cả hai không có chi tiêu.
+      expect(
+        build([_income(1, 900000, DateTime(2026, 3, 5))]).insight,
+        'Hai kỳ đều chưa có chi tiêu.',
+      );
+      // 2. kỳ đối chiếu không có chi tiêu ⇒ nêu số tiền.
+      expect(
+        build([_expense(1, 12300000, DateTime(2026, 3, 5))]).insight,
+        'Kỳ này bạn chi 12.300.000 đ, kỳ đối chiếu chưa có chi tiêu để so sánh.',
+      );
+      // 3. chênh lệch bằng 0.
+      expect(
+        build([
+          _expense(1, 300000, DateTime(2026, 3, 5)),
+          _expense(2, 300000, DateTime(2026, 2, 5)),
+        ]).insight,
+        'Bạn chi tiêu bằng kỳ trước.',
+      );
+      // 4a. chi tăng.
+      expect(
+        build([
+          _expense(1, 1150000, DateTime(2026, 3, 5)),
+          _expense(2, 1000000, DateTime(2026, 2, 5)),
+        ]).insight,
+        'Bạn chi nhiều hơn kỳ trước 15%.',
+      );
+      // 4b. chi giảm.
+      expect(
+        build([
+          _expense(1, 800000, DateTime(2026, 3, 5)),
+          _expense(2, 1000000, DateTime(2026, 2, 5)),
+        ]).insight,
+        'Bạn chi ít hơn kỳ trước 20%.',
+      );
+    });
+
+    test('chữ @ref đổi theo **ngày**, không theo chế độ chọn kỳ đối chiếu', () {
+      // Sau hoán đổi: kỳ chính (T1) đứng **trước** kỳ đối chiếu (T2) ⇒ "kỳ sau".
+      final c = build(
+        [
+          _expense(1, 1150000, DateTime(2026, 1, 5)),
+          _expense(2, 1000000, DateTime(2026, 2, 5)),
+        ],
+        left: DateTime(2026, 1, 15),
+        right: DateTime(2026, 2, 15),
+      );
+      expect(c.insight, 'Bạn chi nhiều hơn kỳ sau 15%.');
+    });
+
+    test('mệnh đề danh mục: nêu tên cha tăng mạnh nhất, gộp danh mục con', () {
+      final c = build(
+        [
+          // Kỳ chính: Ăn uống (danh mục 1) 2.000.000 (gồm con "Cà phê" 500.000).
+          _expense(1, 1500000, DateTime(2026, 3, 5), categoryId: 1),
+          _expense(2, 500000, DateTime(2026, 3, 6), categoryId: 3),
+          _expense(3, 1000000, DateTime(2026, 3, 7), categoryId: 2),
+          // Kỳ đối chiếu: Ăn uống 1.000.000, Đi lại 1.000.000.
+          _expense(4, 1000000, DateTime(2026, 2, 5), categoryId: 1),
+          _expense(5, 1000000, DateTime(2026, 2, 7), categoryId: 2),
+        ],
+        cats: [
+          _cat(1, 'Ăn uống'),
+          _cat(2, 'Đi lại'),
+          _cat(3, 'Cà phê', parentId: 1),
+        ],
+      );
+
+      // Chi 3.000.000 vs 2.000.000 ⇒ +50%; Ăn uống +1.000.000 > Đi lại 0.
+      expect(
+        c.insight,
+        'Bạn chi nhiều hơn kỳ trước 50%. '
+        'Chủ yếu do danh mục Ăn uống tăng mạnh.',
+      );
+    });
+
+    test(
+      'danh mục **ẩn** vẫn được nêu tên; không danh mục nào tăng ⇒ không nêu',
+      () {
+        final hidden = build(
+          [
+            _expense(1, 2000000, DateTime(2026, 3, 5), categoryId: 1),
+            _expense(2, 1000000, DateTime(2026, 2, 5), categoryId: 1),
+          ],
+          cats: [_cat(1, 'Ăn uống', isHidden: true)],
+        );
+        expect(
+          hidden.insight,
+          contains('Chủ yếu do danh mục Ăn uống tăng mạnh.'),
+        );
+
+        // Chi tăng rải đều ở **tiền không gắn danh mục** ⇒ không nêu danh mục nào.
+        final uncategorized = build(
+          [
+            _expense(1, 1500000, DateTime(2026, 3, 5)),
+            _expense(2, 1000000, DateTime(2026, 2, 5)),
+          ],
+          cats: [_cat(1, 'Ăn uống')],
+        );
+        expect(uncategorized.insight, 'Bạn chi nhiều hơn kỳ trước 50%.');
+      },
+    );
   });
 }

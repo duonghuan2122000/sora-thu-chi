@@ -14,6 +14,7 @@ import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 import 'budget_overview_screen.dart';
 import 'report_category_detail_screen.dart';
+import 'report_comparison_screen.dart';
 
 /// Màn Tổng quan tab Báo cáo (mockup `01`, PBI 22): khu đầu màn teal
 /// (tiêu đề + segmented control 4 kỳ + 2 số tổng) rồi các thẻ số liệu.
@@ -60,6 +61,25 @@ class ReportScreen extends StatelessWidget {
     );
   }
 
+  /// Biểu tượng so sánh trên vùng tiêu đề (FR-001). Người dùng **chưa từng** có
+  /// giao dịch Thu/Chi nào trước kỳ đang xem ⇒ không mở màn, chỉ giải thích
+  /// (FR-017); màn 03 vì thế luôn có ít nhất một kỳ có dữ liệu.
+  Future<void> _openComparison(BuildContext context) async {
+    final controller = ensureReportController();
+    final range =
+        controller.data.value?.range ??
+        reportPeriodRange(controller.period.value, controller.now);
+    if (!controller.hasAnyTxnBefore(range.start)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Chưa có dữ liệu để so sánh'.tr)));
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ReportComparisonScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = ensureReportController();
@@ -71,6 +91,17 @@ class ReportScreen extends StatelessWidget {
         children: [
           ScreenHeader(
             title: 'Báo cáo'.tr,
+            trailing: _CompareButton(
+              enabled: controller.hasAnyTxnBefore(
+                (view?.range ??
+                        reportPeriodRange(
+                          controller.period.value,
+                          controller.now,
+                        ))
+                    .start,
+              ),
+              onTap: () => _openComparison(context),
+            ),
             bottom: _HeaderSummary(
               period: controller.period.value,
               onPeriodChanged: controller.setPeriod,
@@ -96,11 +127,8 @@ class ReportScreen extends StatelessWidget {
                       _BreakdownCard(
                         view: view,
                         colors: colors,
-                        onCategoryTap: (categoryId) => _drillDown(
-                          controller.now,
-                          view.range,
-                          categoryId,
-                        ),
+                        onCategoryTap: (categoryId) =>
+                            _drillDown(controller.now, view.range, categoryId),
                       ),
                       _TopCategoriesCard(
                         view: view,
@@ -118,6 +146,37 @@ class ReportScreen extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+/// Nút tròn 48 px trên vùng tiêu đề mở màn So sánh kỳ (FR-001). Mờ đi khi lối
+/// vào bị vô hiệu hoá (FR-017) — vẫn bấm được để hiện giải thích.
+class _CompareButton extends StatelessWidget {
+  const _CompareButton({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SoraColors.of(context);
+    return Tooltip(
+      message: 'So sánh'.tr,
+      child: InkWell(
+        key: const ValueKey('report-compare-entry'),
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(
+            Icons.compare_arrows,
+            size: 24,
+            color: enabled ? AppColors.white : colors.tealLightText,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -246,10 +305,7 @@ class _HeaderTotal extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFFCDE9DF),
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Color(0xFFCDE9DF), fontSize: 12),
               ),
             ),
           ],

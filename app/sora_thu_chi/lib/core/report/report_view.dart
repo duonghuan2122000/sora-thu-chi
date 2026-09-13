@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../category/category.dart';
 import '../date_range.dart';
+import '../money_format.dart';
 import '../transaction/transaction.dart';
 import '../transaction/transaction_filter.dart' show normalizeSearch;
 
@@ -29,7 +30,10 @@ DateRange reportPeriodRange(ReportPeriod period, DateTime anchor) {
   switch (period) {
     case ReportPeriod.day:
       final day = DateTime(anchor.year, anchor.month, anchor.day);
-      return DateRange(start: day, end: DateTime(anchor.year, anchor.month, anchor.day + 1));
+      return DateRange(
+        start: day,
+        end: DateTime(anchor.year, anchor.month, anchor.day + 1),
+      );
     case ReportPeriod.week:
       final day = DateTime(anchor.year, anchor.month, anchor.day);
       final monday = DateTime(
@@ -590,4 +594,283 @@ ReportView buildReportView({
       range: range,
     ),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Màn So sánh kỳ (màn `03`, PBI 26) — cùng module thuần, không đọc DB.
+// ---------------------------------------------------------------------------
+
+/// Chế độ chọn kỳ đối chiếu (FR-003/FR-005) — state của màn, không lưu.
+enum CompareMode { previous, lastYear }
+
+/// Kỳ đối chiếu của [main] theo [mode]: `previous` = kỳ liền trước cùng loại
+/// (`_previousStart` + `reportPeriodRange`); `lastYear` = dời mốc kỳ lùi **1
+/// năm** (kẹp 29/02 → 28/02) rồi giải kỳ (data-model luật 2–4, R4).
+DateRange reportRefRange(
+  ReportPeriod period,
+  DateRange main,
+  CompareMode mode,
+) {
+  final anchor = mode == CompareMode.previous
+      ? _previousStart(period, main.start)
+      : (_shiftYearBack(main.start));
+  return reportPeriodRange(period, anchor);
+}
+
+/// Dời [date] lùi đúng 1 năm lịch; 29/02 không tồn tại ở năm đích ⇒ kẹp 28/02.
+DateTime _shiftYearBack(DateTime date) => date.month == 2 && date.day == 29
+    ? DateTime(date.year - 1, 2, 28)
+    : DateTime(date.year - 1, date.month, date.day);
+
+/// Ngày dương lịch dạng UTC — chênh lệch ngày không phụ thuộc DST của máy.
+DateTime _utcDay(DateTime moment) =>
+    DateTime.utc(moment.year, moment.month, moment.day);
+
+/// Tổng **chi** của từng ngày trong [range] — index 0 = ngày đầu kỳ, độ dài =
+/// **số ngày** của kỳ, **không** luỹ kế; transfer/adjustment tự bị loại cùng
+/// phép lọc với [reportTotals] (data-model luật 10–13).
+List<int> reportDailyExpense(List<Transaction> transactions, DateRange range) {
+  final start = _utcDay(range.start);
+  final days = _utcDay(range.end).difference(start).inDays;
+  final daily = List<int>.filled(days > 0 ? days : 0, 0);
+  for (final t in transactions) {
+    if (t.type != TxnType.expense) continue;
+    if (!range.contains(t.date)) continue;
+    final index = _utcDay(t.date).difference(start).inDays;
+    if (index < 0 || index >= daily.length) continue;
+    daily[index] += -t.amount;
+  }
+  return daily;
+}
+
+/// Chênh lệch một chỉ số giữa kỳ chính ([main]) và kỳ đối chiếu ([ref]) —
+/// data-model §1.3. Màu theo **ý nghĩa** ([higherIsGood]), không theo chiều.
+class CompareDelta {
+  const CompareDelta({
+    required this.percent,
+    required this.direction,
+    required this.isGood,
+  });
+
+  /// `((main − ref) / ref × 100).round()`; `null` ⇔ `ref == 0` (không chia 0).
+  final int? percent;
+
+  /// `1` tăng ▲ · `-1` giảm ▼ · `0` bằng (không mũi tên).
+  final int direction;
+
+  /// `true` tốt (màu thu) · `false` xấu (màu chi) · `null` **không tô màu**.
+  final bool? isGood;
+}
+
+/// % chênh lệch + chiều + tốt/xấu (data-model luật 5–9). `ref == 0` ⇒ không có
+/// `%`; `percent == 0` ⇒ không mũi tên, không tô màu.
+CompareDelta compareDelta({
+  required int main,
+  required int ref,
+  required bool higherIsGood,
+}) {
+  if (ref == 0) {
+    return const CompareDelta(percent: null, direction: 0, isGood: null);
+  }
+  final diff = main - ref;
+  final percent = (diff / ref * 100).round();
+  if (percent == 0) {
+    return const CompareDelta(percent: 0, direction: 0, isGood: null);
+  }
+  return CompareDelta(
+    percent: percent,
+    direction: diff > 0 ? 1 : -1,
+    isGood: higherIsGood ? diff > 0 : diff < 0,
+  );
+}
+
+/// Một vế của cặp so sánh (data-model §1.2) — nhãn hiển thị dựng bằng
+/// [reportPeriodChipLabel]/[reportBarLabel] nên hai màn Báo cáo không lệch chữ.
+class CompareSide {
+  const CompareSide({
+    required this.range,
+    required this.income,
+    required this.expense,
+    required this.dailyExpense,
+  });
+
+  final DateRange range;
+  final int income;
+  final int expense;
+
+  /// Độ dài **đúng bằng số ngày** của kỳ.
+  final List<int> dailyExpense;
+
+  /// Kỳ chỉ có chuyển khoản ⇒ `false` (coi như kỳ rỗng — FR-015).
+  bool get hasAnyTxn => income > 0 || expense > 0;
+}
+
+/// Kết quả dựng toàn màn So sánh kỳ (data-model §1.4) — bất biến.
+class ReportComparison {
+  const ReportComparison({
+    required this.period,
+    required this.left,
+    required this.right,
+    required this.incomeDelta,
+    required this.expenseDelta,
+    required this.insight,
+  });
+
+  final ReportPeriod period;
+
+  /// **Kỳ chính** — luôn ở **bên trái**, được tô đậm.
+  final CompareSide left;
+
+  /// **Kỳ đối chiếu** — luôn ở **bên phải**.
+  final CompareSide right;
+
+  final CompareDelta incomeDelta;
+  final CompareDelta expenseDelta;
+
+  /// Câu Nhận xét **đã dịch**, dựng sẵn ở tầng thuần (R9).
+  final String insight;
+
+  /// Cả hai vế rỗng ⇒ màn hiện trạng thái rỗng (FR-016).
+  bool get isEmpty => !left.hasAnyTxn && !right.hasAnyTxn;
+
+  /// Cả hai vế không có chi tiêu ⇒ thẻ xu hướng không vẽ hai đường phẳng 0.
+  bool get hasExpense => left.expense > 0 || right.expense > 0;
+
+  /// Độ dài trục hoành biểu đồ xu hướng — kỳ dài hơn quyết định.
+  int get dayCount => left.dailyExpense.length > right.dailyExpense.length
+      ? left.dailyExpense.length
+      : right.dailyExpense.length;
+}
+
+/// Số liệu màn **So sánh kỳ** (FR-003…FR-016). Hai mốc là mốc **neo** của từng
+/// kỳ (kỳ chính / kỳ đối chiếu), không phải mốc bắt đầu kỳ.
+ReportComparison reportComparison({
+  required List<Transaction> transactions,
+  required List<Category> categories,
+  required ReportPeriod period,
+  required DateTime leftAnchor,
+  required DateTime rightAnchor,
+}) {
+  CompareSide side(DateTime anchor) {
+    final range = reportPeriodRange(period, anchor);
+    final totals = reportTotals(transactions, range);
+    return CompareSide(
+      range: range,
+      income: totals.income,
+      expense: totals.expense,
+      dailyExpense: reportDailyExpense(transactions, range),
+    );
+  }
+
+  final left = side(leftAnchor);
+  final right = side(rightAnchor);
+  final incomeDelta = compareDelta(
+    main: left.income,
+    ref: right.income,
+    higherIsGood: true,
+  );
+  final expenseDelta = compareDelta(
+    main: left.expense,
+    ref: right.expense,
+    higherIsGood: false,
+  );
+  return ReportComparison(
+    period: period,
+    left: left,
+    right: right,
+    incomeDelta: incomeDelta,
+    expenseDelta: expenseDelta,
+    insight: _insightSentence(
+      transactions: transactions,
+      categories: categories,
+      left: left,
+      right: right,
+      expenseDelta: expenseDelta,
+    ),
+  );
+}
+
+/// Danh mục cha có **chênh lệch tuyệt đối** chi tăng nhiều nhất giữa hai kỳ
+/// (gộp cha, gồm cả danh mục ẩn — FR-014/R8); `null` khi không danh mục nào
+/// tăng. Đồng hạng ⇒ tên tăng dần (chuẩn hoá bỏ dấu) ⇒ kết quả tất định.
+String? _topIncreaseName({
+  required List<Transaction> transactions,
+  required List<Category> categories,
+  required DateRange left,
+  required DateRange right,
+}) {
+  final leftGroups = _breakdown(
+    transactions: transactions,
+    categories: categories,
+    range: left,
+  ).groups;
+  final rightById = {
+    for (final g in _breakdown(
+      transactions: transactions,
+      categories: categories,
+      range: right,
+    ).groups)
+      g.categoryId: g.amount,
+  };
+  _Group? best;
+  var bestDiff = 0;
+  for (final group in leftGroups) {
+    final diff = group.amount - (rightById[group.categoryId] ?? 0);
+    if (diff <= 0) continue;
+    if (best == null ||
+        diff > bestDiff ||
+        (diff == bestDiff &&
+            normalizeSearch(group.name).compareTo(normalizeSearch(best.name)) <
+                0)) {
+      best = group;
+      bestDiff = diff;
+    }
+  }
+  return best?.name;
+}
+
+/// Câu Nhận xét (R9): **mệnh đề chính** chọn theo thứ tự ưu tiên (cả hai không
+/// có chi tiêu → kỳ phải không có chi tiêu → `0%` → tăng/giảm) ghép **mệnh đề
+/// danh mục** khi có danh mục tăng. Chữ `@ref` **suy từ so sánh ngày**, không
+/// lấy từ `CompareMode` — sau hoán đổi câu phải đổi chiều theo.
+String _insightSentence({
+  required List<Transaction> transactions,
+  required List<Category> categories,
+  required CompareSide left,
+  required CompareSide right,
+  required CompareDelta expenseDelta,
+}) {
+  final String main;
+  if (left.expense == 0 && right.expense == 0) {
+    main = 'Hai kỳ đều chưa có chi tiêu.'.tr;
+  } else if (expenseDelta.percent == null) {
+    main = 'Kỳ này bạn chi @amount, kỳ đối chiếu chưa có chi tiêu để so sánh.'
+        .trParams({'amount': formatMoney(left.expense)});
+  } else {
+    final ref = right.range.start.isBefore(left.range.start)
+        ? 'kỳ trước'.tr
+        : 'kỳ sau'.tr;
+    if (expenseDelta.percent == 0) {
+      main = 'Bạn chi tiêu bằng @ref.'.trParams({'ref': ref});
+    } else {
+      main =
+          (expenseDelta.direction > 0
+                  ? 'Bạn chi nhiều hơn @ref @percent%.'
+                  : 'Bạn chi ít hơn @ref @percent%.')
+              .trParams({
+                'ref': ref,
+                'percent': '${expenseDelta.percent!.abs()}',
+              });
+    }
+  }
+
+  final top = _topIncreaseName(
+    transactions: transactions,
+    categories: categories,
+    left: left.range,
+    right: right.range,
+  );
+  return top == null
+      ? main
+      : '$main${' Chủ yếu do danh mục @category tăng mạnh.'.trParams({'category': top.tr})}';
 }

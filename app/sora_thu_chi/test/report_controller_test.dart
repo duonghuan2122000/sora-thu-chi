@@ -118,20 +118,100 @@ void main() {
     expect(controller.data.value, same(previous));
   });
 
-  test('nạp lại hai lần với dữ liệu đổi ⇒ data phản ánh số mới (SC-008)', () async {
-    final r = repo();
-    final controller = ReportController(r);
-    await controller.load(now: DateTime(2026, 3, 15));
+  test(
+    'nạp lại hai lần với dữ liệu đổi ⇒ data phản ánh số mới (SC-008)',
+    () async {
+      final r = repo();
+      final controller = ReportController(r);
+      await controller.load(now: DateTime(2026, 3, 15));
 
-    await r.addTransaction(
-      walletId: 1,
-      type: TxnType.expense,
-      amount: 700000,
-      category: categories.first,
-      date: DateTime(2026, 3, 20),
-    );
-    await controller.load(now: DateTime(2026, 3, 15));
+      await r.addTransaction(
+        walletId: 1,
+        type: TxnType.expense,
+        amount: 700000,
+        category: categories.first,
+        date: DateTime(2026, 3, 20),
+      );
+      await controller.load(now: DateTime(2026, 3, 15));
 
-    expect(controller.data.value!.expense, 1000000);
+      expect(controller.data.value!.expense, 1000000);
+    },
+  );
+
+  group('So sánh kỳ (PBI 26) — seam controller', () {
+    test('comparison() trả null khi CHƯA load()', () {
+      final controller = ReportController(repo());
+      expect(
+        controller.comparison(
+          leftAnchor: DateTime(2026, 3, 15),
+          rightAnchor: DateTime(2026, 2, 15),
+        ),
+        isNull,
+      );
+    });
+
+    test('comparison() khớp kết quả gọi thẳng hàm thuần cùng tham số', () async {
+      final controller = ReportController(repo());
+      await controller.load(now: DateTime(2026, 3, 15));
+
+      final fromController = controller.comparison(
+        leftAnchor: DateTime(2026, 3, 15),
+        rightAnchor: DateTime(2026, 2, 15),
+      )!;
+      final fromPure = reportComparison(
+        transactions: await repo().allTransactions(),
+        categories: categories,
+        period: ReportPeriod.month,
+        leftAnchor: DateTime(2026, 3, 15),
+        rightAnchor: DateTime(2026, 2, 15),
+      );
+
+      expect(fromController.left.expense, fromPure.left.expense);
+      expect(fromController.right.expense, fromPure.right.expense);
+      expect(fromController.left.income, fromPure.left.income);
+      expect(fromController.insight, fromPure.insight);
+      // Kỳ chính T3/2026: chi 300.000, thu 900.000; kỳ đối chiếu T2/2026 rỗng.
+      expect(fromController.left.expense, 300000);
+      expect(fromController.right.expense, 0);
+      expect(fromController.expenseDelta.percent, isNull);
+      expect(fromController.isEmpty, isFalse);
+    });
+
+    test('hasAnyTxnBefore: chỉ Thu/Chi, mốc biên không tính', () async {
+      final controller = ReportController(
+        _CountingRepo(
+          transactions: [
+            _expense(1, 300000, DateTime(2026, 1, 20), categoryId: 1),
+            _income(2, 900000, DateTime(2026, 3, 5)),
+            Transaction(
+              id: 3,
+              walletId: 1,
+              type: TxnType.transfer,
+              amount: -500000,
+              date: DateTime(2025, 12, 1),
+              transferGroupId: 3,
+            ),
+            Transaction(
+              id: 4,
+              walletId: 1,
+              type: TxnType.adjustment,
+              amount: 50000,
+              date: DateTime(2025, 12, 1),
+            ),
+          ],
+          categoriesSeed: categories,
+        ),
+      );
+      expect(controller.hasAnyTxnBefore(DateTime(2026, 1, 1)), isFalse);
+
+      await controller.load(now: DateTime(2026, 3, 15));
+
+      // transfer/adjustment (12/2025) không tính ⇒ chưa có gì trước 1/1/2026.
+      expect(controller.hasAnyTxnBefore(DateTime(2026, 1, 1)), isFalse);
+      // Thu 5/3 không nằm **trước** 5/3 (mốc biên) nhưng chi 20/1 thì có.
+      expect(controller.hasAnyTxnBefore(DateTime(2026, 3, 5)), isTrue);
+      expect(controller.hasAnyTxnBefore(DateTime(2026, 3, 6)), isTrue);
+      expect(controller.hasAnyTxnBefore(DateTime(2026, 4, 1)), isTrue);
+    });
   });
 }

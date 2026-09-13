@@ -73,6 +73,32 @@ class ReportController extends GetxController {
     );
   }
 
+  /// Số liệu màn So sánh kỳ (màn `03`, PBI 26) — dựng lại từ bản chụp RAM mỗi
+  /// lần gọi; màn 03 chỉ mở được từ màn Tổng quan đã có dữ liệu (research R1).
+  ReportComparison? comparison({
+    required DateTime leftAnchor,
+    required DateTime rightAnchor,
+  }) {
+    if (!_loaded) return null;
+    return reportComparison(
+      transactions: _transactions,
+      categories: _categories,
+      period: period.value,
+      leftAnchor: leftAnchor,
+      rightAnchor: rightAnchor,
+    );
+  }
+
+  /// Người dùng đã từng có giao dịch **Thu/Chi** trước [start] chưa — điều kiện
+  /// bật lối vào màn 03 (FR-017). Transfer/adjustment không tính.
+  bool hasAnyTxnBefore(DateTime start) {
+    for (final t in _transactions) {
+      if (t.type != TxnType.income && t.type != TxnType.expense) continue;
+      if (t.date.isBefore(start)) return true;
+    }
+    return false;
+  }
+
   void _rebuild() {
     data.value = buildReportView(
       transactions: _transactions,
