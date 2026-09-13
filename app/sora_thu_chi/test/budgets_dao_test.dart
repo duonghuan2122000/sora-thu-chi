@@ -148,8 +148,9 @@ void main() {
       expect(all.single.categoryId, 1);
       expect(all.single.period, BudgetPeriod.monthly);
       expect(all.single.isArchived, isFalse);
-      expect((await repo.loadAll()).length, 5);
-      expect((await repo.allTransactions()).length, 11);
+      // PBI 32: onCreate/onUpgrade không còn seed ví/giao dịch mẫu.
+      expect(await repo.loadAll(), isEmpty);
+      expect(await repo.allTransactions(), isEmpty);
     });
   });
 
@@ -345,8 +346,9 @@ void main() {
       final repo = DriftWalletRepository(db);
 
       expect(await repo.budgets(), isEmpty);
-      expect((await repo.loadAll()).length, 5);
-      expect((await repo.allTransactions()).length, 11);
+      // PBI 32: onCreate/onUpgrade không còn seed ví/giao dịch mẫu.
+      expect(await repo.loadAll(), isEmpty);
+      expect(await repo.allTransactions(), isEmpty);
 
       final saved = await repo.insertBudget(
         Budget(

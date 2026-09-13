@@ -1,12 +1,13 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
+import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/data/db/app_database.dart';
 import 'package:sora_thu_chi/data/wallet_repository_drift.dart';
 
@@ -21,9 +22,26 @@ Future<AppDatabase?> _tryMemoryDb() async {
   }
 }
 
+/// Chèn 1 ví fixture (PBI 32: onCreate không còn seed ví mẫu).
+Future<Wallet> _insertWallet(
+  DriftWalletRepository repo, {
+  String name = 'Ví',
+  int balance = 0,
+}) =>
+    repo.insert(
+      Wallet(
+        id: 0,
+        name: name,
+        type: WalletType.cash,
+        icon: '💵',
+        initialBalance: balance,
+        balance: balance,
+      ),
+    );
+
 void main() {
-  group('Transactions drift — seed v2 + performTransfer atomic', () {
-    test('migration v2: seed đủ 11 dòng mẫu, 2 vế transfer chung group', () async {
+  group('Transactions drift — performTransfer atomic', () {
+    test('onCreate: 0 giao dịch; performTransfer tạo 2 dòng chung group', () async {
       final db = await _tryMemoryDb();
       if (db == null) {
         markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -32,20 +50,30 @@ void main() {
       addTearDown(db.close);
 
       final total = await db.customSelect('SELECT COUNT(*) c FROM transactions').get();
-      expect(total.single.read<int>('c'), 11);
+      expect(total.single.read<int>('c'), 0);
+
+      final repo = DriftWalletRepository(db);
+      final vcb = await _insertWallet(repo, name: 'Vietcombank', balance: 12800000);
+      final momo = await _insertWallet(repo, name: 'Momo', balance: 1450000);
+      await repo.performTransfer(
+        fromWalletId: vcb.id,
+        toWalletId: momo.id,
+        amount: 700000,
+        date: DateTime(2026, 9, 1),
+        note: 'Nạp Momo',
+      );
 
       final groups = await db.customSelect(
         'SELECT id, wallet_id, amount, transfer_group_id, note '
         'FROM transactions WHERE type = \'transfer\' ORDER BY id',
       ).get();
-      // Cặp mẫu: vế nguồn VCB −700.000 (id 8) ↔ vế đích Momo +700.000 (id 11).
       expect(groups.length, 2);
       final src = groups.first;
       final dst = groups.last;
-      expect(src.read<int>('wallet_id'), 2);
+      expect(src.read<int>('wallet_id'), vcb.id);
       expect(src.read<int>('amount'), -700000);
       expect(src.read<int>('transfer_group_id'), src.read<int>('id'));
-      expect(dst.read<int>('wallet_id'), 4);
+      expect(dst.read<int>('wallet_id'), momo.id);
       expect(dst.read<int>('amount'), 700000);
       expect(dst.read<int>('transfer_group_id'), src.read<int>('id'));
       expect(src.read<String>('note'), dst.read<String>('note'));
@@ -59,26 +87,28 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
+      final vcb = await _insertWallet(repo, name: 'Vietcombank', balance: 14800000);
+      final momo = await _insertWallet(repo, name: 'Momo', balance: 1450000);
 
       await repo.performTransfer(
-        fromWalletId: 2,
-        toWalletId: 4,
+        fromWalletId: vcb.id,
+        toWalletId: momo.id,
         amount: 2000000,
         date: DateTime(2026, 9, 5, 9, 30),
         note: 'Nạp tiền ví điện tử',
       );
 
       final wallets = await repo.loadAll();
-      expect(wallets.firstWhere((w) => w.id == 2).balance, 12800000);
-      expect(wallets.firstWhere((w) => w.id == 4).balance, 3450000);
+      expect(wallets.firstWhere((w) => w.id == vcb.id).balance, 12800000);
+      expect(wallets.firstWhere((w) => w.id == momo.id).balance, 3450000);
 
-      final vcbTx = await repo.transactionsOf(2);
-      expect(vcbTx.length, 7); // 6 mẫu + 1 vế nguồn.
+      final vcbTx = await repo.transactionsOf(vcb.id);
+      expect(vcbTx.length, 1);
       final srcLeg = vcbTx.firstWhere(
         (t) => t.type == TxnType.transfer && t.amount == -2000000,
       );
-      final momoTx = await repo.transactionsOf(4);
-      expect(momoTx.length, 2); // 1 mẫu + 1 vế đích.
+      final momoTx = await repo.transactionsOf(momo.id);
+      expect(momoTx.length, 1);
       final dstLeg = momoTx.firstWhere(
         (t) => t.type == TxnType.transfer && t.amount == 2000000,
       );
@@ -109,18 +139,20 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
+      final vcb = await _insertWallet(repo, name: 'Vietcombank', balance: 14800000);
+      final momo = await _insertWallet(repo, name: 'Momo', balance: 1450000);
 
       final before = await repo.loadAll();
-      final beforeVcb = before.firstWhere((w) => w.id == 2).balance;
-      final beforeMomo = before.firstWhere((w) => w.id == 4).balance;
+      final beforeVcb = before.firstWhere((w) => w.id == vcb.id).balance;
+      final beforeMomo = before.firstWhere((w) => w.id == momo.id).balance;
 
       // Làm giao dịch fail giữa chừng: đã trừ/cộng balance, bước insert vế giao
       // dịch chạm bảng đã bị xóa → ném lỗi; transaction phải rollback toàn bộ.
       await db.customStatement('DROP TABLE transactions');
       await expectLater(
         repo.performTransfer(
-          fromWalletId: 2,
-          toWalletId: 4,
+          fromWalletId: vcb.id,
+          toWalletId: momo.id,
           amount: 2000000,
           date: DateTime(2026, 9, 5, 9, 30),
         ),
@@ -128,11 +160,11 @@ void main() {
       );
 
       final after = await repo.loadAll();
-      expect(after.firstWhere((w) => w.id == 2).balance, beforeVcb);
-      expect(after.firstWhere((w) => w.id == 4).balance, beforeMomo);
+      expect(after.firstWhere((w) => w.id == vcb.id).balance, beforeVcb);
+      expect(after.firstWhere((w) => w.id == momo.id).balance, beforeMomo);
     });
 
-    test('allTransactions: đủ 11 dòng, cặp transfer map chung transferGroupId', () async {
+    test('allTransactions: đủ 2 dòng, cặp transfer map chung transferGroupId', () async {
       final db = await _tryMemoryDb();
       if (db == null) {
         markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -140,9 +172,17 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
+      final vcb = await _insertWallet(repo, name: 'Vietcombank', balance: 14800000);
+      final momo = await _insertWallet(repo, name: 'Momo', balance: 1450000);
+      await repo.performTransfer(
+        fromWalletId: vcb.id,
+        toWalletId: momo.id,
+        amount: 700000,
+        date: DateTime(2026, 9, 1),
+      );
 
       final all = await repo.allTransactions();
-      expect(all.length, 11);
+      expect(all.length, 2);
 
       final transfers = all
           .where((t) => t.type == TxnType.transfer)
@@ -151,15 +191,15 @@ void main() {
       expect(transfers.length, 2);
       final src = transfers.first; // vế nguồn −700.000.
       final dst = transfers.last; // vế đích +700.000.
-      expect(src.walletId, 2);
-      expect(dst.walletId, 4);
+      expect(src.walletId, vcb.id);
+      expect(dst.walletId, momo.id);
       expect(src.transferGroupId, isNotNull);
       expect(src.transferGroupId, dst.transferGroupId);
     });
   });
 
   group('Transactions drift — schema v3: 3 cột tùy chọn (PBI 10, R3)', () {
-    test('fresh schema v3: row 1 mang tags/location, dòng khác rỗng', () async {
+    test('fresh schema v3: dòng tự ghi mang tags/location, dòng khác rỗng', () async {
       final db = await _tryMemoryDb();
       if (db == null) {
         markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -167,19 +207,45 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
+      final wallet = await _insertWallet(repo, balance: 3200000);
+
+      // Dòng làm giàu tags/location — chèn trực tiếp (repo.addTransaction chưa
+      // hỗ trợ 3 cột tùy chọn này ở tầng ghi).
+      final row1Id = await db.into(db.transactions).insert(
+        TransactionsCompanion.insert(
+          walletId: wallet.id,
+          type: TxnType.expense,
+          amount: -85000,
+          category: const Value('Ăn uống'),
+          transactionDate: DateTime(2026, 9, 1),
+          tags: const Value('côngty'),
+          location: const Value('123 Láng Hạ, Đống Đa, Hà Nội'),
+        ),
+      );
+      await repo.addTransaction(
+        walletId: wallet.id,
+        type: TxnType.expense,
+        amount: 20000,
+        category: const Category(
+          id: 1,
+          name: 'Di chuyển',
+          type: CategoryType.expense,
+          icon: 'directions_car',
+          color: 0xFF3D8C77,
+        ),
+        date: DateTime(2026, 9, 2),
+      );
 
       final all = await repo.allTransactions();
-      expect(all.length, 11);
+      expect(all.length, 2);
 
-      // Row 1 (chi 85.000 Tiền mặt) được làm giàu để QA đối chiếu mockup 04.
-      final row1 = all.firstWhere((t) => t.id == 1);
+      final row1 = all.firstWhere((t) => t.id == row1Id);
       expect(row1.type, TxnType.expense);
       expect(row1.tags, 'côngty');
       expect(row1.location, '123 Láng Hạ, Đống Đa, Hà Nội');
       expect(row1.receiptImage, '');
 
-      // Mọi dòng khác: 3 field tùy chọn default '' → màn ẩn hàng rỗng.
-      final others = all.where((t) => t.id != 1).toList();
+      final others = all.where((t) => t.id != row1Id).toList();
       expect(
         others.every(
           (t) => t.tags == '' && t.receiptImage == '' && t.location == '',
@@ -204,10 +270,14 @@ void main() {
       });
       final file = File(p.join(dir.path, 'v2.sqlite'));
 
-      // (1) Mở lần đầu (schema v3) → bảng wallets seed đủ ví; rồi thay bảng
-      //     transactions bằng hình dạng v2 (không 3 cột mới) + 2 dòng "cũ".
+      // (1) Mở lần đầu (schema v3), tự chèn 2 ví (mô phỏng dữ liệu thật đã có
+      //     trước upgrade); rồi thay bảng transactions bằng hình dạng v2
+      //     (không 3 cột mới) + 2 dòng "cũ".
       final first = AppDatabase(NativeDatabase.createInBackground(file));
       await first.customSelect('SELECT 1').get();
+      final firstRepo = DriftWalletRepository(first);
+      final vcbBefore = await _insertWallet(firstRepo, name: 'Vietcombank', balance: 14800000);
+      final momoBefore = await _insertWallet(firstRepo, name: 'Momo', balance: 1450000);
       // Giả lập DB cũ v2: bỏ bảng categories (chưa tồn tại ở v2) + thay bảng
       //     transactions bằng hình dạng v2 (không 3 cột v3/categoryId).
       await first.customStatement('DROP TABLE categories');
@@ -228,7 +298,7 @@ void main() {
         '(wallet_id, type, amount, category, note, transaction_date, '
         'transfer_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
         variables: [
-          Variable(1),
+          Variable(vcbBefore.id),
           Variable('expense'),
           Variable(-85000),
           Variable('Ăn uống'),
@@ -242,7 +312,7 @@ void main() {
         '(wallet_id, type, amount, category, note, transaction_date, '
         'transfer_group_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
         variables: [
-          Variable(2),
+          Variable(momoBefore.id),
           Variable('income'),
           Variable(12000000),
           Variable('Lương'),
@@ -262,21 +332,21 @@ void main() {
       // Dữ liệu cũ không mất; 3 cột mới map về domain default ''.
       final all = await repo.allTransactions();
       expect(all.length, 2);
-      final old = all.firstWhere((t) => t.walletId == 1);
+      final old = all.firstWhere((t) => t.walletId == vcbBefore.id);
       expect(old.category, 'Ăn uống');
       expect(old.note, 'Ăn trưa văn phòng');
       expect(old.tags, '');
       expect(old.receiptImage, '');
       expect(old.location, '');
-      // Ví seed không bị phá khi upgrade.
+      // Ví đã có trước upgrade không bị phá.
       final wallets = await repo.loadAll();
-      expect(wallets.length, 5);
-      expect(wallets.firstWhere((w) => w.id == 2).balance, 14800000);
+      expect(wallets.length, 2);
+      expect(wallets.firstWhere((w) => w.id == vcbBefore.id).balance, 14800000);
 
       // performTransfer (PBI 8) vẫn chạy trên DB v2→v3 đã nâng cấp.
       await repo.performTransfer(
-        fromWalletId: 2,
-        toWalletId: 4,
+        fromWalletId: vcbBefore.id,
+        toWalletId: momoBefore.id,
         amount: 1000000,
         date: DateTime(2026, 9, 5, 9, 0),
       );
@@ -314,7 +384,7 @@ void main() {
       expect(children.every((c) => c.type == CategoryType.expense), isTrue);
     });
 
-    test('seed giao dịch: category_id map đúng tên cùng type, tên lạ/transfer → null', () async {
+    test('category_id map đúng tên cùng type, tên lạ/transfer → null', () async {
       final db = await _tryMemoryDb();
       if (db == null) {
         markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -322,32 +392,36 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
-      final cats = await repo.categories(type: CategoryType.expense);
-      final idByName = {for (final c in cats) c.name: c.id};
+      final wallet = await _insertWallet(repo, balance: 3200000);
+      final expenseCats = await repo.categories(type: CategoryType.expense);
+      final anUong = expenseCats.firstWhere((c) => c.name == 'Ăn uống');
 
-      final all = await repo.allTransactions();
-      // 'Ăn uống' (expense) → gán id; 'Di chuyển' → gán id.
-      for (final t in all.where((t) => t.category == 'Ăn uống')) {
-        expect(t.categoryId, idByName['Ăn uống']);
-      }
-      expect(
-        all.firstWhere((t) => t.category == 'Di chuyển').categoryId,
-        idByName['Di chuyển'],
+      // addTransaction (giao dịch mới) luôn gán category_id đúng.
+      await repo.addTransaction(
+        walletId: wallet.id,
+        type: TxnType.expense,
+        amount: 50000,
+        category: anUong,
+        date: DateTime(2026, 9, 1),
       );
-      // Thu 'Lương' → gán id danh mục thu Lương.
-      final income = all.firstWhere((t) => t.category == 'Lương');
-      expect(income.categoryId, isNotNull);
-      final thuCats = await repo.categories(type: CategoryType.income);
-      expect(income.categoryId, thuCats.firstWhere((c) => c.name == 'Lương').id);
-      // Tên lạ & transfer → null (không khớp bộ mặc định / không gắn danh mục).
-      for (final t in all) {
-        if (const {'Bán đồ cũ', 'Thu nhập khác', 'Xăng xe'}.contains(t.category)) {
-          expect(t.categoryId, isNull, reason: '${t.category} không nên map id');
-        }
-        if (t.type == TxnType.transfer) {
-          expect(t.categoryId, isNull, reason: 'transfer không gắn danh mục');
-        }
-      }
+      final matched = (await repo.allTransactions())
+          .firstWhere((t) => t.category == 'Ăn uống');
+      expect(matched.categoryId, anUong.id);
+
+      // Tên lạ/transfer chèn thẳng qua DB không map category_id → null
+      // (chỉ addTransaction/addScannedTransaction mới tự gán id).
+      await db.into(db.transactions).insert(
+        TransactionsCompanion.insert(
+          walletId: wallet.id,
+          type: TxnType.income,
+          amount: 200000,
+          category: const Value('Bán đồ cũ'),
+          transactionDate: DateTime(2026, 9, 2),
+        ),
+      );
+      final lastRow = (await repo.allTransactions())
+          .firstWhere((t) => t.category == 'Bán đồ cũ');
+      expect(lastRow.categoryId, isNull);
     });
 
     test('addTransaction: income/expense bù đúng balance + dòng đúng dấu/id/tên', () async {
@@ -358,23 +432,25 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
+      final wallet1 = await _insertWallet(repo, name: 'Tiền mặt', balance: 3200000);
+      final wallet2 = await _insertWallet(repo, name: 'Vietcombank', balance: 14800000);
       final expenseCats = await repo.categories(type: CategoryType.expense);
       final incomeCats = await repo.categories(type: CategoryType.income);
       final anNgoai = expenseCats.firstWhere((c) => c.name == 'Ăn ngoài');
       final luong = incomeCats.firstWhere((c) => c.name == 'Lương');
 
-      // Chi 85.000 ví Tiền mặt (id 1, balance 3.200.000).
+      // Chi 85.000 ví Tiền mặt (balance 3.200.000).
       await repo.addTransaction(
-        walletId: 1,
+        walletId: wallet1.id,
         type: TxnType.expense,
         amount: 85000,
         category: anNgoai,
         date: DateTime(2026, 9, 5, 10, 0),
         note: 'Ăn trưa',
       );
-      var w = (await repo.loadAll()).firstWhere((x) => x.id == 1);
+      var w = (await repo.loadAll()).firstWhere((x) => x.id == wallet1.id);
       expect(w.balance, 3115000);
-      final txn = (await repo.transactionsOf(1)).firstWhere((t) => t.note == 'Ăn trưa');
+      final txn = (await repo.transactionsOf(wallet1.id)).firstWhere((t) => t.note == 'Ăn trưa');
       expect(txn.type, TxnType.expense);
       expect(txn.amount, -85000);
       expect(txn.category, 'Ăn ngoài');
@@ -383,17 +459,17 @@ void main() {
       expect(txn.tags, '');
       expect(txn.transferGroupId, isNull);
 
-      // Thu 500.000 ví Vietcombank (id 2, balance 14.800.000).
+      // Thu 500.000 ví Vietcombank (balance 14.800.000).
       await repo.addTransaction(
-        walletId: 2,
+        walletId: wallet2.id,
         type: TxnType.income,
         amount: 500000,
         category: luong,
         date: DateTime(2026, 9, 5, 11, 30),
       );
-      w = (await repo.loadAll()).firstWhere((x) => x.id == 2);
+      w = (await repo.loadAll()).firstWhere((x) => x.id == wallet2.id);
       expect(w.balance, 15300000);
-      final inc = (await repo.transactionsOf(2))
+      final inc = (await repo.transactionsOf(wallet2.id))
           .firstWhere((t) => t.type == TxnType.income && t.amount == 500000);
       expect(inc.amount, 500000);
       expect(inc.category, 'Lương');
@@ -416,11 +492,15 @@ void main() {
       });
       final file = File(p.join(dir.path, 'v3.sqlite'));
 
-      // (1) Mở lần đầu (schema v4) → seed; rồi giả lập DB cũ v3: bỏ bảng
-      //     categories, thay transactions bằng hình dạng v3 (chưa category_id)
-      //     + 2 dòng cũ, hạ user_version = 3.
+      // (1) Mở lần đầu (schema v4), tự chèn 2 ví (mô phỏng dữ liệu thật đã có
+      //     trước upgrade); rồi giả lập DB cũ v3: bỏ bảng categories, thay
+      //     transactions bằng hình dạng v3 (chưa category_id) + 2 dòng cũ,
+      //     hạ user_version = 3.
       final first = AppDatabase(NativeDatabase.createInBackground(file));
       await first.customSelect('SELECT 1').get();
+      final firstRepo = DriftWalletRepository(first);
+      final walletBefore1 = await _insertWallet(firstRepo, name: 'Tiền mặt', balance: 3200000);
+      final walletBefore2 = await _insertWallet(firstRepo, name: 'Vietcombank', balance: 14800000);
       await first.customStatement('DROP TABLE categories');
       await first.customStatement('DROP TABLE transactions');
       await first.customStatement(
@@ -441,7 +521,7 @@ void main() {
         'INSERT INTO transactions (wallet_id, type, amount, category, note, '
         'transaction_date) VALUES (?, ?, ?, ?, ?, ?)',
         variables: [
-          Variable(1),
+          Variable(walletBefore1.id),
           Variable('expense'),
           Variable(-120000),
           Variable('Di chuyển'),
@@ -453,7 +533,7 @@ void main() {
         'INSERT INTO transactions (wallet_id, type, amount, category, note, '
         'transaction_date) VALUES (?, ?, ?, ?, ?, ?)',
         variables: [
-          Variable(2),
+          Variable(walletBefore2.id),
           Variable('income'),
           Variable(12000000),
           Variable('Lương'),
@@ -479,26 +559,26 @@ void main() {
 
       final all = await repo.allTransactions();
       expect(all.length, 2);
-      final chi = all.firstWhere((t) => t.walletId == 1);
+      final chi = all.firstWhere((t) => t.walletId == walletBefore1.id);
       expect(chi.category, 'Di chuyển');
       expect(chi.categoryId, isNull, reason: 'dòng cũ upgrade giữ category_id null');
-      final thu = all.firstWhere((t) => t.walletId == 2);
+      final thu = all.firstWhere((t) => t.walletId == walletBefore2.id);
       expect(thu.categoryId, isNull);
-      // Ví seed không bị phá.
+      // Ví đã có trước upgrade không bị phá.
       final wallets = await repo.loadAll();
-      expect(wallets.length, 5);
-      expect(wallets.firstWhere((w) => w.id == 2).balance, 14800000);
+      expect(wallets.length, 2);
+      expect(wallets.firstWhere((w) => w.id == walletBefore2.id).balance, 14800000);
 
       // addTransaction chạy tốt trên DB v3→v4 (ghi category_id mới).
       final anNgoai = expense.firstWhere((c) => c.name == 'Ăn ngoài');
       await repo.addTransaction(
-        walletId: 1,
+        walletId: walletBefore1.id,
         type: TxnType.expense,
         amount: 50000,
         category: anNgoai,
         date: DateTime(2026, 9, 5, 12, 0),
       );
-      final added = (await repo.transactionsOf(1)).first;
+      final added = (await repo.transactionsOf(walletBefore1.id)).first;
       expect(added.categoryId, anNgoai.id);
     });
   });

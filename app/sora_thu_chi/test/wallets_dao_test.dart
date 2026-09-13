@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/data/db/app_database.dart';
 import 'package:sora_thu_chi/data/wallet_repository_drift.dart';
@@ -21,7 +23,7 @@ Future<AppDatabase?> _tryMemoryDb() async {
 }
 
 void main() {
-  test('migration schemaVersion 1 + seed 5 ví + CRUD/map field', () async {
+  test('onCreate: 0 ví, 0 giao dịch (PBI 32) + CRUD/map field', () async {
     final db = await _tryMemoryDb();
     if (db == null) {
       markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -30,19 +32,7 @@ void main() {
     addTearDown(db.close);
 
     final repo = DriftWalletRepository(db);
-    final all = await repo.loadAll();
-    expect(all.length, 5);
-
-    // Seed khớp WalletSource: tên + Vietcombank initial_balance khác số dư.
-    final names = all.map((w) => w.name).toList();
-    expect(
-      names,
-      ['Tiền mặt', 'Vietcombank', 'Thẻ tín dụng VIB', 'Momo', 'Sổ tiết kiệm'],
-    );
-    final vc = all.firstWhere((w) => w.name == 'Vietcombank');
-    expect(vc.initialBalanceValue, 1200000);
-    expect(vc.balance, 14800000);
-    expect(vc.currency, 'VND');
+    expect(await repo.loadAll(), isEmpty);
 
     // Map trường optional — tạo ví savings đủ field rồi đọc lại.
     final maturity = DateTime(2027, 1, 15);
@@ -74,19 +64,18 @@ void main() {
     expect(reloaded.color, 0xFF355070);
 
     // update giữ is_hidden cũ (FR-012): ví tiền mặt đang active vẫn active.
-    final cash = all.firstWhere((w) => w.id == 1);
     final updated = await repo.update(
-      cash.copyWith(name: 'Tiền mặt X', balance: 999),
+      created.copyWith(name: 'Sổ Agribank X', balance: 999),
     );
-    expect(updated.name, 'Tiền mặt X');
+    expect(updated.name, 'Sổ Agribank X');
     expect(updated.balance, 999);
     expect(updated.isHidden, isFalse); // không bị ghi đè sang ẩn
-    final after = (await repo.loadAll()).firstWhere((w) => w.id == 1);
+    final after = (await repo.loadAll()).firstWhere((w) => w.id == created.id);
     expect(after.isHidden, isFalse);
-    expect(after.name, 'Tiền mặt X');
+    expect(after.name, 'Sổ Agribank X');
   });
 
-  test('schema v2: onCreate seed ví (không phá) + 11 dòng giao dịch mẫu', () async {
+  test('schema v2: onCreate không seed giao dịch (PBI 32); transfer tự tạo hoạt động', () async {
     final db = await _tryMemoryDb();
     if (db == null) {
       markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -95,17 +84,52 @@ void main() {
     addTearDown(db.close);
 
     final repo = DriftWalletRepository(db);
-    final wallets = await repo.loadAll();
-    expect(wallets.length, 5); // seed ví PBI 7 giữ nguyên.
+    expect(await repo.loadAll(), isEmpty);
 
-    // Seed giao dịch đủ 11 dòng, đúng ví (data-model §Migration).
-    expect((await repo.transactionsOf(1)).length, 2); // Tiền mặt
-    expect((await repo.transactionsOf(2)).length, 6); // Vietcombank
-    expect((await repo.transactionsOf(3)).length, 2); // VIB
-    expect((await repo.transactionsOf(4)).length, 1); // Momo (vế đích transfer)
-    expect((await repo.transactionsOf(5)), isEmpty); // Sổ tiết kiệm
+    final cash = await repo.insert(
+      Wallet(
+        id: 0,
+        name: 'Tiền mặt',
+        type: WalletType.cash,
+        icon: '💵',
+        initialBalance: 0,
+        balance: 0,
+      ),
+    );
+    final momo = await repo.insert(
+      Wallet(
+        id: 0,
+        name: 'Momo',
+        type: WalletType.eWallet,
+        icon: '📱',
+        initialBalance: 0,
+        balance: 0,
+      ),
+    );
+    expect(await repo.transactionsOf(cash.id), isEmpty);
+    expect(await repo.transactionsOf(momo.id), isEmpty);
 
-    // 2 vế chuyển mẫu liên kết cùng transfer_group_id (VCB − / Momo +).
+    // 2 vế chuyển tự tạo liên kết cùng transfer_group_id (nguồn − / đích +).
+    final sourceId = await db.into(db.transactions).insert(
+      TransactionsCompanion.insert(
+        walletId: cash.id,
+        type: TxnType.transfer,
+        amount: -700000,
+        transactionDate: DateTime(2026, 1, 1),
+      ),
+    );
+    await (db.update(db.transactions)..where((r) => r.id.equals(sourceId)))
+        .write(TransactionsCompanion(transferGroupId: Value(sourceId)));
+    await db.into(db.transactions).insert(
+      TransactionsCompanion.insert(
+        walletId: momo.id,
+        type: TxnType.transfer,
+        amount: 700000,
+        transactionDate: DateTime(2026, 1, 1),
+        transferGroupId: Value(sourceId),
+      ),
+    );
+
     final groupRows = await db.customSelect(
       'SELECT wallet_id, amount, transfer_group_id FROM transactions '
       'WHERE transfer_group_id IS NOT NULL ORDER BY id',
@@ -117,10 +141,9 @@ void main() {
       groupRows[0].read<int>('transfer_group_id'),
       groupRows[1].read<int>('transfer_group_id'),
     );
-    expect(groupRows[0].read<int>('transfer_group_id'), greaterThan(0));
   });
 
-  test('migration v1→v2: giữ seed ví PBI 7, tạo bảng + seed giao dịch (onUpgrade)', () async {
+  test('migration v1→v2: onUpgrade tạo bảng transactions rỗng, giữ ví đã có', () async {
     // Bỏ qua nếu host thiếu sqlite native.
     final probe = await _tryMemoryDb();
     if (probe == null) {
@@ -137,10 +160,20 @@ void main() {
     });
     final file = File(p.join(dir.path, 'legacy.sqlite'));
 
-    // (1) Mở DB lần đầu ở schema v2 → onCreate seed đủ ví + giao dịch.
+    // (1) Mở DB lần đầu ở schema hiện tại → onCreate không seed ví/giao dịch,
+    //     tự chèn 1 ví để mô phỏng dữ liệu thật đã có trước khi nâng cấp.
     final first = AppDatabase(NativeDatabase.createInBackground(file));
     final repo1 = DriftWalletRepository(first);
-    expect((await repo1.loadAll()).length, 5);
+    final wallet = await repo1.insert(
+      Wallet(
+        id: 0,
+        name: 'Tiền mặt',
+        type: WalletType.cash,
+        icon: '💵',
+        initialBalance: 0,
+        balance: 14800000,
+      ),
+    );
     // Giả lập trạng thái DB "cũ" v1: bỏ bảng giao dịch + danh mục (cả hai chưa
     // tồn tại ở schema v1), hạ user_version.
     await first.customStatement('DROP TABLE transactions');
@@ -148,19 +181,18 @@ void main() {
     await first.customStatement('PRAGMA user_version = 1');
     await first.close();
 
-    // (2) Mở lại cùng file → drift chạy onUpgrade 1→2 (chỉ thêm giao dịch).
+    // (2) Mở lại cùng file → drift chạy onUpgrade 1→2 (chỉ tạo bảng, không
+    // seed — FR-006: dữ liệu ví đã có không bị đụng tới).
     final db = AppDatabase(NativeDatabase.createInBackground(file));
     addTearDown(db.close);
     final repo = DriftWalletRepository(db);
 
     final wallets = await repo.loadAll();
-    expect(wallets.length, 5); // seed ví không bị phá khi upgrade.
-    expect(wallets.firstWhere((w) => w.id == 2).balance, 14800000);
-    expect(wallets.firstWhere((w) => w.id == 5).isHidden, isTrue);
+    expect(wallets.length, 1); // ví đã có không bị phá khi upgrade.
+    expect(wallets.first.id, wallet.id);
+    expect(wallets.first.balance, 14800000);
 
-    // Bảng transactions mới + seed 11 dòng.
-    expect((await repo.transactionsOf(1)).length, 2);
-    expect((await repo.transactionsOf(2)).length, 6);
-    expect((await repo.transactionsOf(4)).length, 1);
+    // Bảng transactions mới, rỗng (PBI 32: không seed nữa).
+    expect(await repo.transactionsOf(wallet.id), isEmpty);
   });
 }

@@ -11,15 +11,11 @@ import '../../core/category/category_source.dart';
 import '../../core/notification/app_notification.dart';
 import '../../core/scan/scan_result.dart';
 import '../../core/transaction/transaction.dart';
-import '../../core/transaction/transaction_source.dart';
 import '../../core/wallet/wallet.dart';
-import '../../core/wallet/wallet_source.dart';
 
 part 'app_database.g.dart';
 
 /// Bảng ví — 18 cột nghiệp vụ (data-model.md §Bảng drift), schemaVersion 4.
-/// Seed 5 ví mẫu (từ [WalletSource]) chỉ chạy lúc tạo DB lần đầu (onCreate) để
-/// giữ liên tục demo PBI 5/6; gỡ khi PBI Giao dịch có dữ liệu thật.
 @DataClassName('WalletsRow')
 class Wallets extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -68,8 +64,7 @@ class Categories extends Table {
 /// không đổi; `category_id` (schema v4, R2) là tham chiếu `categories.id` cho
 /// module Danh mục sau (giao dịch cũ/transfer không khớp → null). Giao dịch
 /// thu/chi mới ghi cả hai. `tags`/`receipt_image`/`location` là 3 cột tùy chọn
-/// (default `''` — schema v3, PBI 10). Seed 11 dòng mẫu (từ [TransactionSource])
-/// ở onCreate/onUpgrade.
+/// (default `''` — schema v3, PBI 10).
 @DataClassName('TransactionsRow')
 @TableIndex(name: 'transactions_wallet_id_index', columns: {#walletId})
 class Transactions extends Table {
@@ -211,8 +206,6 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
       await _seedCategories();
-      await _seedSampleWallets();
-      await _seedSampleTransactions();
     },
     onUpgrade: (m, from, to) async {
       // from < 4: DB cũ hơn v4 chưa từng có bảng categories → tạo + seed.
@@ -226,7 +219,6 @@ class AppDatabase extends _$AppDatabase {
       // (else-if) để tránh duplicate-column trên DB v1 nâng thẳng lên v4.
       if (from < 2) {
         await m.createTable(transactions);
-        await _seedSampleTransactions();
       } else if (from < 3) {
         // DB v2 cũ: bảng đã có dữ liệu → chỉ thêm 3 cột tùy chọn (default ''),
         // an toàn, không mất dữ liệu (data-model §Migration, R3).
@@ -316,102 +308,6 @@ class AppDatabase extends _$AppDatabase {
           sortOrder: Value(c.sortOrder),
           isSystem: const Value(true),
           isHidden: const Value(false),
-        ),
-      );
-    }
-  }
-
-  /// Nạp 5 ví mẫu [WalletSource] khi DB vừa tạo — giá trị bằng hằng seed cũ
-  /// (kèm `initial_balance` — Vietcombank gốc 1.200.000 ≠ số dư đã giao dịch).
-  Future<void> _seedSampleWallets() async {
-    await batch((b) {
-      b.insertAll(wallets, [
-        for (final w in WalletSource.all())
-          WalletsCompanion.insert(
-            name: w.name,
-            walletType: w.type,
-            icon: w.icon,
-            initialBalance: w.initialBalanceValue,
-            balance: w.balance,
-            currency: Value(w.currency),
-            isDefault: Value(w.isDefault),
-            isHidden: Value(w.isHidden),
-            sortOrder: Value(w.sortOrder),
-            creditLimit: Value(w.creditLimit),
-            creditUsed: Value(w.creditUsed),
-          ),
-      ]);
-    });
-  }
-
-  /// Nạp 11 dòng giao dịch mẫu [TransactionSource] (research R2) — chạy một lần
-  /// lúc tạo DB mới (onCreate) hoặc upgrade v1→v2, tham chiếu `wallet_id` 1..5
-  /// của seed ví. Bỏ qua `id` domain, để DB tự sinh; gán `transfer_group_id`
-  /// = id vế nguồn vừa ghi (data-model §Migration R7).
-  Future<void> _seedSampleTransactions() async {
-    final seed = TransactionSource.all();
-    final legs = TransactionSource.transferGroupLegs; // domain id nguồn → đích.
-    final destIds = legs.values.toSet();
-    final newIds = <int, int>{};
-
-    // Map tên danh mục (đã seed) → id thật — gán category_id cho dòng seed khớp
-    // tên cùng type (R4); tên lạ ('Xăng xe', 'Thu nhập khác'…) & transfer → null.
-    final catIdByName = <String, int>{
-      for (final r in await select(categories).get()) r.name: r.id,
-    };
-    int? categoryIdFor(Transaction t) =>
-        (t.type == TxnType.income || t.type == TxnType.expense)
-            ? catIdByName[t.category]
-            : null;
-
-    // (1) Ghi mọi dòng trừ vế đích của cặp transfer. Vế nguồn tự cập nhật
-    //     transfer_group_id = id vừa sinh (group = vế ghi trước).
-    for (final t in seed) {
-      if (destIds.contains(t.id)) continue;
-      final id = await into(transactions).insert(
-        TransactionsCompanion.insert(
-          walletId: t.walletId,
-          type: t.type,
-          amount: t.amount,
-          category: Value(t.category),
-          note: Value(t.note),
-          transactionDate: t.date,
-          categoryId: Value(categoryIdFor(t)),
-          tags: Value(t.tags),
-          receiptImage: Value(t.receiptImage),
-          location: Value(t.location),
-        ),
-      );
-      newIds[t.id] = id;
-      if (legs.containsKey(t.id)) {
-        await (update(transactions)..where((r) => r.id.equals(id))).write(
-          TransactionsCompanion(transferGroupId: Value(id)),
-        );
-      }
-    }
-    // (2) Vế đích gắn group = id vế nguồn đã ghi ở trên.
-    for (final t in seed) {
-      int? anchorId;
-      for (final k in legs.keys) {
-        if (legs[k] == t.id) {
-          anchorId = k;
-          break;
-        }
-      }
-      if (anchorId == null) continue;
-      await into(transactions).insert(
-        TransactionsCompanion.insert(
-          walletId: t.walletId,
-          type: t.type,
-          amount: t.amount,
-          category: Value(t.category),
-          note: Value(t.note),
-          transactionDate: t.date,
-          transferGroupId: Value(newIds[anchorId]),
-          categoryId: Value(categoryIdFor(t)),
-          tags: Value(t.tags),
-          receiptImage: Value(t.receiptImage),
-          location: Value(t.location),
         ),
       );
     }

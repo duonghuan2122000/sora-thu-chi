@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/scan/scan_result.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
+import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/data/db/app_database.dart';
 import 'package:sora_thu_chi/data/wallet_repository_drift.dart';
 
@@ -33,6 +34,18 @@ Future<Directory?> _tryTempDir() async {
 
 const _skip = 'Host thiếu sqlite native — bỏ qua DAO drift tích hợp.';
 
+/// Chèn 1 ví fixture (PBI 32: onCreate không còn seed ví mẫu).
+Future<Wallet> _insertWallet(DriftWalletRepository repo) => repo.insert(
+      Wallet(
+        id: 0,
+        name: 'Tiền mặt',
+        type: WalletType.cash,
+        icon: '💵',
+        initialBalance: 1000000,
+        balance: 1000000,
+      ),
+    );
+
 void main() {
   group('addScannedTransaction (FR-033/FR-034, R11)', () {
     test('1 giao dịch nguồn aiScan + 1 phiên quét trỏ đúng giao dịch', () async {
@@ -43,8 +56,7 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
-      final before = await repo.loadAll();
-      final wallet = before.firstWhere((w) => !w.isHidden);
+      final wallet = await _insertWallet(repo);
 
       await repo.addScannedTransaction(
         walletId: wallet.id,
@@ -96,7 +108,7 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
-      final wallet = (await repo.loadAll()).firstWhere((w) => !w.isHidden);
+      final wallet = await _insertWallet(repo);
 
       await repo.addScannedTransaction(
         walletId: wallet.id,
@@ -125,7 +137,21 @@ void main() {
       }
       addTearDown(db.close);
       final repo = DriftWalletRepository(db);
-      final wallet = (await repo.loadAll()).firstWhere((w) => !w.isHidden);
+      final wallet = await _insertWallet(repo);
+      // Giao dịch nhập tay fixture — đối chứng nguồn manual (không còn seed).
+      await repo.addTransaction(
+        walletId: wallet.id,
+        type: TxnType.expense,
+        amount: 10000,
+        category: const Category(
+          id: 1,
+          name: 'Ăn uống',
+          type: CategoryType.expense,
+          icon: 'restaurant',
+          color: 0xFF3D8C77,
+        ),
+        date: DateTime(2026, 9, 11),
+      );
 
       await repo.addScannedTransaction(
         walletId: wallet.id,
@@ -142,7 +168,7 @@ void main() {
       final scanned = all.where((t) => t.amount == -30000).toList();
       expect(scanned, hasLength(1));
       expect(scanned.single.source, TxnSource.aiScan);
-      // Dòng cũ/seed vẫn là manual.
+      // Giao dịch nhập tay fixture vẫn là manual.
       expect(all.where((t) => t.source == TxnSource.manual), isNotEmpty);
     });
   });
@@ -157,11 +183,27 @@ void main() {
       addTearDown(() => dir.delete(recursive: true));
       final file = File(p.join(dir.path, 'sora.sqlite'));
 
-      // (1) Tạo DB v8 rồi "hạ cấp" về đúng hình dạng v7: bỏ cột source + bảng
+      // (1) Tạo DB v8, chèn 1 ví + giao dịch (mô phỏng dữ liệu thật đã có),
+      //     rồi "hạ cấp" về đúng hình dạng v7: bỏ cột source + bảng
       //     scan_sessions, đặt user_version = 7.
       final created = AppDatabase(NativeDatabase(file));
       await created.customSelect('SELECT 1').get();
       expect(created.schemaVersion, 10);
+      final createdRepo = DriftWalletRepository(created);
+      final createdWallet = await _insertWallet(createdRepo);
+      await createdRepo.addTransaction(
+        walletId: createdWallet.id,
+        type: TxnType.expense,
+        amount: 20000,
+        category: const Category(
+          id: 1,
+          name: 'Ăn uống',
+          type: CategoryType.expense,
+          icon: 'restaurant',
+          color: 0xFF3D8C77,
+        ),
+        date: DateTime(2026, 9, 10),
+      );
       try {
         await created.customStatement('ALTER TABLE transactions DROP COLUMN source');
       } catch (_) {
@@ -177,7 +219,7 @@ void main() {
       final upgraded = AppDatabase(NativeDatabase(file));
       addTearDown(upgraded.close);
       final rows = await upgraded.select(upgraded.transactions).get();
-      expect(rows, isNotEmpty, reason: 'seed cũ phải còn nguyên');
+      expect(rows, isNotEmpty, reason: 'dữ liệu cũ phải còn nguyên');
       expect(rows.every((r) => r.source == TxnSource.manual), isTrue,
           reason: 'dòng cũ nhận default manual');
       expect(await upgraded.select(upgraded.scanSessions).get(), isEmpty,
