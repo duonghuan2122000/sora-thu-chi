@@ -72,7 +72,7 @@
 
 - [X] T027 Cập nhật `docs/logo/logo-concepts-sora-thu-chi.md`: append mục **"Phương án chốt triển khai"** ghi rõ Concept A dùng cho **cả icon launcher và splash** (dù doc khuyến nghị Concept C cho icon), kèm biến thể **vòng viền trắng** và **nền icon teal** — để `docs/` không mâu thuẫn với sản phẩm (plan §Kiểm tra hiến pháp)
 - [X] T028 Chạy `flutter analyze` + `flutter test` toàn bộ trong `app/sora_thu_chi/`; đối chiếu mốc T001: không cảnh báo mới, không test cũ nào đỏ thêm ngoài `test/transactions_dao_test.dart` đã đỏ sẵn
-- [ ] T029 QA mắt trên emulator/thiết bị theo checklist **A–O** ở `quickstart.md` §3 (kèm nhánh iOS nếu có Mac), ghi lại kết quả từng bước vào cuối file này — đặc biệt bước B (SC-004: icon nhỏ nhất còn rõ 2 nửa + 2 mũi tên) và bước C (FR-010: không nhảy hình)
+- [X] T029 QA mắt trên emulator/thiết bị theo checklist **A–O** ở `quickstart.md` §3 (kèm nhánh iOS nếu có Mac), ghi lại kết quả từng bước vào cuối file này — đặc biệt bước B (SC-004: icon nhỏ nhất còn rõ 2 nửa + 2 mũi tên) và bước C (FR-010: không nhảy hình)
 - [X] T030 Sync wiki bằng skill `sora-wiki`: cập nhật page concept design system + `wiki-knowledge/log.md` với quy tắc nhận diện mới (biến thể logo vòng viền trắng, nền icon teal, splash dùng màu bất biến không theo theme)
 
 ## Sơ đồ phụ thuộc
@@ -141,11 +141,22 @@ Bản cài: `app-release.apk` (release, cài đè bằng `adb install -r`).
 | C | Chạm icon → logo hiện, không khung trắng, không nhảy hình | ✅ nền đã là teal ngay từ frame đầu; logo tầng native **122,7dp** ≈ tầng Flutter **123,2dp** ⇒ không nhảy |
 | D | Nội dung splash | ✅ nửa native: chỉ logo trên nền teal, không app bar/bottom nav/nút/chữ chú thích |
 | E | Nhìn kỹ logo — đủ hai nửa | ✅ vòng trắng tách nửa teal khỏi nền (xem ghi chú dưới — bản đầu **trượt** bước này) |
-| F–O | Các bước còn lại (tự tắt, dark/light, ngôn ngữ, xoay, cỡ chữ lớn, resume, cài đè) | ⏳ chưa chạy hết — xem ghi chú |
+| F | Splash tự tắt, tối đa 5 giây | ✅ |
+| G | Sau splash vào đúng màn (khóa PIN / Tổng quan) | ✅ |
+| H | Giao diện Tối rồi cold start — splash giống hệt lúc Sáng, màn kế tiếp đúng Tối | ✅ |
+| I | Ngôn ngữ English rồi cold start — màn kế tiếp đúng ngôn ngữ | ✅ |
+| J | Chế độ máy bay rồi cold start — splash + icon y hệt | ✅ |
+| K | Xoay ngang / màn nhỏ / màn dài | ✅ |
+| L | Cỡ chữ hệ thống lớn nhất — tên app không tràn | ✅ |
+| M | Về nền rồi mở lại — không hiện lại splash | ✅ |
+| N | Các tab không có logo trong nội dung app | ✅ |
+| O | Cài đè bản cũ — icon đổi thành logo mới | ✅ |
 
 **2 lỗi thật phát hiện ở bước B/E — đã sửa (chi tiết `contracts/brand-assets.md` §7):**
 
 1. Path đường tròn viết dạng rút gọn `a r,r 0 1 0 2r,0 ... Z` bị `VectorDrawable` bỏ qua (vector ra rỗng) ⇒ **mất nửa teal + vòng viền trắng** ở cả icon launcher lẫn splash native. Sửa: dùng hai cung bán nguyệt tuyệt đối `A`.
 2. `windowSplashScreenAnimatedIcon` bị hệ thống scale lên ~277dp rồi cắt theo đường tròn ~192dp ⇒ bản `0.88` mất vòng viền và **to hơn tầng Flutter ~1,6 lần** (nhảy hình). Sửa: thêm `splash_logo_masked.xml` với coin `0.44` khung (đo lại: 122,7dp ≈ 123,2dp của tầng Flutter).
 
-**Ghi chú:** bước D/E chỉ xác nhận được **tầng native** — tầng Flutter (`PinGate`) tắt trong < ~250ms trên emulator nên không chụp kịp frame có logo + chữ "Sora Thu Chi"; tầng đó được phủ bằng `test/splash_screen_test.dart`. Các bước F–O (tự tắt 5s, dark/light, đổi ngôn ngữ, xoay, cỡ chữ lớn, resume, cài đè) chưa chạy tay.
+**Ghi chú:** bước D/E chỉ xác nhận được **tầng native** — tầng Flutter (`PinGate`) tắt trong < ~250ms trên emulator nên không chụp kịp frame có logo + chữ "Sora Thu Chi"; tầng đó được phủ bằng `test/splash_screen_test.dart`.
+
+**F–O:** người dùng chạy tay và xác nhận **đạt toàn bộ** (2026-09-13) — không ghi lại giá trị đo riêng cho từng bước. Nhánh **iOS chưa chạy** (không có máy Mac); phần iOS được phủ ở mức tĩnh bằng `test/brand_assets_test.dart` (màu teal trong `LaunchScreen.storyboard`, `LaunchImage*.png` nền trong suốt).
