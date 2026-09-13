@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ dựng splash bằng SplashScreen API (không dùng `windowBackground`
+     như bản cũ) nên phải khai báo riêng nền + icon để không lộ nền mặc định.
+     Không dùng `postSplashScreenTheme`: thuộc tính đó đến từ
+     `androidx.core:core-splashscreen` — PBI này không thêm dependency; vai trò
+     "theme sau splash" đã do meta-data `NormalTheme` trong AndroidManifest đảm nhiệm. -->
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/brand_teal</item>
+        <!-- Biến thể thu nhỏ: hệ thống scale drawable lên rồi cắt theo đường
+             tròn ~2/3 khung, để nguyên bản 0.88 thì mất vòng viền trắng. -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo_masked</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/brand_teal</item>
+    </style>
+</resources>

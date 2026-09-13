@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Như `drawable/launch_background.xml`: không dùng nền theo giao diện hệ
+     thống nữa, để nền splash luôn là teal thương hiệu (FR-004/FR-008). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+    <item android:drawable="@color/brand_teal" />
+    <item
+        android:drawable="@drawable/splash_logo"
+        android:width="140dp"
+        android:height="140dp"
+        android:gravity="center" />
 </layer-list>

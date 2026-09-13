@@ -46,16 +46,16 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Giao diện: đăng ký controller ở gốc rồi nạp lựa chọn đã lưu (R3/R8).
+    // Giao diện: chỉ đăng ký controller ở gốc để `Obx`/`themeMode` có nguồn
+    // ngay frame đầu — việc `load()` chuyển vào nhóm chờ của splash (PBI 25,
+    // FR-013) để màn kế tiếp hiện ra đã đúng giao diện đã chọn.
     if (!Get.isRegistered<ThemeController>()) {
       Get.put(ThemeController(widget.themeStore ?? ensureThemeStore()));
     }
-    Get.find<ThemeController>().load();
-    // Ngôn ngữ: cùng khuôn — nạp lựa chọn đã lưu (chỉ reassemble khi khác `vi`).
+    // Ngôn ngữ: cùng khuôn (chỉ reassemble khi khác `vi`).
     if (!Get.isRegistered<LocaleController>()) {
       Get.put(LocaleController(widget.localeStore ?? ensureLocaleStore()));
     }
-    Get.find<LocaleController>().load();
     // Quét hóa đơn (PBI 24): công tắc + chế độ + hồ sơ thiết bị dùng chung cho
     // sheet FAB và màn Cài đặt ⇒ nạp ở gốc app (R15).
     ensureScanController().load();
