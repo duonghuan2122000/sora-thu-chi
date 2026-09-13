@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -91,6 +93,9 @@ class _DailyReminderConfigScreenState extends State<DailyReminderConfigScreen> {
     try {
       await _store.save(_draft);
     } catch (_) {}
+    // Thông báo đẩy (PBI 31, FR-021/AC#16): giờ/ngày mới **có hiệu lực ngay**,
+    // không cần mở lại app — fire-and-forget, lỗi nuốt bên trong engine.
+    unawaited(ensureNotificationEngine().onPrefsChanged());
     if (!mounted) return;
     Navigator.of(context).pop();
   }

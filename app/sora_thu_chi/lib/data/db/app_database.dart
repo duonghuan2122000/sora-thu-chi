@@ -154,6 +154,31 @@ class Notifications extends Table {
   IntColumn get relatedId => integer().nullable()();
 }
 
+/// Bảng **sổ thông báo** (data-model §3, schema v10 — PBI 31): mỗi dòng = một
+/// mốc thông báo đã lên lịch / đã bắn / đã bị chặn. `entry_key` là **khoá chính**
+/// (khoá nghiệp vụ mang kỳ) nên lên lịch lại cùng khoá **không** nhân đôi dòng.
+///
+/// Vì sao cần bảng này: khi app đóng lúc mốc bắn, hệ điều hành không chạy Dart ⇒
+/// bản ghi Trung tâm (bảng `notifications`, PBI 30) chỉ được **ghi bù** ở lần mở
+/// app kế tiếp; sổ là thứ duy nhất sống qua khoảng đó và cũng là bộ nhớ chống
+/// bắn trùng. Migration v9→v10 = **thuần tạo bảng, KHÔNG seed** (bám nếp v6/v9).
+/// Không FK (bám nếp `transactions.category_id`).
+@DataClassName('NotificationLedgerRow')
+class NotificationLedger extends Table {
+  TextColumn get entryKey => text()();
+  TextColumn get kind => textEnum<NotificationKind>()();
+  IntColumn get relatedId => integer().nullable()();
+  TextColumn get title => text()();
+  TextColumn get body => text().withDefault(const Constant(''))();
+  DateTimeColumn get scheduledFor => dateTime()();
+  BoolColumn get suppressed => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get historyWrittenAt => dateTime().nullable()();
+  IntColumn get historyId => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {entryKey};
+}
+
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
 QueryExecutor _openConnection() {
   return LazyDatabase(() async {
@@ -172,13 +197,14 @@ QueryExecutor _openConnection() {
     Budgets,
     ScanSessions,
     Notifications,
+    NotificationLedger,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -246,6 +272,13 @@ class AppDatabase extends _$AppDatabase {
       // (spec: không dựng cơ chế seed dữ liệu mẫu). Không đụng bảng nào khác.
       if (from < 9) {
         await m.createTable(notifications);
+      }
+      // from < 10 (PBI 31): bảng sổ thông báo — thuần tạo, **KHÔNG** seed. Bảng
+      // rỗng lúc nâng cấp là đúng: engine tự cuốn lịch cho mốc **tương lai** ở
+      // lần chạy kế tiếp, nên DB cũ nâng cấp **không** bị dội thông báo bù
+      // (FR-028/AC#24). Không đụng bảng nào khác.
+      if (from < 10) {
+        await m.createTable(notificationLedger);
       }
     },
   );

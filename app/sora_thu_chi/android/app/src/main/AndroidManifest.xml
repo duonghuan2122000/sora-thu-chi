@@ -4,6 +4,14 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
 
+    <!-- Thông báo đẩy (PBI 31): xin quyền ở lần đầu mở màn "Thông báo & nhắc nhở"
+         (Android 13+); 2 quyền còn lại để lịch sống qua khởi động lại thiết bị
+         (SC-010/AC#17). `USE_EXACT_ALARM` — app phát hành qua GitHub Releases,
+         không qua Play, nên ràng buộc chính sách Play không áp dụng (R10). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+
     <application
         android:label="Sora Thu Chi"
         android:name="${applicationName}"
@@ -36,6 +44,24 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 2 receiver của flutter_local_notifications (PBI 31). Thiếu
+             `ScheduledNotificationBootReceiver` là MẤT TOÀN BỘ LỊCH sau khi
+             khởi động lại thiết bị (AC#17/SC-010) — Android xoá mọi alarm khi
+             reboot, receiver này đăng ký lại. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

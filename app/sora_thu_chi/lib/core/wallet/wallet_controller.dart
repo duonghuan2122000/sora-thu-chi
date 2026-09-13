@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
+import '../../data/notification_deps.dart';
 import '../../data/wallet_repository.dart';
 import '../transaction/transaction.dart';
 import 'wallet.dart';
@@ -108,6 +111,10 @@ class WalletController extends GetxController {
       date: date,
       note: note,
     );
+    // Thông báo đẩy (PBI 31, FR-011): chuyển khoản **không** tính vào ngân sách
+    // nhưng **có** tính là "hôm nay đã ghi giao dịch" — engine chỉ đọc, chạy
+    // fire-and-forget và tự nuốt lỗi (FR-023/FR-024).
+    unawaited(ensureNotificationEngine().onTransactionSaved(at: date, type: TxnType.transfer));
     await _reload();
   }
 

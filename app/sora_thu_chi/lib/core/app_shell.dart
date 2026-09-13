@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../screens/add_transaction_screen.dart';
@@ -6,8 +8,11 @@ import '../screens/report_screen.dart';
 import '../screens/scan/add_transaction_sheet.dart';
 import '../screens/settings_screen.dart';
 import '../screens/transaction_screen.dart';
+import '../data/notification_deps.dart';
 import '../data/report_deps.dart';
 import '../data/transaction_deps.dart';
+import 'notification/notification_presence.dart';
+import 'notification/notification_tap.dart';
 import 'scan/scan_flow.dart';
 import 'transaction/transaction.dart';
 import 'widgets/add_transaction_fab.dart';
@@ -23,6 +28,37 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Shell đã dựng ⇒ đã qua `PinGate`/mở khoá (FR-019): giờ mới tiêu thụ payload
+    // chạm thông báo, nếu không màn đích sẽ nằm **dưới** màn khoá (AC#13).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _consumePendingTap());
+  }
+
+  /// Tiêu thụ payload **một lần**: hoà giải + đánh dấu đã đọc rồi điều hướng.
+  /// Chỉ `take()` sau khi xử lý xong — lỗi giữa chừng để lần mở sau thử lại.
+  Future<void> _consumePendingTap() async {
+    final router = ensureNotificationTapRouter();
+    final entryKey = router.peek();
+    if (entryKey == null) return;
+    NotificationTapResult result;
+    try {
+      result = await ensureNotificationEngine().handleTap(entryKey);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    router.take();
+    await openNotificationTarget(
+      target: result.target,
+      relatedId: result.relatedId,
+      period: result.period,
+      onSelectTab: _onTabSelected,
+      context: context,
+    );
+  }
 
   /// `late final` (không còn `static const`): tab Báo cáo cần bơm
   /// [_onTabSelected] xuống màn Tổng quan Ngân sách đẩy từ nó (PBI 20) — màn
@@ -47,6 +83,27 @@ class _AppShellState extends State<AppShell> {
     // liệu phản ánh dữ liệu mới (FR-016/kịch bản 12).
     if (index == 2) {
       ensureReportController().load();
+    }
+    _syncReportPresence(index == 2);
+  }
+
+  /// Q3 (PBI 31, R9/FR-016): "đang mở màn Báo cáo" = **tab Báo cáo đang được
+  /// chọn**. Không thể suy từ vòng đời widget: `IndexedStack` giữ **mọi** tab
+  /// sống từ lúc boot nên `initState` của màn Báo cáo không phản ánh việc người
+  /// dùng đang nhìn nó. Vào tab ⇒ huỷ mốc tổng kết đang chờ (không bắn, không
+  /// ghi — AC#10/H3); rời tab ⇒ cuốn lịch lại, mốc đã trôi qua **không** ghi bù
+  /// (H4/FR-028).
+  void _syncReportPresence(bool onReport) {
+    final presence = ensureNotificationPresence();
+    final engine = ensureNotificationEngine();
+    if (onReport) {
+      presence.enterReport();
+      unawaited(engine.onEnterRelatedScreen(NotificationScreens.report));
+      return;
+    }
+    if (presence.screen.value == NotificationScreens.report) {
+      presence.leave();
+      unawaited(engine.onLeaveRelatedScreen());
     }
   }
 

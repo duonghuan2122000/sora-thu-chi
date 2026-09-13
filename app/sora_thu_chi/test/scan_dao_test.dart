@@ -161,7 +161,7 @@ void main() {
       //     scan_sessions, đặt user_version = 7.
       final created = AppDatabase(NativeDatabase(file));
       await created.customSelect('SELECT 1').get();
-      expect(created.schemaVersion, 9);
+      expect(created.schemaVersion, 10);
       try {
         await created.customStatement('ALTER TABLE transactions DROP COLUMN source');
       } catch (_) {

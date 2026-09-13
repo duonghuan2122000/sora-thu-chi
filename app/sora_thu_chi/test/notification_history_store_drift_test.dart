@@ -46,7 +46,7 @@ void main() {
     }
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 9);
+    expect(db.schemaVersion, 10);
   });
 
   test('bảng rỗng → loadRecent trả [] (không ném, không seed)', () async {

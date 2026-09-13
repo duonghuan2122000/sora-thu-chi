@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -9,6 +11,7 @@ import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
 import '../core/wallet/wallet_rules.dart';
 import '../core/widgets/amount_keypad.dart';
+import '../data/notification_deps.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
@@ -244,6 +247,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         category: _category!,
         date: _date,
         note: _noteCtrl.text.trim(),
+      );
+      // Thông báo đẩy (PBI 31): huỷ mốc nhắc hôm nay nếu cờ "chỉ nhắc nếu chưa
+      // ghi" đang bật + xét ngưỡng ngân sách. **Fire-and-forget** — không await,
+      // lỗi nuốt bên trong engine (FR-024/SC-012): luồng lưu không đổi.
+      unawaited(
+        ensureNotificationEngine().onTransactionSaved(at: _date, type: _type),
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);

@@ -3977,6 +3977,595 @@ class NotificationsCompanion extends UpdateCompanion<NotificationsRow> {
   }
 }
 
+class $NotificationLedgerTable extends NotificationLedger
+    with TableInfo<$NotificationLedgerTable, NotificationLedgerRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotificationLedgerTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entryKeyMeta = const VerificationMeta(
+    'entryKey',
+  );
+  @override
+  late final GeneratedColumn<String> entryKey = GeneratedColumn<String>(
+    'entry_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<NotificationKind, String> kind =
+      GeneratedColumn<String>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<NotificationKind>(
+        $NotificationLedgerTable.$converterkind,
+      );
+  static const VerificationMeta _relatedIdMeta = const VerificationMeta(
+    'relatedId',
+  );
+  @override
+  late final GeneratedColumn<int> relatedId = GeneratedColumn<int>(
+    'related_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _scheduledForMeta = const VerificationMeta(
+    'scheduledFor',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scheduledFor = GeneratedColumn<DateTime>(
+    'scheduled_for',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _suppressedMeta = const VerificationMeta(
+    'suppressed',
+  );
+  @override
+  late final GeneratedColumn<bool> suppressed = GeneratedColumn<bool>(
+    'suppressed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("suppressed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _historyWrittenAtMeta = const VerificationMeta(
+    'historyWrittenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> historyWrittenAt =
+      GeneratedColumn<DateTime>(
+        'history_written_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _historyIdMeta = const VerificationMeta(
+    'historyId',
+  );
+  @override
+  late final GeneratedColumn<int> historyId = GeneratedColumn<int>(
+    'history_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    entryKey,
+    kind,
+    relatedId,
+    title,
+    body,
+    scheduledFor,
+    suppressed,
+    historyWrittenAt,
+    historyId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notification_ledger';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotificationLedgerRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entry_key')) {
+      context.handle(
+        _entryKeyMeta,
+        entryKey.isAcceptableOrUnknown(data['entry_key']!, _entryKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryKeyMeta);
+    }
+    if (data.containsKey('related_id')) {
+      context.handle(
+        _relatedIdMeta,
+        relatedId.isAcceptableOrUnknown(data['related_id']!, _relatedIdMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    }
+    if (data.containsKey('scheduled_for')) {
+      context.handle(
+        _scheduledForMeta,
+        scheduledFor.isAcceptableOrUnknown(
+          data['scheduled_for']!,
+          _scheduledForMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledForMeta);
+    }
+    if (data.containsKey('suppressed')) {
+      context.handle(
+        _suppressedMeta,
+        suppressed.isAcceptableOrUnknown(data['suppressed']!, _suppressedMeta),
+      );
+    }
+    if (data.containsKey('history_written_at')) {
+      context.handle(
+        _historyWrittenAtMeta,
+        historyWrittenAt.isAcceptableOrUnknown(
+          data['history_written_at']!,
+          _historyWrittenAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('history_id')) {
+      context.handle(
+        _historyIdMeta,
+        historyId.isAcceptableOrUnknown(data['history_id']!, _historyIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entryKey};
+  @override
+  NotificationLedgerRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotificationLedgerRow(
+      entryKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entry_key'],
+      )!,
+      kind: $NotificationLedgerTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
+      relatedId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}related_id'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      scheduledFor: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_for'],
+      )!,
+      suppressed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}suppressed'],
+      )!,
+      historyWrittenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}history_written_at'],
+      ),
+      historyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}history_id'],
+      ),
+    );
+  }
+
+  @override
+  $NotificationLedgerTable createAlias(String alias) {
+    return $NotificationLedgerTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<NotificationKind, String, String> $converterkind =
+      const EnumNameConverter<NotificationKind>(NotificationKind.values);
+}
+
+class NotificationLedgerRow extends DataClass
+    implements Insertable<NotificationLedgerRow> {
+  final String entryKey;
+  final NotificationKind kind;
+  final int? relatedId;
+  final String title;
+  final String body;
+  final DateTime scheduledFor;
+  final bool suppressed;
+  final DateTime? historyWrittenAt;
+  final int? historyId;
+  const NotificationLedgerRow({
+    required this.entryKey,
+    required this.kind,
+    this.relatedId,
+    required this.title,
+    required this.body,
+    required this.scheduledFor,
+    required this.suppressed,
+    this.historyWrittenAt,
+    this.historyId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entry_key'] = Variable<String>(entryKey);
+    {
+      map['kind'] = Variable<String>(
+        $NotificationLedgerTable.$converterkind.toSql(kind),
+      );
+    }
+    if (!nullToAbsent || relatedId != null) {
+      map['related_id'] = Variable<int>(relatedId);
+    }
+    map['title'] = Variable<String>(title);
+    map['body'] = Variable<String>(body);
+    map['scheduled_for'] = Variable<DateTime>(scheduledFor);
+    map['suppressed'] = Variable<bool>(suppressed);
+    if (!nullToAbsent || historyWrittenAt != null) {
+      map['history_written_at'] = Variable<DateTime>(historyWrittenAt);
+    }
+    if (!nullToAbsent || historyId != null) {
+      map['history_id'] = Variable<int>(historyId);
+    }
+    return map;
+  }
+
+  NotificationLedgerCompanion toCompanion(bool nullToAbsent) {
+    return NotificationLedgerCompanion(
+      entryKey: Value(entryKey),
+      kind: Value(kind),
+      relatedId: relatedId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relatedId),
+      title: Value(title),
+      body: Value(body),
+      scheduledFor: Value(scheduledFor),
+      suppressed: Value(suppressed),
+      historyWrittenAt: historyWrittenAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(historyWrittenAt),
+      historyId: historyId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(historyId),
+    );
+  }
+
+  factory NotificationLedgerRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotificationLedgerRow(
+      entryKey: serializer.fromJson<String>(json['entryKey']),
+      kind: $NotificationLedgerTable.$converterkind.fromJson(
+        serializer.fromJson<String>(json['kind']),
+      ),
+      relatedId: serializer.fromJson<int?>(json['relatedId']),
+      title: serializer.fromJson<String>(json['title']),
+      body: serializer.fromJson<String>(json['body']),
+      scheduledFor: serializer.fromJson<DateTime>(json['scheduledFor']),
+      suppressed: serializer.fromJson<bool>(json['suppressed']),
+      historyWrittenAt: serializer.fromJson<DateTime?>(
+        json['historyWrittenAt'],
+      ),
+      historyId: serializer.fromJson<int?>(json['historyId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entryKey': serializer.toJson<String>(entryKey),
+      'kind': serializer.toJson<String>(
+        $NotificationLedgerTable.$converterkind.toJson(kind),
+      ),
+      'relatedId': serializer.toJson<int?>(relatedId),
+      'title': serializer.toJson<String>(title),
+      'body': serializer.toJson<String>(body),
+      'scheduledFor': serializer.toJson<DateTime>(scheduledFor),
+      'suppressed': serializer.toJson<bool>(suppressed),
+      'historyWrittenAt': serializer.toJson<DateTime?>(historyWrittenAt),
+      'historyId': serializer.toJson<int?>(historyId),
+    };
+  }
+
+  NotificationLedgerRow copyWith({
+    String? entryKey,
+    NotificationKind? kind,
+    Value<int?> relatedId = const Value.absent(),
+    String? title,
+    String? body,
+    DateTime? scheduledFor,
+    bool? suppressed,
+    Value<DateTime?> historyWrittenAt = const Value.absent(),
+    Value<int?> historyId = const Value.absent(),
+  }) => NotificationLedgerRow(
+    entryKey: entryKey ?? this.entryKey,
+    kind: kind ?? this.kind,
+    relatedId: relatedId.present ? relatedId.value : this.relatedId,
+    title: title ?? this.title,
+    body: body ?? this.body,
+    scheduledFor: scheduledFor ?? this.scheduledFor,
+    suppressed: suppressed ?? this.suppressed,
+    historyWrittenAt: historyWrittenAt.present
+        ? historyWrittenAt.value
+        : this.historyWrittenAt,
+    historyId: historyId.present ? historyId.value : this.historyId,
+  );
+  NotificationLedgerRow copyWithCompanion(NotificationLedgerCompanion data) {
+    return NotificationLedgerRow(
+      entryKey: data.entryKey.present ? data.entryKey.value : this.entryKey,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      relatedId: data.relatedId.present ? data.relatedId.value : this.relatedId,
+      title: data.title.present ? data.title.value : this.title,
+      body: data.body.present ? data.body.value : this.body,
+      scheduledFor: data.scheduledFor.present
+          ? data.scheduledFor.value
+          : this.scheduledFor,
+      suppressed: data.suppressed.present
+          ? data.suppressed.value
+          : this.suppressed,
+      historyWrittenAt: data.historyWrittenAt.present
+          ? data.historyWrittenAt.value
+          : this.historyWrittenAt,
+      historyId: data.historyId.present ? data.historyId.value : this.historyId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationLedgerRow(')
+          ..write('entryKey: $entryKey, ')
+          ..write('kind: $kind, ')
+          ..write('relatedId: $relatedId, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('scheduledFor: $scheduledFor, ')
+          ..write('suppressed: $suppressed, ')
+          ..write('historyWrittenAt: $historyWrittenAt, ')
+          ..write('historyId: $historyId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    entryKey,
+    kind,
+    relatedId,
+    title,
+    body,
+    scheduledFor,
+    suppressed,
+    historyWrittenAt,
+    historyId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotificationLedgerRow &&
+          other.entryKey == this.entryKey &&
+          other.kind == this.kind &&
+          other.relatedId == this.relatedId &&
+          other.title == this.title &&
+          other.body == this.body &&
+          other.scheduledFor == this.scheduledFor &&
+          other.suppressed == this.suppressed &&
+          other.historyWrittenAt == this.historyWrittenAt &&
+          other.historyId == this.historyId);
+}
+
+class NotificationLedgerCompanion
+    extends UpdateCompanion<NotificationLedgerRow> {
+  final Value<String> entryKey;
+  final Value<NotificationKind> kind;
+  final Value<int?> relatedId;
+  final Value<String> title;
+  final Value<String> body;
+  final Value<DateTime> scheduledFor;
+  final Value<bool> suppressed;
+  final Value<DateTime?> historyWrittenAt;
+  final Value<int?> historyId;
+  final Value<int> rowid;
+  const NotificationLedgerCompanion({
+    this.entryKey = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.relatedId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.body = const Value.absent(),
+    this.scheduledFor = const Value.absent(),
+    this.suppressed = const Value.absent(),
+    this.historyWrittenAt = const Value.absent(),
+    this.historyId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotificationLedgerCompanion.insert({
+    required String entryKey,
+    required NotificationKind kind,
+    this.relatedId = const Value.absent(),
+    required String title,
+    this.body = const Value.absent(),
+    required DateTime scheduledFor,
+    this.suppressed = const Value.absent(),
+    this.historyWrittenAt = const Value.absent(),
+    this.historyId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entryKey = Value(entryKey),
+       kind = Value(kind),
+       title = Value(title),
+       scheduledFor = Value(scheduledFor);
+  static Insertable<NotificationLedgerRow> custom({
+    Expression<String>? entryKey,
+    Expression<String>? kind,
+    Expression<int>? relatedId,
+    Expression<String>? title,
+    Expression<String>? body,
+    Expression<DateTime>? scheduledFor,
+    Expression<bool>? suppressed,
+    Expression<DateTime>? historyWrittenAt,
+    Expression<int>? historyId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entryKey != null) 'entry_key': entryKey,
+      if (kind != null) 'kind': kind,
+      if (relatedId != null) 'related_id': relatedId,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (scheduledFor != null) 'scheduled_for': scheduledFor,
+      if (suppressed != null) 'suppressed': suppressed,
+      if (historyWrittenAt != null) 'history_written_at': historyWrittenAt,
+      if (historyId != null) 'history_id': historyId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotificationLedgerCompanion copyWith({
+    Value<String>? entryKey,
+    Value<NotificationKind>? kind,
+    Value<int?>? relatedId,
+    Value<String>? title,
+    Value<String>? body,
+    Value<DateTime>? scheduledFor,
+    Value<bool>? suppressed,
+    Value<DateTime?>? historyWrittenAt,
+    Value<int?>? historyId,
+    Value<int>? rowid,
+  }) {
+    return NotificationLedgerCompanion(
+      entryKey: entryKey ?? this.entryKey,
+      kind: kind ?? this.kind,
+      relatedId: relatedId ?? this.relatedId,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      scheduledFor: scheduledFor ?? this.scheduledFor,
+      suppressed: suppressed ?? this.suppressed,
+      historyWrittenAt: historyWrittenAt ?? this.historyWrittenAt,
+      historyId: historyId ?? this.historyId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entryKey.present) {
+      map['entry_key'] = Variable<String>(entryKey.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(
+        $NotificationLedgerTable.$converterkind.toSql(kind.value),
+      );
+    }
+    if (relatedId.present) {
+      map['related_id'] = Variable<int>(relatedId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (scheduledFor.present) {
+      map['scheduled_for'] = Variable<DateTime>(scheduledFor.value);
+    }
+    if (suppressed.present) {
+      map['suppressed'] = Variable<bool>(suppressed.value);
+    }
+    if (historyWrittenAt.present) {
+      map['history_written_at'] = Variable<DateTime>(historyWrittenAt.value);
+    }
+    if (historyId.present) {
+      map['history_id'] = Variable<int>(historyId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationLedgerCompanion(')
+          ..write('entryKey: $entryKey, ')
+          ..write('kind: $kind, ')
+          ..write('relatedId: $relatedId, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('scheduledFor: $scheduledFor, ')
+          ..write('suppressed: $suppressed, ')
+          ..write('historyWrittenAt: $historyWrittenAt, ')
+          ..write('historyId: $historyId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3987,6 +4576,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BudgetsTable budgets = $BudgetsTable(this);
   late final $ScanSessionsTable scanSessions = $ScanSessionsTable(this);
   late final $NotificationsTable notifications = $NotificationsTable(this);
+  late final $NotificationLedgerTable notificationLedger =
+      $NotificationLedgerTable(this);
   late final Index transactionsWalletIdIndex = Index(
     'transactions_wallet_id_index',
     'CREATE INDEX transactions_wallet_id_index ON transactions (wallet_id)',
@@ -4003,6 +4594,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     budgets,
     scanSessions,
     notifications,
+    notificationLedger,
     transactionsWalletIdIndex,
   ];
 }
@@ -6023,6 +6615,313 @@ typedef $$NotificationsTableProcessedTableManager =
       NotificationsRow,
       PrefetchHooks Function()
     >;
+typedef $$NotificationLedgerTableCreateCompanionBuilder =
+    NotificationLedgerCompanion Function({
+      required String entryKey,
+      required NotificationKind kind,
+      Value<int?> relatedId,
+      required String title,
+      Value<String> body,
+      required DateTime scheduledFor,
+      Value<bool> suppressed,
+      Value<DateTime?> historyWrittenAt,
+      Value<int?> historyId,
+      Value<int> rowid,
+    });
+typedef $$NotificationLedgerTableUpdateCompanionBuilder =
+    NotificationLedgerCompanion Function({
+      Value<String> entryKey,
+      Value<NotificationKind> kind,
+      Value<int?> relatedId,
+      Value<String> title,
+      Value<String> body,
+      Value<DateTime> scheduledFor,
+      Value<bool> suppressed,
+      Value<DateTime?> historyWrittenAt,
+      Value<int?> historyId,
+      Value<int> rowid,
+    });
+
+class $$NotificationLedgerTableFilterComposer
+    extends Composer<_$AppDatabase, $NotificationLedgerTable> {
+  $$NotificationLedgerTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entryKey => $composableBuilder(
+    column: $table.entryKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<NotificationKind, NotificationKind, String>
+  get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get relatedId => $composableBuilder(
+    column: $table.relatedId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledFor => $composableBuilder(
+    column: $table.scheduledFor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get suppressed => $composableBuilder(
+    column: $table.suppressed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get historyWrittenAt => $composableBuilder(
+    column: $table.historyWrittenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get historyId => $composableBuilder(
+    column: $table.historyId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotificationLedgerTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotificationLedgerTable> {
+  $$NotificationLedgerTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entryKey => $composableBuilder(
+    column: $table.entryKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relatedId => $composableBuilder(
+    column: $table.relatedId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledFor => $composableBuilder(
+    column: $table.scheduledFor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get suppressed => $composableBuilder(
+    column: $table.suppressed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get historyWrittenAt => $composableBuilder(
+    column: $table.historyWrittenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get historyId => $composableBuilder(
+    column: $table.historyId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotificationLedgerTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotificationLedgerTable> {
+  $$NotificationLedgerTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entryKey =>
+      $composableBuilder(column: $table.entryKey, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<NotificationKind, String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get relatedId =>
+      $composableBuilder(column: $table.relatedId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledFor => $composableBuilder(
+    column: $table.scheduledFor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get suppressed => $composableBuilder(
+    column: $table.suppressed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get historyWrittenAt => $composableBuilder(
+    column: $table.historyWrittenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get historyId =>
+      $composableBuilder(column: $table.historyId, builder: (column) => column);
+}
+
+class $$NotificationLedgerTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotificationLedgerTable,
+          NotificationLedgerRow,
+          $$NotificationLedgerTableFilterComposer,
+          $$NotificationLedgerTableOrderingComposer,
+          $$NotificationLedgerTableAnnotationComposer,
+          $$NotificationLedgerTableCreateCompanionBuilder,
+          $$NotificationLedgerTableUpdateCompanionBuilder,
+          (
+            NotificationLedgerRow,
+            BaseReferences<
+              _$AppDatabase,
+              $NotificationLedgerTable,
+              NotificationLedgerRow
+            >,
+          ),
+          NotificationLedgerRow,
+          PrefetchHooks Function()
+        > {
+  $$NotificationLedgerTableTableManager(
+    _$AppDatabase db,
+    $NotificationLedgerTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotificationLedgerTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotificationLedgerTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotificationLedgerTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> entryKey = const Value.absent(),
+                Value<NotificationKind> kind = const Value.absent(),
+                Value<int?> relatedId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<DateTime> scheduledFor = const Value.absent(),
+                Value<bool> suppressed = const Value.absent(),
+                Value<DateTime?> historyWrittenAt = const Value.absent(),
+                Value<int?> historyId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotificationLedgerCompanion(
+                entryKey: entryKey,
+                kind: kind,
+                relatedId: relatedId,
+                title: title,
+                body: body,
+                scheduledFor: scheduledFor,
+                suppressed: suppressed,
+                historyWrittenAt: historyWrittenAt,
+                historyId: historyId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entryKey,
+                required NotificationKind kind,
+                Value<int?> relatedId = const Value.absent(),
+                required String title,
+                Value<String> body = const Value.absent(),
+                required DateTime scheduledFor,
+                Value<bool> suppressed = const Value.absent(),
+                Value<DateTime?> historyWrittenAt = const Value.absent(),
+                Value<int?> historyId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotificationLedgerCompanion.insert(
+                entryKey: entryKey,
+                kind: kind,
+                relatedId: relatedId,
+                title: title,
+                body: body,
+                scheduledFor: scheduledFor,
+                suppressed: suppressed,
+                historyWrittenAt: historyWrittenAt,
+                historyId: historyId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$NotificationLedgerTable, NotificationLedgerRow>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $NotificationLedgerTable,
+                    NotificationLedgerRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotificationLedgerTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotificationLedgerTable,
+      NotificationLedgerRow,
+      $$NotificationLedgerTableFilterComposer,
+      $$NotificationLedgerTableOrderingComposer,
+      $$NotificationLedgerTableAnnotationComposer,
+      $$NotificationLedgerTableCreateCompanionBuilder,
+      $$NotificationLedgerTableUpdateCompanionBuilder,
+      (
+        NotificationLedgerRow,
+        BaseReferences<
+          _$AppDatabase,
+          $NotificationLedgerTable,
+          NotificationLedgerRow
+        >,
+      ),
+      NotificationLedgerRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6041,4 +6940,6 @@ class $AppDatabaseManager {
       $$ScanSessionsTableTableManager(_db, _db.scanSessions);
   $$NotificationsTableTableManager get notifications =>
       $$NotificationsTableTableManager(_db, _db.notifications);
+  $$NotificationLedgerTableTableManager get notificationLedger =>
+      $$NotificationLedgerTableTableManager(_db, _db.notificationLedger);
 }

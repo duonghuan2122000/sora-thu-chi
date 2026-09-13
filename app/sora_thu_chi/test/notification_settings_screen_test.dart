@@ -9,6 +9,9 @@ import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 
+import 'package:sora_thu_chi/core/notification/notification_presenter.dart';
+
+import 'fakes/fake_notification_presenter.dart';
 import 'fakes/fake_notification_store.dart';
 
 /// 5 nhãn nhóm đúng thứ tự mockup `01` (FR-003).
@@ -80,6 +83,8 @@ Color? iconGlyphColorOf(WidgetTester tester, String label) => tester
     .color;
 
 void main() {
+  group('NotificationSettingsScreen — US4 (PBI 31): quyền thông báo', _us4PermissionTests);
+
   group('NotificationSettingsScreen — US1 (mockup 01)', () {
     testWidgets('Mở lần đầu: đủ 5 nhóm + 8 hàng + 8 dòng phụ đúng thứ tự', (
       tester,
@@ -671,5 +676,114 @@ void main() {
         reason: 'Không được có FlutterError (RenderFlex overflow) khi cỡ chữ lớn',
       );
     });
+  });
+}
+
+/// US4 (PBI 31) — quyền thông báo: soft-ask **một lần** + dòng trạng thái.
+/// Bơm `FakeNotificationPresenter` qua GetX (màn gọi `ensureNotificationPresenter`).
+void _us4PermissionTests() {
+  late FakeNotificationPresenter presenter;
+
+  setUp(() {
+    presenter = FakeNotificationPresenter();
+    Get.put<NotificationPresenter>(presenter);
+  });
+  tearDown(() => Get.delete<NotificationPresenter>());
+
+  testWidgets('lần mở ĐẦU: hộp thoại giải thích hiện trước, CHƯA xin quyền (AC#27)', (
+    tester,
+  ) async {
+    final store = FakeNotificationStore(asked: false);
+    await pumpScreen(tester, store: store);
+
+    expect(find.text('Bật thông báo nhắc nhở?'), findsOneWidget);
+    expect(find.text('Đồng ý'), findsOneWidget);
+    expect(find.text('Không đồng ý'), findsOneWidget);
+    expect(presenter.requestPermissionCount, 0);
+  });
+
+  testWidgets('chọn ĐỒNG Ý ⇒ xin quyền đúng 1 lần + đánh dấu đã hỏi', (tester) async {
+    final store = FakeNotificationStore(asked: false);
+    await pumpScreen(tester, store: store);
+
+    await tester.tap(find.byKey(const ValueKey('permission-agree')));
+    await tester.pumpAndSettle();
+
+    expect(presenter.requestPermissionCount, 1);
+    expect(store.asked, isTrue);
+    expect(find.text('Bật thông báo nhắc nhở?'), findsNothing);
+  });
+
+  testWidgets('chọn KHÔNG ĐỒNG Ý ⇒ không xin quyền, vẫn đánh dấu đã hỏi', (tester) async {
+    final store = FakeNotificationStore(asked: false);
+    await pumpScreen(tester, store: store);
+
+    await tester.tap(find.byKey(const ValueKey('permission-decline')));
+    await tester.pumpAndSettle();
+
+    expect(presenter.requestPermissionCount, 0);
+    expect(store.asked, isTrue);
+  });
+
+  testWidgets('mở lại màn nhiều lần ⇒ KHÔNG hỏi lại (SC-018)', (tester) async {
+    final store = FakeNotificationStore(asked: false);
+    await pumpScreen(tester, store: store);
+    await tester.tap(find.byKey(const ValueKey('permission-decline')));
+    await tester.pumpAndSettle();
+
+    await pumpScreen(tester, store: store);
+    expect(find.text('Bật thông báo nhắc nhở?'), findsNothing);
+    expect(presenter.requestPermissionCount, 0);
+  });
+
+  testWidgets('quyền BỊ TẮT ⇒ đúng 1 dòng trạng thái + nút mở cài đặt (AC#28)', (
+    tester,
+  ) async {
+    presenter.enabled = false;
+    final store = FakeNotificationStore();
+    await pumpScreen(tester, store: store);
+
+    expect(find.byKey(const ValueKey('permission-notice')), findsOneWidget);
+    expect(
+      find.text('Thông báo đang bị tắt trong cài đặt hệ điều hành.'),
+      findsOneWidget,
+    );
+    // Đúng MỘT dòng — không lặp lại ở nhóm nào khác.
+    expect(
+      find.text('Thông báo đang bị tắt trong cài đặt hệ điều hành.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('permission-open-settings')));
+    await tester.pumpAndSettle();
+    expect(presenter.openSettingsCount, 1);
+  });
+
+  testWidgets('quyền ĐÃ CẤP ⇒ 0 dòng thừa (mockup 01)', (tester) async {
+    final store = FakeNotificationStore();
+    await pumpScreen(tester, store: store);
+
+    expect(find.byKey(const ValueKey('permission-notice')), findsNothing);
+  });
+
+  testWidgets('bật/tắt công tắc khi đang có dòng trạng thái ⇒ giá trị cấu hình vẫn đổi đúng (SC-019)', (
+    tester,
+  ) async {
+    presenter.enabled = false;
+    final store = FakeNotificationStore();
+    await pumpScreen(tester, store: store);
+    expect(find.byKey(const ValueKey('permission-notice')), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: rowOf('Nhắc nhập giao dịch hằng ngày'),
+        matching: find.byType(Switch),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(store.storedPrefs.dailyEnabled, isFalse);
+    expect(store.storedPrefs.dailyHour, 20);
+    expect(find.byKey(const ValueKey('permission-notice')), findsOneWidget);
   });
 }

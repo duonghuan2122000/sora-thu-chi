@@ -3,12 +3,11 @@ import 'package:get/get.dart';
 
 import '../core/notification/app_notification.dart';
 import '../core/notification/notification_history_store.dart';
+import '../core/notification/notification_tap.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/notification_history_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
-import 'add_transaction_screen.dart';
-import 'budget_detail_screen.dart';
 import 'notification_settings_screen.dart';
 
 /// Màn "Thông báo" (mockup `03`, PBI 30) — màn con: app bar teal + back + bánh
@@ -108,33 +107,20 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     await _navigate(item);
   }
 
-  /// Đích theo `kind` (FR-008). Loại chưa có màn đích và cảnh báo thiếu
-  /// `relatedId` → **im lặng**: 0 route, 0 SnackBar, 0 dialog.
-  Future<void> _navigate(AppNotification item) async {
-    switch (item.kind) {
-      case NotificationKind.dailyReminder:
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const AddTransactionScreen()),
-        );
-      case NotificationKind.budgetAlert:
-        final id = item.relatedId;
-        if (id == null) return;
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => BudgetDetailScreen(
-              budgetId: id,
-              onSelectTab: widget.onSelectTab,
-            ),
-          ),
-        );
-      case NotificationKind.periodSummary:
-        // Tab Báo cáo nằm **trong** shell ⇒ pop về màn gốc rồi đổi tab.
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        widget.onSelectTab?.call(2);
-      case NotificationKind.recurringDue:
-      case NotificationKind.goalReminder:
-        return;
-    }
+  /// Đích theo `kind` (FR-008) — bảng đích dùng **chung** với engine thông báo
+  /// (PBI 31) qua `notification_tap.dart`, nên hai đường vào không thể lệch.
+  /// Loại chưa có màn đích và cảnh báo thiếu `relatedId` → **im lặng**: 0 route,
+  /// 0 SnackBar, 0 dialog.
+  Future<void> _navigate(AppNotification item) {
+    return openNotificationTarget(
+      target: notificationTargetFor(
+        kind: item.kind,
+        relatedId: item.relatedId,
+      ),
+      relatedId: item.relatedId,
+      onSelectTab: widget.onSelectTab,
+      context: context,
+    );
   }
 
   /// Bánh răng → màn `01` "Thông báo & nhắc nhở" (PBI 28).

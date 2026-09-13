@@ -21,7 +21,7 @@ Future<AppDatabase?> _tryMemoryDb() async {
 const _skip = 'Host thiếu sqlite native — bỏ qua DAO drift tích hợp.';
 
 void main() {
-  test('bảng rỗng → mặc định; schemaVersion 9 (PBI 30)', () async {
+  test('bảng rỗng → mặc định; schemaVersion 10 (PBI 31)', () async {
     final db = await _tryMemoryDb();
     if (db == null) {
       markTestSkipped(_skip);
@@ -29,7 +29,7 @@ void main() {
     }
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 9);
+    expect(db.schemaVersion, 10);
     final settings = await DriftScanSettingsStore(db).load();
     expect(settings.enabled, isFalse);
     expect(settings.mode, ScanEngine.ruleBased);

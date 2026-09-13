@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -45,11 +47,82 @@ class _NotificationSettingsScreenState
   /// luôn là lần ghi cuối.
   Future<void> _saveTail = Future<void>.value();
 
+  /// Quyền thông báo của hệ điều hành — `null` = chưa đọc xong (chưa vẽ dòng
+  /// trạng thái, tránh nháy dòng rồi biến mất).
+  bool? _permissionEnabled;
+
   @override
   void initState() {
     super.initState();
     _store = widget.store ?? ensureNotificationStore();
     _load();
+    _checkPermission();
+  }
+
+  /// Dòng trạng thái quyền (FR-032/SC-019): đọc **mỗi lần màn dựng**, chỉ để
+  /// hiện/ẩn một dòng — **không** chạm giá trị công tắc/tham số nào.
+  Future<void> _checkPermission() async {
+    bool enabled;
+    try {
+      enabled = await ensureNotificationPresenter().areEnabled();
+    } catch (_) {
+      enabled = true; // không đọc được ⇒ không doạ người dùng bằng dòng cảnh báo
+    }
+    if (!mounted) return;
+    setState(() => _permissionEnabled = enabled);
+  }
+
+  /// Soft-ask **một lần** ở lần mở màn đầu tiên (FR-017/AC#27/SC-018): giải
+  /// thích **trong app** trước, chỉ khi người dùng đồng ý mới gọi hộp thoại quyền
+  /// của hệ điều hành. Dù kết quả nào cũng đánh dấu "đã hỏi" ⇒ không hỏi lại.
+  Future<void> _maybeAskPermission() async {
+    bool asked;
+    try {
+      asked = await _store.permissionAsked();
+    } catch (_) {
+      return; // không đọc được cờ ⇒ không hỏi (an toàn hơn hỏi lặp)
+    }
+    if (asked || !mounted) return;
+
+    final agreed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Bật thông báo nhắc nhở?'.tr),
+        content: Text(
+          'Sora Thu Chi cần quyền thông báo để nhắc bạn ghi chép giao dịch, '
+                  'cảnh báo vượt ngân sách và gửi tổng kết tuần/tháng. '
+                  'Bạn có thể tắt lại bất cứ lúc nào trong Cài đặt.'
+              .tr,
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('permission-decline'),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Không đồng ý'.tr),
+          ),
+          TextButton(
+            key: const ValueKey('permission-agree'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Đồng ý'.tr),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+
+    if (agreed == true) {
+      try {
+        await ensureNotificationPresenter().requestPermission();
+      } catch (_) {
+        // Từ chối/lỗi hệ điều hành ⇒ dòng trạng thái ở dưới sẽ nói cho người dùng.
+      }
+    }
+    try {
+      await _store.markPermissionAsked();
+    } catch (_) {
+      // Ghi cờ lỗi ⇒ lần sau hỏi lại; không chặn màn.
+    }
+    await _checkPermission();
   }
 
   Future<void> _load() async {
@@ -68,6 +141,7 @@ class _NotificationSettingsScreenState
       // từng cấu hình ⇒ bộ mặc định FR-008 **được lưu ngay**, không chờ thao tác
       // (FR-007/kịch bản 6). Đọc-rồi-ghi cũng chuẩn hoá giá trị lạ về miền hợp lệ.
       _saveTail = _saveTail.then((_) => _store.save(_prefs));
+      await _maybeAskPermission();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -85,6 +159,9 @@ class _NotificationSettingsScreenState
       } catch (_) {
         // Ghi lỗi bỏ qua — lần chạm sau ghi lại toàn trạng thái mới nhất.
       }
+      // Thông báo đẩy (PBI 31, FR-021/AC#15): tắt công tắc là **ngừng bắn
+      // ngay** — fire-and-forget, lỗi nuốt bên trong engine (FR-024).
+      unawaited(ensureNotificationEngine().onPrefsChanged());
     });
   }
 
@@ -156,6 +233,9 @@ class _NotificationSettingsScreenState
     return ListView(
       padding: const EdgeInsets.only(bottom: 48),
       children: [
+        // Dòng trạng thái quyền (FR-032/AC#28/SC-019) — **đúng một** dòng, chỉ
+        // khi quyền đang bị tắt; quyền đã cấp ⇒ 0 dòng thừa (đúng mockup `01`).
+        if (_permissionEnabled == false) _PermissionNotice(colors: colors),
         _SectionLabel('NHẮC NHỞ HÀNG NGÀY'.tr),
         ..._rows(colors, [
           _switchRow(
@@ -392,6 +472,50 @@ class _NotificationSettingsScreenState
           ),
           const SizedBox(width: 8),
           trailing,
+        ],
+      ),
+    );
+  }
+}
+
+/// Dòng trạng thái **quyền thông báo đang bị tắt** (FR-032) — một câu + lối mở
+/// cài đặt hệ điều hành. Cố ý **không** dùng coral (đây không phải ngữ cảnh chi
+/// tiêu/cảnh báo số liệu — design system dành coral cho chi/cảnh báo).
+class _PermissionNotice extends StatelessWidget {
+  const _PermissionNotice({required this.colors});
+
+  final SoraColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('permission-notice'),
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.softCardBg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.notifications_off_outlined,
+            size: 20,
+            color: colors.textSecondary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Thông báo đang bị tắt trong cài đặt hệ điều hành.'.tr,
+              style: TextStyle(color: colors.textSecondary, fontSize: 12),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            key: const ValueKey('permission-open-settings'),
+            onPressed: () => ensureNotificationPresenter().openSettings(),
+            child: Text('Mở cài đặt'.tr),
+          ),
         ],
       ),
     );

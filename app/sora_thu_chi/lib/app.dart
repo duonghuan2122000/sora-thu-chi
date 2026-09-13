@@ -12,6 +12,7 @@ import 'core/security/pin_store_secure.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/theme/theme_store.dart';
 import 'data/locale_deps.dart';
+import 'data/notification_deps.dart';
 import 'data/scan_deps.dart';
 import 'data/theme_deps.dart';
 import 'screens/pin/pin_lock_screen.dart';
@@ -59,6 +60,22 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
     // Quét hóa đơn (PBI 24): công tắc + chế độ + hồ sơ thiết bị dùng chung cho
     // sheet FAB và màn Cài đặt ⇒ nạp ở gốc app (R15).
     ensureScanController().load();
+    // Thông báo đẩy (PBI 31): đọc payload của lần chạm đã mở app này rồi hoà
+    // giải sổ. Cả hai **fire-and-forget** — không chặn splash/`PinGate` (FR-024).
+    _bootstrapNotifications();
+  }
+
+  /// Nhặt payload chạm thông báo (nếu app được mở bằng cách chạm) và hoà giải
+  /// sổ + cuốn lịch. Mọi lỗi đã bị nuốt bên trong engine.
+  Future<void> _bootstrapNotifications() async {
+    try {
+      ensureNotificationTapRouter().put(
+        await ensureNotificationPresenter().launchPayload(),
+      );
+    } catch (_) {
+      // Không đọc được launch details ⇒ coi như mở app bình thường.
+    }
+    ensureNotificationEngine().reconcile();
   }
 
   @override
@@ -79,6 +96,9 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
           _pendingLock = true;
         }
       case AppLifecycleState.resumed:
+        // Về tiền cảnh: cuốn lại lịch + ghi bù bản ghi của mốc đã bắn khi app
+        // đóng (R6) — fire-and-forget, không chặn luồng mở khoá bên dưới.
+        ensureNotificationEngine().reconcile();
         if (_pendingLock &&
             controller != null &&
             controller.configured &&

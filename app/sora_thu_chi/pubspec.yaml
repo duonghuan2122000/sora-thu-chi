@@ -60,6 +60,12 @@ dependencies:
   # `excel` gốc xung đột `archive` với `image ^4.9.2` của PBI 25 (research R8).
   excel_community: ^2.4.0
   share_plus: ^13.3.0
+  # Thông báo đẩy (PBI 31) — engine bắn thông báo & nhắc nhở do **chính thiết bị**
+  # sinh ra (không FCM, không server). `timezone` + `flutter_timezone` bắt buộc đi
+  # kèm: thiếu package thứ 3 thì `tz.local` mãi là UTC ⇒ bắn sai giờ (research R1).
+  flutter_local_notifications: ^22.3.1
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
 
 dev_dependencies:
   flutter_test:

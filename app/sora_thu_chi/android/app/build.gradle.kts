@@ -13,6 +13,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // flutter_local_notifications v10+ dùng API java.time ⇒ BẮT BUỘC bật core
+        // library desugaring, thiếu là đỏ build release ngay (PBI 31, R14).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -52,6 +55,8 @@ dependencies {
     implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
     // `CoroutineScope(Dispatchers.Main)` cho GenAiChannel — ML Kit chỉ có API `suspend`.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    // Desugaring cho flutter_local_notifications (PBI 31, R14).
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

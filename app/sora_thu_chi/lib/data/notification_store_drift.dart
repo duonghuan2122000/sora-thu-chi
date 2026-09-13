@@ -28,4 +28,22 @@ class DriftNotificationStore implements NotificationStore {
       );
     }
   }
+
+  @override
+  Future<bool> permissionAsked() async {
+    final row = await (_db.select(_db.appSettings)
+          ..where((r) => r.key.equals(kKeyNotificationPermissionAsked)))
+        .getSingleOrNull();
+    return row?.value == 'true';
+  }
+
+  @override
+  Future<void> markPermissionAsked() async {
+    await _db.into(_db.appSettings).insertOnConflictUpdate(
+      AppSettingsCompanion.insert(
+        key: kKeyNotificationPermissionAsked,
+        value: 'true',
+      ),
+    );
+  }
 }

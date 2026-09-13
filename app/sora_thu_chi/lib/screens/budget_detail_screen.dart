@@ -8,10 +8,12 @@ import '../core/budget/budget_view.dart';
 import '../core/category/category.dart';
 import '../core/date_label.dart';
 import '../core/money_format.dart';
+import '../core/notification/notification_presence.dart';
 import '../core/transaction/transaction.dart';
 import '../core/transaction/transaction_filter.dart';
 import '../core/widgets/category_icon.dart';
 import '../core/widgets/sub_page_scaffold.dart';
+import '../data/notification_deps.dart';
 import '../data/transaction_deps.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
@@ -72,7 +74,23 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     super.initState();
     _repository = widget.repository ?? ensureWalletRepository();
     _now = widget.now ?? DateTime.now();
+    // Q3 (PBI 31, R9/FR-016): khai báo đang mở Chi tiết **ngân sách này** để
+    // engine **không** bắn cảnh báo cho chính nó khi người dùng đang nhìn số liệu
+    // đó (AC#10). Đặt trước `_load()` để cửa sổ đua là 0.
+    ensureNotificationPresence().enterBudgetDetail(widget.budgetId);
     _load();
+  }
+
+  @override
+  void dispose() {
+    // Chỉ ngưng hiện diện nếu **vẫn là** màn này (màn khác có thể đã giành quyền
+    // khai báo trong lúc màn này còn trong stack).
+    final presence = ensureNotificationPresence();
+    if (presence.budgetId.value == widget.budgetId &&
+        presence.screen.value == NotificationScreens.budgetDetail) {
+      presence.leave();
+    }
+    super.dispose();
   }
 
   Budget? get _budget {

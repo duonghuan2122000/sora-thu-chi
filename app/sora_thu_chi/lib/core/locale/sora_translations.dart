@@ -720,5 +720,38 @@ class SoraTranslations extends Translations {
     'Thứ Sáu': 'Friday',
     'Thứ Bảy': 'Saturday',
     'Chủ Nhật': 'Sunday',
+
+    // ---------------------------------------------------------------------
+    // Câu chữ thông báo đẩy (PBI 31) — engine sinh lúc bắn theo ngôn ngữ hiện
+    // hành rồi LƯU NGUYÊN VĂN (snapshot, FR-027). Tên app "Sora Thu Chi" và
+    // chuỗi số liệu (`82%`, `42.500.000 đ`, `HH:mm`) không dịch. Tái dùng
+    // 'Đừng quên ghi lại thu chi hôm nay nhé!' — không thêm lại.
+    // ---------------------------------------------------------------------
+    'Nhắc ghi chép giao dịch': 'Log your transactions',
+    'Bạn chưa ghi giao dịch nào hôm nay.':
+        "You haven't logged any transaction today.",
+    'tuần @ngày/@tháng': 'week @ngày/@tháng',
+    'tháng @tháng': 'month @tháng',
+    'năm @năm': 'year @năm',
+    'Sắp vượt ngân sách @danh_mục': 'Approaching @danh_mục budget',
+    'Đã vượt ngân sách @danh_mục': '@danh_mục budget exceeded',
+    'Bạn đã dùng @phần_trăm% ngân sách @kỳ cho danh mục @danh_mục.':
+        'You have used @phần_trăm% of your @kỳ budget for @danh_mục.',
+    'Tổng kết tuần': 'Weekly summary',
+    'Tổng kết tháng': 'Monthly summary',
+    'Xem chi tiết báo cáo.': 'See the full report.',
+
+    // ---------------------------------------------------------------------
+    // Quyền thông báo ở màn `01` (PBI 31) — soft-ask + dòng trạng thái. Tên app
+    // "Sora Thu Chi" trong lời giải thích KHÔNG dịch (N4).
+    // ---------------------------------------------------------------------
+    'Bật thông báo nhắc nhở?': 'Turn on reminders?',
+    'Sora Thu Chi cần quyền thông báo để nhắc bạn ghi chép giao dịch, cảnh báo vượt ngân sách và gửi tổng kết tuần/tháng. Bạn có thể tắt lại bất cứ lúc nào trong Cài đặt.':
+        'Sora Thu Chi needs notification permission to remind you to log transactions, warn you about budget overruns, and send weekly/monthly summaries. You can turn it off again anytime in Settings.',
+    'Đồng ý': 'Agree',
+    'Không đồng ý': 'Not now',
+    'Thông báo đang bị tắt trong cài đặt hệ điều hành.':
+        'Notifications are turned off in your device settings.',
+    'Mở cài đặt': 'Open settings',
   };
 }

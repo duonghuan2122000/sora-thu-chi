@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io';
@@ -17,6 +18,7 @@ import '../../core/wallet/wallet.dart';
 import '../../core/wallet/wallet_rules.dart';
 import '../../core/widgets/amount_keypad.dart';
 import '../../core/widgets/sub_page_scaffold.dart';
+import '../../data/notification_deps.dart';
 import '../../data/scan_deps.dart';
 import '../../data/wallet_deps.dart';
 import '../../data/wallet_repository.dart';
@@ -227,6 +229,8 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
         note: _merchantCtrl.text.trim(),
         createdAt: widget.now ?? DateTime.now(),
       );
+      // Thông báo đẩy (PBI 31): fire-and-forget — lỗi nuốt bên trong engine.
+      unawaited(ensureNotificationEngine().onTransactionSaved(at: _date, type: _type));
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (_) {

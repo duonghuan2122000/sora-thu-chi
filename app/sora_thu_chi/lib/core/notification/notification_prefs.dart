@@ -5,6 +5,12 @@ import 'package:flutter/foundation.dart';
 /// Khóa row cấu hình thông báo trong bảng key-value `AppSettings`.
 const String kKeyNotificationPrefs = 'notificationPrefs';
 
+/// Khoá row cờ **"đã hỏi quyền thông báo lần đầu"** (PBI 31, FR-017) — row
+/// `AppSettings` riêng, **không** nằm trong khối JSON [NotificationPrefs] (cờ
+/// này không phải cấu hình người dùng chỉnh, chỉ là dấu "đã hỏi"). Thêm row ⇒
+/// **không** cần migration (nếp PBI 17/24/28).
+const String kKeyNotificationPermissionAsked = 'notificationPermissionAsked';
+
 /// Cấu hình 5 loại nhắc nhở của màn "Thông báo & nhắc nhở" (17 trường — đủ cho
 /// 8 hàng của mockup `01` + tham số ngày của màn cấu hình nhắc hàng ngày). Bất
 /// biến: mọi thay đổi qua [copyWith], mỗi lần đổi **chỉ** chạm trường của loại
