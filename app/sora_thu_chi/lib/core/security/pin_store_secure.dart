@@ -15,6 +15,7 @@ class PinStoreSecure implements PinStore {
 
   static const _pinKey = 'pin_salt_hash';
   static const _lockKey = 'lock_state';
+  static const _biometricKey = 'biometric_state';
 
   final FlutterSecureStorage _storage;
 
@@ -68,6 +69,33 @@ class PinStoreSecure implements PinStore {
       value: jsonEncode({
         'streak': state.streak,
         'lockUntilEpochMs': state.lockUntil?.millisecondsSinceEpoch,
+      }),
+    );
+  }
+
+  @override
+  Future<BiometricState> readBiometricState() async {
+    final raw = await _storage.read(key: _biometricKey);
+    if (raw == null) return const BiometricState();
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return BiometricState(
+        enabled: json['enabled'] as bool? ?? false,
+        enrolledTypes:
+            (json['enrolledTypes'] as List<dynamic>?)?.cast<String>() ?? [],
+      );
+    } catch (_) {
+      return const BiometricState();
+    }
+  }
+
+  @override
+  Future<void> saveBiometricState(BiometricState state) async {
+    await _storage.write(
+      key: _biometricKey,
+      value: jsonEncode({
+        'enabled': state.enabled,
+        'enrolledTypes': state.enrolledTypes,
       }),
     );
   }

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/app.dart';
+import 'package:sora_thu_chi/core/security/biometric_gateway.dart';
 import 'package:sora_thu_chi/core/security/pin_store.dart';
 import 'package:sora_thu_chi/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
@@ -10,6 +13,7 @@ import 'package:sora_thu_chi/screens/pin/pin_setup_screen.dart';
 import 'package:sora_thu_chi/screens/pin/widgets/pin_dots.dart';
 import 'package:sora_thu_chi/screens/pin/widgets/pin_keypad.dart';
 
+import 'fakes/biometric_gateway_fake.dart';
 import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_theme_store.dart';
 import 'fakes/fake_wallet_repository.dart';
@@ -19,7 +23,11 @@ import 'fakes/pin_store_fake.dart';
 /// Bơm luôn `FakeThemeStore` + `FakeLocaleStore` — `SoraApp.initState` tạo
 /// `ThemeController`/`LocaleController` + gọi `load()`; thiếu fake sẽ khởi tạo
 /// drift/sqlite native và vỡ test (R8/PBI 19).
-Future<void> pumpApp(WidgetTester tester, PinStore store) async {
+Future<void> pumpApp(
+  WidgetTester tester,
+  PinStore store, {
+  BiometricGateway? biometricGateway,
+}) async {
   // Tab Báo cáo nạp dữ liệu khi được chọn (PBI 22) ⇒ cần repo giả như
   // `widget_test.pumpShell`; thiếu sẽ khởi tạo drift/sqlite native và treo test.
   Get.reset();
@@ -30,6 +38,7 @@ Future<void> pumpApp(WidgetTester tester, PinStore store) async {
       store: store,
       themeStore: FakeThemeStore(),
       localeStore: FakeLocaleStore(),
+      biometricGateway: biometricGateway,
     ),
   );
   await tester.pumpAndSettle();
@@ -222,6 +231,114 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(AppBottomNavBar), findsOneWidget);
       expect(find.text('Báo cáo'), findsNWidgets(2));
+    });
+  });
+
+  group('US2b — Mời sinh trắc học tự động + fallback PIN (PBI 34)', () {
+    Future<PinStoreFake> storeWithBiometricEnabled() async {
+      final store = PinStoreFake.withPin('1234');
+      await store.saveBiometricState(
+        const BiometricState(enabled: true, enrolledTypes: ['fingerprint']),
+      );
+      return store;
+    }
+
+    testWidgets(
+        'Công tắc bật + khả dụng → màn khóa khởi tạo mời sinh trắc học trước PIN',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..pendingAuthenticate = Completer();
+      await pumpApp(
+        tester,
+        await storeWithBiometricEnabled(),
+        biometricGateway: gateway,
+      );
+
+      expect(find.text('Chạm để xác thực'), findsOneWidget);
+      expect(find.text('Nhập mã PIN'), findsNothing);
+      expect(find.byType(AppBottomNavBar), findsNothing);
+    });
+
+    testWidgets('Xác thực thành công → vào thẳng AppShell (FR-006)',
+        (tester) async {
+      await pumpApp(
+        tester,
+        await storeWithBiometricEnabled(),
+        biometricGateway: BiometricGatewayFake(),
+      );
+
+      expect(find.byType(AppBottomNavBar), findsOneWidget);
+    });
+
+    testWidgets(
+        'Xác thực thất bại → tự chuyển bàn phím PIN, PIN vẫn mở khóa được (FR-005)',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..authenticateResult = false;
+      await pumpApp(
+        tester,
+        await storeWithBiometricEnabled(),
+        biometricGateway: gateway,
+      );
+
+      expect(find.text('Nhập mã PIN'), findsOneWidget);
+      await enterPin(tester, '1234');
+      await tester.pumpAndSettle();
+      expect(find.byType(AppBottomNavBar), findsOneWidget);
+    });
+
+    testWidgets('Bấm "Dùng mã PIN thay thế" → chuyển ngay bàn phím PIN',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..pendingAuthenticate = Completer();
+      await pumpApp(
+        tester,
+        await storeWithBiometricEnabled(),
+        biometricGateway: gateway,
+      );
+
+      await tester.tap(find.text('Dùng mã PIN thay thế'));
+      await tester.pumpAndSettle();
+      expect(find.text('Nhập mã PIN'), findsOneWidget);
+    });
+
+    testWidgets('Bấm "Hủy" → vẫn ở màn biometric, chỉ huỷ lượt xác thực (R6)',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..pendingAuthenticate = Completer();
+      await pumpApp(
+        tester,
+        await storeWithBiometricEnabled(),
+        biometricGateway: gateway,
+      );
+
+      await tester.tap(find.text('Hủy'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chạm để xác thực'), findsOneWidget);
+      expect(gateway.stopAuthenticationCallCount, 1);
+    });
+
+    testWidgets('Công tắc tắt → khởi tạo thẳng bàn phím PIN, không gọi gateway',
+        (tester) async {
+      final gateway = BiometricGatewayFake();
+      await pumpApp(
+        tester,
+        PinStoreFake.withPin('1234'),
+        biometricGateway: gateway,
+      );
+
+      expect(find.text('Nhập mã PIN'), findsOneWidget);
+      expect(gateway.authenticateCallCount, 0);
+    });
+
+    testWidgets(
+        'Quyền/đăng ký đã đổi (canOfferBiometric=false) → khởi tạo thẳng PIN, không gọi authenticate',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..canUseResult = false;
+      await pumpApp(
+        tester,
+        await storeWithBiometricEnabled(),
+        biometricGateway: gateway,
+      );
+
+      expect(find.text('Nhập mã PIN'), findsOneWidget);
+      expect(gateway.authenticateCallCount, 0);
     });
   });
 }

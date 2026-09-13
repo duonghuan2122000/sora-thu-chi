@@ -51,6 +51,12 @@ class SoraTranslations extends Translations {
     'Tiền tệ mặc định': 'Default currency',
     'Đổi mã PIN': 'Change PIN',
     'Mở khóa sinh trắc học': 'Biometric unlock',
+    'Thiết bị chưa hỗ trợ hoặc chưa đăng ký vân tay/khuôn mặt':
+        'Device unsupported or no fingerprint/face registered',
+    'Chạm để xác thực': 'Tap to authenticate',
+    'Sử dụng vân tay hoặc Face ID để mở khóa ứng dụng':
+        'Use fingerprint or Face ID to unlock the app',
+    'Dùng mã PIN thay thế': 'Use PIN instead',
     'Quản lý ví': 'Manage wallets',
     'Danh mục': 'Categories',
     'Chạm để đổi ảnh đại diện': 'Tap to change avatar',

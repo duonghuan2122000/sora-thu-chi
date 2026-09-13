@@ -12,6 +12,12 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
+    <!-- Mở khóa sinh trắc học (PBI 34): quyền normal-level, tự cấp khi cài
+         đặt — khai báo tường minh để `BiometricPrompt` hoạt động đúng trên
+         API 23-27 (trước khi `USE_BIOMETRIC` thay `USE_FINGERPRINT`). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+
     <application
         android:label="Sora Thu Chi"
         android:name="${applicationName}"

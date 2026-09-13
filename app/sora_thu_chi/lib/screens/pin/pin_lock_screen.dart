@@ -5,8 +5,13 @@ import 'package:get/get.dart';
 
 import '../../core/security/pin_controller.dart';
 import '../../theme/sora_colors.dart';
+import 'widgets/biometric_prompt.dart';
 import 'widgets/pin_dots.dart';
 import 'widgets/pin_keypad.dart';
+
+/// Chế độ nội bộ của màn khóa (research.md R3): `biometric` mời sinh trắc học
+/// trước; `pin` là bàn phím quen thuộc (hành vi PBI 3, không đổi).
+enum _Mode { biometric, pin }
 
 /// Màn khóa toàn màn hình (mockup `02-khoa-pin.svg`): hiện trước mọi nội dung
 /// khi vào app / quay lại từ nền (FR-005). Nhập đúng → `onUnlocked` (nơi đẩy
@@ -31,11 +36,47 @@ class _PinLockScreenState extends State<PinLockScreen> {
   bool _blocked = false;
   int _blockSeconds = 0;
   Timer? _timer;
+  _Mode _mode = _Mode.pin;
+  bool _biometricBusy = false;
 
   @override
   void initState() {
     super.initState();
     if (_controller.isBlocked) _startBlocking();
+    _initBiometric();
+  }
+
+  /// Kiểm tra còn mời sinh trắc học được không (research.md R4/R5); nếu có,
+  /// khởi tạo ở chế độ biometric và mời ngay (FR-003).
+  Future<void> _initBiometric() async {
+    final canOffer = await _controller.canOfferBiometric();
+    if (!mounted || !canOffer) return;
+    setState(() => _mode = _Mode.biometric);
+    _tryBiometric();
+  }
+
+  /// Mời xác thực sinh trắc học; thành công → `onUnlocked` (FR-006), thất
+  /// bại/lỗi → rơi về bàn phím PIN (FR-005, không tính vào chống dò PIN).
+  Future<void> _tryBiometric() async {
+    if (_biometricBusy) return;
+    _biometricBusy = true;
+    final success = await _controller.authenticateBiometric();
+    _biometricBusy = false;
+    if (!mounted) return;
+    if (success) {
+      widget.onUnlocked();
+    } else {
+      setState(() => _mode = _Mode.pin);
+    }
+  }
+
+  void _useFallbackPin() {
+    setState(() => _mode = _Mode.pin);
+  }
+
+  /// "Hủy" chỉ huỷ lượt xác thực hiện tại — ở lại màn biometric (R6).
+  void _cancelBiometric() {
+    _controller.stopBiometricAuthentication();
   }
 
   @override
@@ -75,7 +116,13 @@ class _PinLockScreenState extends State<PinLockScreen> {
       canPop: false,
       child: Scaffold(
         backgroundColor: colors.background,
-        body: SafeArea(
+        body: _mode == _Mode.biometric
+            ? BiometricPrompt(
+                onRetry: _tryBiometric,
+                onUsePin: _useFallbackPin,
+                onCancel: _cancelBiometric,
+              )
+            : SafeArea(
           child: Column(
             children: [
               Expanded(

@@ -6,6 +6,7 @@ import '../core/profile/device_profile.dart';
 import '../core/scan/device_tier.dart';
 import '../core/scan/scan_controller.dart';
 import '../core/scan/scan_result.dart';
+import '../core/security/pin_controller.dart';
 import '../core/widgets/screen_header.dart';
 import '../data/scan_deps.dart';
 import '../theme/app_colors.dart';
@@ -119,10 +120,7 @@ class SettingsScreen extends StatelessWidget {
                   color: colors.tabInactive,
                 ),
               ),
-              _SettingsRow(
-                label: 'Mở khóa sinh trắc học'.tr,
-                trailing: const Switch(value: false, onChanged: null),
-              ),
+              const _BiometricSwitchRow(),
               _SectionLabel('KHÁC'.tr),
               _SettingsRow(
                 label: 'Quản lý ví'.tr,
@@ -361,13 +359,20 @@ class _SectionLabel extends StatelessWidget {
 }
 
 /// Hàng cài đặt: nhãn trái (chống tràn cỡ chữ lớn) + trailing tuỳ chọn.
-/// Có [onTap] → hàng chạm được (hiệu ứng mực); thiếu → đứng im.
+/// Có [onTap] → hàng chạm được (hiệu ứng mực); thiếu → đứng im. [subtitle] →
+/// dòng phụ mờ dưới nhãn (VD giải thích lý do công tắc không bật được).
 class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({required this.label, this.trailing, this.onTap});
+  const _SettingsRow({
+    required this.label,
+    this.trailing,
+    this.onTap,
+    this.subtitle,
+  });
 
   final String label;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -385,12 +390,25 @@ class _SettingsRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: colors.listLabel,
-                fontSize: 15,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.listLabel,
+                    fontSize: 15,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ],
             ),
           ),
           if (trailing != null) ...[
@@ -403,5 +421,65 @@ class _SettingsRow extends StatelessWidget {
     final handler = onTap;
     if (handler == null) return row;
     return InkWell(onTap: handler, child: row);
+  }
+}
+
+/// Hàng "Mở khóa sinh trắc học": công tắc thật đọc/ghi qua [PinController]
+/// (FR-001/FR-002/FR-009). Không có [PinController] đăng ký (VD test không
+/// chạm module này) → coi như không hỗ trợ, công tắc tắt + không bật được.
+class _BiometricSwitchRow extends StatefulWidget {
+  const _BiometricSwitchRow();
+
+  @override
+  State<_BiometricSwitchRow> createState() => _BiometricSwitchRowState();
+}
+
+class _BiometricSwitchRowState extends State<_BiometricSwitchRow> {
+  PinController? get _controller =>
+      Get.isRegistered<PinController>() ? Get.find<PinController>() : null;
+
+  bool _checking = true;
+  bool _supported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSupport();
+  }
+
+  Future<void> _checkSupport() async {
+    final supported = await _controller?.deviceSupportsBiometric() ?? false;
+    if (!mounted) return;
+    setState(() {
+      _supported = supported;
+      _checking = false;
+    });
+  }
+
+  Future<void> _onChanged(bool value) async {
+    final controller = _controller;
+    if (controller == null) return;
+    if (value) {
+      await controller.enableBiometric();
+    } else {
+      await controller.disableBiometric();
+    }
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    final canToggle = controller != null && !_checking && _supported;
+    return _SettingsRow(
+      label: 'Mở khóa sinh trắc học'.tr,
+      subtitle: (!_checking && !_supported)
+          ? 'Thiết bị chưa hỗ trợ hoặc chưa đăng ký vân tay/khuôn mặt'.tr
+          : null,
+      trailing: Switch(
+        value: controller?.biometricEnabled ?? false,
+        onChanged: canToggle ? _onChanged : null,
+      ),
+    );
   }
 }

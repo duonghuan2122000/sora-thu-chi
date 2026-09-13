@@ -6,6 +6,7 @@ import 'core/boot_gate.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/locale/locale_store.dart';
 import 'core/locale/sora_translations.dart';
+import 'core/security/biometric_gateway.dart';
 import 'core/security/pin_controller.dart';
 import 'core/security/pin_store.dart';
 import 'core/security/pin_store_secure.dart';
@@ -21,10 +22,19 @@ import 'theme/app_theme.dart';
 /// Gốc app. `home` = BootGate nền trung tính; PIN controller được khởi tạo ở
 /// đây (qua PinGate) rồi dùng lại cho khóa khi resume (US2).
 class SoraApp extends StatefulWidget {
-  const SoraApp({super.key, this.store, this.themeStore, this.localeStore});
+  const SoraApp({
+    super.key,
+    this.store,
+    this.themeStore,
+    this.localeStore,
+    this.biometricGateway,
+  });
 
   /// Bơm store để test; mặc định dùng secure storage thật.
   final PinStore? store;
+
+  /// Bơm seam sinh trắc học để test; mặc định dùng `local_auth` thật.
+  final BiometricGateway? biometricGateway;
 
   /// Bơm store giao diện để test; mặc định dùng drift.
   final ThemeStore? themeStore;
@@ -144,7 +154,7 @@ class _SoraAppState extends State<SoraApp> with WidgetsBindingObserver {
           GlobalCupertinoLocalizations.delegate,
         ],
         navigatorKey: _navigatorKey,
-        home: PinGate(store: _store),
+        home: PinGate(store: _store, gateway: widget.biometricGateway),
       ),
     );
   }

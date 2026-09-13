@@ -2,14 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sora_thu_chi/core/security/pin_controller.dart';
 import 'package:sora_thu_chi/core/security/pin_store.dart';
 
+import 'fakes/biometric_gateway_fake.dart';
 import 'fakes/pin_store_fake.dart';
 
 void main() {
   late PinStoreFake store;
   late DateTime now;
 
-  PinController buildController() {
-    return PinController(store: store, now: () => now);
+  PinController buildController({BiometricGatewayFake? gateway}) {
+    return PinController(store: store, now: () => now, gateway: gateway);
   }
 
   setUp(() {
@@ -124,5 +125,133 @@ void main() {
     expect(c.streak, 5);
     expect(c.isBlocked, isTrue);
     expect(c.lockUntil, lockUntil);
+  });
+
+  group('Sinh trắc học (PBI 34)', () {
+    late BiometricGatewayFake gateway;
+
+    setUp(() {
+      store = PinStoreFake.withPin('1234');
+      gateway = BiometricGatewayFake();
+    });
+
+    test('deviceSupportsBiometric: hỗ trợ + có đăng ký → true', () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+      expect(await c.deviceSupportsBiometric(), isTrue);
+    });
+
+    test('deviceSupportsBiometric: hỗ trợ nhưng chưa đăng ký → false (FR-001)',
+        () async {
+      gateway.availableTypesResult = [];
+      final c = buildController(gateway: gateway);
+      await c.init();
+      expect(await c.deviceSupportsBiometric(), isFalse);
+    });
+
+    test('enableBiometric: xác thực thành công → bật + lưu enrolledTypes',
+        () async {
+      gateway.availableTypesResult = ['fingerprint', 'face'];
+      final c = buildController(gateway: gateway);
+      await c.init();
+      expect(c.biometricEnabled, isFalse);
+
+      expect(await c.enableBiometric(), isTrue);
+      expect(c.biometricEnabled, isTrue);
+      final saved = await store.readBiometricState();
+      expect(saved.enabled, isTrue);
+      expect(saved.enrolledTypes, ['fingerprint', 'face']);
+    });
+
+    test('enableBiometric: xác thực thất bại/huỷ → giữ tắt, không ghi store',
+        () async {
+      gateway.authenticateResult = false;
+      final c = buildController(gateway: gateway);
+      await c.init();
+
+      expect(await c.enableBiometric(), isFalse);
+      expect(c.biometricEnabled, isFalse);
+      expect((await store.readBiometricState()).enabled, isFalse);
+    });
+
+    test('enableBiometric: hệ thống ném lỗi → giữ tắt, không crash', () async {
+      gateway.authenticateResult = null;
+      final c = buildController(gateway: gateway);
+      await c.init();
+
+      expect(await c.enableBiometric(), isFalse);
+      expect(c.biometricEnabled, isFalse);
+    });
+
+    test('disableBiometric: tắt ngay không cần xác thực (FR-009)', () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+      await c.enableBiometric();
+      expect(c.biometricEnabled, isTrue);
+
+      gateway.authenticateCallCount = 0;
+      await c.disableBiometric();
+      expect(c.biometricEnabled, isFalse);
+      expect((await store.readBiometricState()).enabled, isFalse);
+      expect(gateway.authenticateCallCount, 0);
+    });
+
+    test('canOfferBiometric: quyền bị thu hồi → tự tắt công tắc (FR-007)',
+        () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+      await c.enableBiometric();
+      expect(c.biometricEnabled, isTrue);
+
+      gateway.canUseResult = false;
+      expect(await c.canOfferBiometric(), isFalse);
+      expect(c.biometricEnabled, isFalse);
+      expect((await store.readBiometricState()).enabled, isFalse);
+    });
+
+    test(
+        'canOfferBiometric: tập đăng ký đổi loại → tự tắt công tắc, bật lại phải qua enableBiometric (FR-008)',
+        () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+      await c.enableBiometric(); // enrolledTypes = ['fingerprint']
+
+      gateway.availableTypesResult = ['fingerprint', 'face'];
+      expect(await c.canOfferBiometric(), isFalse);
+      expect(c.biometricEnabled, isFalse);
+
+      // Bật lại phải đi qua enableBiometric() đầy đủ, không có đường tắt.
+      expect(await c.enableBiometric(), isTrue);
+      expect(c.biometricEnabled, isTrue);
+    });
+
+    test('canOfferBiometric: mọi kiểm tra khớp → true, không tự tắt', () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+      await c.enableBiometric();
+
+      expect(await c.canOfferBiometric(), isTrue);
+      expect(c.biometricEnabled, isTrue);
+    });
+
+    test('canOfferBiometric: công tắc đang tắt → false ngay, không gọi gateway',
+        () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+
+      expect(await c.canOfferBiometric(), isFalse);
+    });
+
+    test('authenticateBiometric: thành công/thất bại/lỗi đều không crash',
+        () async {
+      final c = buildController(gateway: gateway);
+      await c.init();
+
+      expect(await c.authenticateBiometric(), isTrue);
+      gateway.authenticateResult = false;
+      expect(await c.authenticateBiometric(), isFalse);
+      gateway.authenticateResult = null;
+      expect(await c.authenticateBiometric(), isFalse);
+    });
   });
 }

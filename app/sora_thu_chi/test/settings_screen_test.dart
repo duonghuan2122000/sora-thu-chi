@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/notification/notification_store.dart';
 import 'package:sora_thu_chi/core/profile/device_profile.dart';
+import 'package:sora_thu_chi/core/security/pin_controller.dart';
+import 'package:sora_thu_chi/core/security/pin_store.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/scan/device_tier.dart';
 import 'package:sora_thu_chi/core/scan/model_manager.dart';
@@ -22,6 +24,7 @@ import 'package:sora_thu_chi/screens/utilities_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
+import 'fakes/biometric_gateway_fake.dart';
 import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_notification_store.dart';
 import 'fakes/fake_theme_store.dart';
@@ -30,6 +33,7 @@ import 'fakes/fake_scan_model_manager.dart';
 import 'fakes/fake_scan_settings_store.dart';
 import 'fakes/fake_utilities_store.dart';
 import 'fakes/fake_wallet_repository.dart';
+import 'fakes/pin_store_fake.dart';
 
 /// Danh sách ví giờ đọc [WalletController] — đăng ký controller fake để list
 /// không khởi tạo drift (sqlite native) trong widget test.
@@ -67,6 +71,23 @@ void _registerNotificationStore() {
   Get.reset();
   Get.put<NotificationStore>(FakeNotificationStore());
   addTearDown(Get.reset);
+}
+
+/// Hàng "Mở khóa sinh trắc học" (PBI 34) đọc [PinController] — đăng ký
+/// controller + gateway fake để test bơm kết quả hỗ trợ/xác thực.
+Future<PinController> _registerPinController({
+  PinStoreFake? store,
+  BiometricGatewayFake? gateway,
+}) async {
+  Get.reset();
+  final controller = PinController(
+    store: store ?? PinStoreFake(),
+    gateway: gateway ?? BiometricGatewayFake(),
+  );
+  await controller.init();
+  Get.put(controller);
+  addTearDown(Get.reset);
+  return controller;
 }
 
 Future<void> pumpSettings(
@@ -508,6 +529,89 @@ void main() {
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(find.byType(SettingsScreen), findsOneWidget);
+    });
+  });
+
+  group('SettingsScreen — hàng "Mở khóa sinh trắc học" (PBI 34)', () {
+    testWidgets('Đã bật sẵn → công tắc hiện bật', (tester) async {
+      final store = PinStoreFake.withPin('1234');
+      await store.saveBiometricState(
+        const BiometricState(enabled: true, enrolledTypes: ['fingerprint']),
+      );
+      await _registerPinController(store: store);
+      await pumpSettings(tester);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
+    });
+
+    testWidgets(
+        'Thiết bị không hỗ trợ/chưa đăng ký → công tắc tắt, không bật được, hiện dòng giải thích (FR-001)',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..availableTypesResult = [];
+      await _registerPinController(gateway: gateway);
+      await pumpSettings(tester);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+      expect(
+        find.text('Thiết bị chưa hỗ trợ hoặc chưa đăng ký vân tay/khuôn mặt'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+    });
+
+    testWidgets('Chạm bật, xác thực thành công → công tắc bật (FR-002)',
+        (tester) async {
+      final controller = await _registerPinController();
+      await pumpSettings(tester);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      expect(controller.biometricEnabled, isTrue);
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
+    });
+
+    testWidgets('Chạm bật, xác thực huỷ/thất bại → công tắc vẫn tắt',
+        (tester) async {
+      final gateway = BiometricGatewayFake()..authenticateResult = false;
+      final controller = await _registerPinController(gateway: gateway);
+      await pumpSettings(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      expect(controller.biometricEnabled, isFalse);
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+    });
+
+    testWidgets('Tắt công tắc đang bật → tắt ngay, không xác thực gì (FR-009)',
+        (tester) async {
+      final store = PinStoreFake.withPin('1234');
+      await store.saveBiometricState(
+        const BiometricState(enabled: true, enrolledTypes: ['fingerprint']),
+      );
+      final gateway = BiometricGatewayFake();
+      final controller = await _registerPinController(
+        store: store,
+        gateway: gateway,
+      );
+      await pumpSettings(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      expect(controller.biometricEnabled, isFalse);
+      expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+      expect(gateway.authenticateCallCount, 0);
     });
   });
 }

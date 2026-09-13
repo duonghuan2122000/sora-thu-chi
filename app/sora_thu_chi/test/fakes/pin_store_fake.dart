@@ -12,6 +12,7 @@ class PinStoreFake implements PinStore {
 
   String? _pin;
   PinLockState _lockState = const PinLockState();
+  BiometricState _biometricState = const BiometricState();
 
   @override
   Future<bool> get isPinSet async => _pin != null;
@@ -31,5 +32,13 @@ class PinStoreFake implements PinStore {
   @override
   Future<void> saveLockState(PinLockState state) async {
     _lockState = state;
+  }
+
+  @override
+  Future<BiometricState> readBiometricState() async => _biometricState;
+
+  @override
+  Future<void> saveBiometricState(BiometricState state) async {
+    _biometricState = state;
   }
 }

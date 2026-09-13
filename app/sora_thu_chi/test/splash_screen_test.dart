@@ -36,6 +36,12 @@ class _HangingStore implements PinStore {
 
   @override
   Future<void> saveLockState(PinLockState state) async {}
+
+  @override
+  Future<BiometricState> readBiometricState() async => const BiometricState();
+
+  @override
+  Future<void> saveBiometricState(BiometricState state) async {}
 }
 
 Future<void> pumpApp(

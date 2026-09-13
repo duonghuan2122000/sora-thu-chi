@@ -9,6 +9,19 @@ class PinLockState {
   final DateTime? lockUntil;
 }
 
+/// Trạng thái công tắc sinh trắc học (data-model.md — key `biometric_state`).
+/// Gắn với thiết bị hiện tại — không nằm trong backup/restore JSON (FR-011).
+class BiometricState {
+  const BiometricState({this.enabled = false, this.enrolledTypes = const []});
+
+  /// Công tắc "Mở khóa sinh trắc học" đang bật hay đã bị hệ thống tự tắt.
+  final bool enabled;
+
+  /// Snapshot tên `BiometricType` đọc lúc bật — so khớp phát hiện đổi đăng ký
+  /// (FR-008).
+  final List<String> enrolledTypes;
+}
+
 /// Lưu trữ PIN + trạng thái chống dò — giữ trừu tượng để test bơm fake.
 abstract class PinStore {
   Future<bool> get isPinSet;
@@ -16,4 +29,6 @@ abstract class PinStore {
   Future<bool> verifyPin(String pin);
   Future<PinLockState> readLockState();
   Future<void> saveLockState(PinLockState state);
+  Future<BiometricState> readBiometricState();
+  Future<void> saveBiometricState(BiometricState state);
 }

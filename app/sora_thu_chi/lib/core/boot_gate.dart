@@ -8,6 +8,7 @@ import '../screens/pin/pin_setup_screen.dart';
 import '../theme/app_colors.dart';
 import 'app_shell.dart';
 import 'locale/locale_controller.dart';
+import 'security/biometric_gateway.dart';
 import 'security/pin_controller.dart';
 import 'security/pin_store.dart';
 import 'theme/theme_controller.dart';
@@ -16,9 +17,12 @@ import 'theme/theme_controller.dart';
 /// hiệu trên nền teal, không nội dung tài chính), rồi điều hướng sang thiết lập
 /// PIN / màn khóa / Tổng quan.
 class PinGate extends StatefulWidget {
-  const PinGate({super.key, required this.store});
+  const PinGate({super.key, required this.store, this.gateway});
 
   final PinStore store;
+
+  /// Bơm seam sinh trắc học để test; mặc định dùng `local_auth` thật.
+  final BiometricGateway? gateway;
 
   /// Trần chờ nạp: quá hạn thì vào app với cấu hình đang có (FR-006/SC-003).
   static const bootCap = Duration(seconds: 5);
@@ -43,7 +47,11 @@ class _PinGateState extends State<PinGate> {
       Get.delete<PinController>(force: true);
     }
     final controller = Get.put<PinController>(
-      PinController(store: widget.store, now: DateTime.now),
+      PinController(
+        store: widget.store,
+        now: DateTime.now,
+        gateway: widget.gateway,
+      ),
       permanent: true,
     );
     await _waitUntilReady(controller);
