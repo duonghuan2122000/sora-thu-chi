@@ -18,13 +18,14 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 ## Thư viện chính
 | Thư viện | Mục đích | Module dùng |
 |---|---|---|
-| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions`, **`notifications` (schema **v9** — PBI 30)**, `app_settings` |
+| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions`, `notifications` (PBI 30), **`notification_ledger` (schema **v10** — PBI 31)**, `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
 | `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21), **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22), **`LineChart` + `dashArray`** ở màn `03` So sánh kỳ (PBI 26) — [[Báo cáo]]. Còn lại: line chart xu hướng **một kỳ** ở màn `01` |
 | `pdf` `^3.13.0` *(PBI 27)* | Sinh **PDF thuần Dart** (`pw.Document` + `MultiPage` + `ThemeData.withFont`) — chạy được trong isolate | Màn `04` Xuất báo cáo (định dạng PDF) |
 | `excel_community` `^2.4.0` *(PBI 27)* | Sinh `.xlsx` 2 sheet | Màn `04` Xuất báo cáo (định dạng Excel) |
 | `share_plus` `^13.3.0` *(PBI 27)* | Mở **bảng chia sẻ của hệ điều hành** (`SharePlus.instance.share` + `XFile.fromData`) | Màn `04` — cả 3 định dạng đi **một** đường chia sẻ |
-| `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
+| `flutter_local_notifications` `^22.3.1` *(PBI 31)* | Thông báo **do chính thiết bị sinh ra** (app offline, **không FCM**) — 3 kênh Android + `zonedSchedule` **một-lần**, `exactAllowWhileIdle` lùi `inexactAllowWhileIdle` | Nhắc nhập giao dịch hằng ngày, cảnh báo ngân sách, tổng kết tuần/tháng — [[Hồ sơ & Bảo mật]] |
+| `timezone` `^0.11.1` + `flutter_timezone` `^5.1.0` *(PBI 31)* | `TZDateTime` cho lịch + **múi giờ địa phương thật** | Bắt buộc đi kèm FLN: thiếu `flutter_timezone` thì `tz.local` mãi là **UTC** ⇒ bắn sai giờ |
 | `flutter_secure_storage` | Lưu bí mật khóa app + khóa mã hóa (Keychain/Keystore) | Khóa app — PBI 3: key `pin_salt_hash` (hash PIN), key `lock_state` (chống dò JSON) |
 | `crypto` | Băm **SHA-256** (PBI 3, dep mới) | Hash PIN có muối — [[Hồ sơ & Bảo mật]] |
 | `local_auth` | Sinh trắc học (vân tay/FaceID) | Lớp mở khóa tiện lợi + xác thực data nhạy cảm |
@@ -114,6 +115,22 @@ Chặng 1 = **Chế độ cơ bản** (bộ luật, không LLM) + kiểm tra c�
 - `DriftNotificationHistoryStore` + `ensureNotificationHistoryStore()` (GetX singleton — **1** connection drift trên file sqlite; test `Get.put` fake trước ⇒ không mở drift); test bơm `FakeNotificationHistoryStore`.
 - **Nâng schema ⇒ phải sửa số khẳng định ở 4 file test drift cũ** (`notification_store_drift` / `scan_settings_store_drift` / `utilities_store_drift` / `scan_dao`: `schemaVersion` 8 → 9) — không tránh được, chỉ đổi con số, không đổi hành vi kiểm.
 - ⚠ **Trần 200 kiểm được ở DAO drift thật** trên host Windows này (có sqlite native) — tức test `notification_history_store_drift_test` **không** bị skip, khác mấy test drift phải skip-guard.
+
+## Engine thông báo đẩy — 2 seam mới + sổ drift (PBI 31, **3 dependency mới**)
+- **Vì sao "thông báo đẩy" mà không FCM**: app **offline hoàn toàn** ⇒ thông báo do **chính thiết bị** sinh ra từ **lịch của hệ điều hành**, **0 lời gọi mạng** (FR-001/FR-031). Đây là **thực thi đúng stack đã chốt** trong `docs/tinh-nang…§Stack` + `notification-solution.md §3.2`, không phải mở rộng stack (PBI 28/30 đã hoãn đúng phần này).
+- **Hai seam MỚI** (điều kiện để **toàn bộ** luật nghiệp vụ test được **không cần plugin/thiết bị**):
+  - `NotificationPresenter` — bọc hệ điều hành: `init` · `launchPayload` · `areEnabled` · `requestPermission` · `openSettings` · `schedule` · `show` · `cancel` · `cancelKind`. Impl thật `PluginNotificationPresenter`; test dùng `FakeNotificationPresenter`.
+  - `NotificationLedger` — bọc **sổ**: `byKey` · `dueBefore` · `all` · `upsert` · `markHistoryWritten` · `suppress` · `pruneBefore` (**cố ý KHÔNG có `delete`** — dòng sổ chỉ được **dọn** qua `pruneBefore`, nên khoá chống trùng của kỳ đang chạy không thể mất). Impl thật `DriftNotificationLedger`.
+  - `NotificationHistoryStore` (PBI 30) **không đổi** hợp đồng — engine là **nguồn ghi thứ hai** qua đúng `append`/`markRead` ⇒ trần 200 nằm sẵn ở tầng ghi vẫn cưỡng chế cả engine (có test: 300 mốc quá khứ ⇒ lịch sử dừng đúng 200).
+- **Bảng drift `notification_ledger` (schema v10)** — 9 cột: `entry_key` (**khoá chính** — khoá nghiệp vụ mang kỳ) · `kind` `textEnum<NotificationKind>` · `related_id?` · `title` · `body` · `scheduled_for` · `suppressed` · `history_written_at?` · `history_id?`. Migration `from < 10` = **thuần `createTable`, KHÔNG seed** ⇒ DB cũ nâng cấp **không** dội thông báo bù. Không index (`entry_key` là PK; bảng luôn nhỏ nhờ dọn 90 ngày). Không FK.
+- **Bất biến nằm trong SQL**: `dueBefore(now)` = `scheduled_for <= now AND suppressed = false AND history_written_at IS NULL`; `pruneBefore(cutoff)` **không** xoá dòng còn nợ bản ghi (mất dấu = mất bản ghi của mốc đó vĩnh viễn).
+- **Id hệ điều hành = FNV-1a 32-bit tự viết** của `entry_key` — `String.hashCode` **không ổn định giữa các bản SDK**, mà id phải tra lại đúng lịch sau khi khởi động lại. Cùng khoá ⇒ cùng id ⇒ **thay thế**, không xếp chồng.
+- **3 điểm nối lưu giao dịch gọi engine fire-and-forget** (`unawaited`), `try/catch` **bên trong** engine ⇒ lưu giao dịch không chậm/không đỏ vì thông báo (FR-024/SC-012) — có test: ledger/presenter/store cắm cờ lỗi mà API công khai vẫn `completes`.
+- **Cấu hình native (R14)** — lần đầu kể từ PBI 25: **core library desugaring** bắt buộc ở `build.gradle.kts` (FLN v10+; thiếu ⇒ **đỏ build release ngay**) · manifest: `POST_NOTIFICATIONS` + `RECEIVE_BOOT_COMPLETED` + `USE_EXACT_ALARM` + **2 receiver** của plugin (thiếu `ScheduledNotificationBootReceiver` ⇒ **mất toàn bộ lịch sau reboot**) · **3 vector drawable đơn sắc** (`ic_notif_{bell,warning,summary}.xml`) · `ios/Runner/AppDelegate.swift` (`UNUserNotificationCenter.delegate`).
+- 🪤 **`AndroidNotificationChannel` KHÔNG có tham số `color`** ở FLN v22 ⇒ màu coral của cảnh báo ngân sách đặt ở `AndroidNotificationDetails.color` (theo **thông báo**, không theo kênh); 3 kênh `sora_daily`/`sora_budget`/`sora_summary` vẫn phân biệt bằng id + tên.
+- 🪤 **exact alarm "im lặng"**: bị hệ điều hành từ chối thì `zonedSchedule` **không** ném lỗi và **không** tạo lịch ⇒ luôn phải hỏi `canScheduleExactNotifications()` và **lùi** inexact.
+- 🪤 **Test drift chạy thật** trên host này (có sqlite native) nên trần 200 **và** luật "sổ chỉ đụng 1 bảng, 6 bảng nghiệp vụ nguyên vẹn" được kiểm thật.
+- **Nâng schema v9 → v10 ⇒ phải sửa số khẳng định ở 5 file test drift cũ** (`notification_history_store_drift` / `notification_store_drift` / `scan_settings_store_drift` / `utilities_store_drift` / `scan_dao`) — chỉ đổi con số, không đổi hành vi kiểm. (`wallets_dao_test` **không** khẳng định `schemaVersion` nên không phải sửa.)
 
 ## Liên kết
 - [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ đã xong ở PBI 19.
