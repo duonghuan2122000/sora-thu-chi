@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/locale/locale_controller.dart';
+import 'package:sora_thu_chi/core/notification/app_notification.dart';
 import 'package:sora_thu_chi/core/scan/scan_controller.dart';
 import 'package:sora_thu_chi/core/scan/scan_result.dart';
 import 'package:sora_thu_chi/core/security/pin_controller.dart';
@@ -16,6 +17,7 @@ import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/daily_reminder_config_screen.dart';
+import 'package:sora_thu_chi/screens/notification_center_screen.dart';
 import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
@@ -33,6 +35,7 @@ import 'package:sora_thu_chi/theme/sora_colors.dart';
 
 import 'fakes/fake_device_probe.dart';
 import 'fakes/fake_locale_store.dart';
+import 'fakes/fake_notification_history_store.dart';
 import 'fakes/fake_notification_store.dart';
 import 'fakes/fake_scan_image_store.dart';
 import 'fakes/fake_scan_settings_store.dart';
@@ -679,6 +682,55 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       }
+    },
+  );
+
+  testWidgets(
+    'Màn Trung tâm thông báo ở tối: nhãn + kẻ đọc token tối, không overflow',
+    (tester) async {
+      registerTheme();
+      await tester.binding.setSurfaceSize(const Size(390, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final store = FakeNotificationHistoryStore(
+        stored: [
+          AppNotification(
+            id: 1,
+            kind: NotificationKind.dailyReminder,
+            title: 'Nhắc ghi chép hôm nay',
+            body: 'Bạn chưa ghi giao dịch nào hôm nay',
+            createdAt: DateTime(2026, 9, 13, 8, 30),
+          ),
+          AppNotification(
+            id: 2,
+            kind: NotificationKind.budgetAlert,
+            title: 'Sắp vượt ngân sách Ăn uống',
+            createdAt: DateTime(2026, 8, 24, 9, 0),
+            readAt: DateTime(2026, 8, 25, 9, 0),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        darkApp(
+          NotificationCenterScreen(
+            store: store,
+            now: DateTime(2026, 9, 13, 9, 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(NotificationCenterScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+      // Nhãn nhóm đọc token tối (không phải bản sáng).
+      expect(
+        tester.widget<Text>(find.text('HÔM NAY')).style?.color,
+        SoraColors.dark.tabInactive,
+      );
+      expect(find.text('Tất cả'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 }

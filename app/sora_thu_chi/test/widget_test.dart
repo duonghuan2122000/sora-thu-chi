@@ -3,14 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/app_shell.dart';
+import 'package:sora_thu_chi/core/notification/app_notification.dart';
+import 'package:sora_thu_chi/core/notification/notification_history_store.dart';
+import 'package:sora_thu_chi/core/notification/notification_store.dart';
 import 'package:sora_thu_chi/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sora_thu_chi/core/widgets/screen_header.dart';
 import 'package:sora_thu_chi/core/scan/scan_controller.dart';
 import 'package:sora_thu_chi/core/scan/scan_settings.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/notification_center_screen.dart';
+import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_device_probe.dart';
+import 'fakes/fake_notification_history_store.dart';
+import 'fakes/fake_notification_store.dart';
 import 'fakes/fake_scan_settings_store.dart';
 import 'fakes/fake_wallet_repository.dart';
 
@@ -18,9 +25,18 @@ import 'fakes/fake_wallet_repository.dart';
 /// nhóm shell pump `AppShell` trực tiếp, tách khỏi luồng boot. Tab Giao dịch
 /// nạp dữ liệu khi chọn (FR-011) → đăng ký fake repo để không mở drift DB thật.
 /// FAB mở bottom sheet (PBI 24) → đăng ký luôn [ScanController] fake.
-Future<void> pumpShell(WidgetTester tester, {bool scanEnabled = false}) async {
+/// Màn Tổng quan đọc lịch sử thông báo ngay khi boot (PBI 30) → đăng ký fake
+/// store để không mở drift thật; trả về store đó cho test assert chấm đỏ.
+Future<FakeNotificationHistoryStore> pumpShell(
+  WidgetTester tester, {
+  bool scanEnabled = false,
+  List<AppNotification> history = const [],
+}) async {
   Get.reset();
   Get.put<WalletRepository>(FakeWalletRepository());
+  Get.put<NotificationStore>(FakeNotificationStore());
+  final historyStore = FakeNotificationHistoryStore(stored: [...history]);
+  Get.put<NotificationHistoryStore>(historyStore);
   final scan = ScanController(
     FakeScanSettingsStore(stored: ScanSettings(enabled: scanEnabled)),
     FakeDeviceProbe(),
@@ -31,7 +47,20 @@ Future<void> pumpShell(WidgetTester tester, {bool scanEnabled = false}) async {
   await tester.pumpWidget(
     MaterialApp(theme: AppTheme.themeData, home: const AppShell()),
   );
+  await tester.pumpAndSettle();
+  return historyStore;
 }
+
+/// Chấm chưa đọc trên chuông = ô `Positioned` 9×9 nền coral trong ô nút 48 px.
+Finder bellDot() => find.descendant(
+  of: find.byKey(const ValueKey('dashboard-notification-bell')),
+  matching: find.byWidgetPredicate(
+    (w) =>
+        w is Container &&
+        (w.decoration is BoxDecoration) &&
+        ((w.decoration as BoxDecoration).color == AppColors.coral),
+  ),
+);
 
 /// Màn ảo cao đủ hiện mọi dòng màn thêm giao dịch mà không cần cuộn.
 void useTallView(WidgetTester tester) {
@@ -200,6 +229,74 @@ void main() {
       // Header Giao dịch vẫn hiển thị, đúng vùng đã chọn.
       expect(find.text('Giao dịch'), findsNWidgets(2));
       expect(find.text('Báo cáo'), findsOneWidget);
+    });
+  });
+
+  group('Màn Tổng quan — chuông thông báo & chấm đỏ (PBI 30)', () {
+    AppNotification unread() => AppNotification(
+      id: 1,
+      kind: NotificationKind.recurringDue,
+      title: 'Hóa đơn tiền điện sắp đến hạn',
+      createdAt: DateTime(2026, 9, 13, 8, 0),
+    );
+
+    testWidgets('chuông có mặt ở vùng tiêu đề, không chấm khi lịch sử rỗng',
+        (tester) async {
+      await pumpShell(tester);
+
+      expect(
+        find.byKey(const ValueKey('dashboard-notification-bell')),
+        findsOneWidget,
+      );
+      expect(bellDot(), findsNothing);
+    });
+
+    testWidgets('có mục chưa đọc → chấm hiện', (tester) async {
+      await pumpShell(tester, history: [unread()]);
+
+      expect(bellDot(), findsOneWidget);
+    });
+
+    testWidgets('mọi mục đã đọc → không chấm', (tester) async {
+      await pumpShell(
+        tester,
+        history: [unread().copyWith(readAt: DateTime(2026, 9, 13, 9, 0))],
+      );
+
+      expect(bellDot(), findsNothing);
+    });
+
+    testWidgets('1 lần chạm chuông → mở màn Trung tâm', (tester) async {
+      await pumpShell(tester, history: [unread()]);
+
+      await tester.tap(
+        find.byKey(const ValueKey('dashboard-notification-bell')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationCenterScreen), findsOneWidget);
+      expect(find.text('Thông báo'), findsOneWidget);
+    });
+
+    testWidgets('đọc mục cuối rồi quay về → chấm mất ngay (SC-013)',
+        (tester) async {
+      final store = await pumpShell(tester, history: [unread()]);
+      expect(bellDot(), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('dashboard-notification-bell')),
+      );
+      await tester.pumpAndSettle();
+      // Loại chưa có màn đích ⇒ chạm chỉ đánh dấu đã đọc, không điều hướng.
+      await tester.tap(find.text('Hóa đơn tiền điện sắp đến hạn'));
+      await tester.pumpAndSettle();
+      expect(store.stored.single.isRead, isTrue);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationCenterScreen), findsNothing);
+      expect(bellDot(), findsNothing);
     });
   });
 }

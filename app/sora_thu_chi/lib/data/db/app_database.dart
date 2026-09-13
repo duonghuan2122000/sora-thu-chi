@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/budget/budget.dart';
 import '../../core/category/category.dart';
 import '../../core/category/category_source.dart';
+import '../../core/notification/app_notification.dart';
 import '../../core/scan/scan_result.dart';
 import '../../core/transaction/transaction.dart';
 import '../../core/transaction/transaction_source.dart';
@@ -137,6 +138,22 @@ class Budgets extends Table {
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 }
 
+/// Bảng lịch sử thông báo (data-model §4, schema v9 — PBI 30): mỗi lần một
+/// thông báo **đã phát sinh** được ghi lại. Trần [kMaxNotifications] cưỡng chế ở
+/// tầng ghi (`DriftNotificationHistoryStore.append`), không phải lúc đọc. Không
+/// FK — bám nếp `transactions.category_id`: xoá đối tượng nghiệp vụ **không** làm
+/// mất/đổi lịch sử. Không seed: lần mở đầu tiên bảng rỗng là đúng nghiệp vụ.
+@DataClassName('NotificationsRow')
+class Notifications extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get kind => textEnum<NotificationKind>()();
+  TextColumn get title => text()();
+  TextColumn get body => text().withDefault(const Constant(''))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get readAt => dateTime().nullable()();
+  IntColumn get relatedId => integer().nullable()();
+}
+
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
 QueryExecutor _openConnection() {
   return LazyDatabase(() async {
@@ -147,13 +164,21 @@ QueryExecutor _openConnection() {
 }
 
 @DriftDatabase(
-  tables: [Wallets, Categories, Transactions, AppSettings, Budgets, ScanSessions],
+  tables: [
+    Wallets,
+    Categories,
+    Transactions,
+    AppSettings,
+    Budgets,
+    ScanSessions,
+    Notifications,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -216,6 +241,11 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(transactions, transactions.source);
         }
         await m.createTable(scanSessions);
+      }
+      // from < 9 (PBI 30): bảng lịch sử thông báo — thuần tạo, **KHÔNG** seed
+      // (spec: không dựng cơ chế seed dữ liệu mẫu). Không đụng bảng nào khác.
+      if (from < 9) {
+        await m.createTable(notifications);
       }
     },
   );

@@ -28,7 +28,7 @@ class _AppShellState extends State<AppShell> {
   /// [_onTabSelected] xuống màn Tổng quan Ngân sách đẩy từ nó (PBI 20) — màn
   /// con tự dựng bottom nav nhưng không giữ state của shell.
   late final List<Widget> _screens = [
-    const DashboardScreen(),
+    DashboardScreen(onSelectTab: _onTabSelected),
     const TransactionScreen(),
     ReportScreen(onSelectTab: _onTabSelected),
     const SettingsScreen(),

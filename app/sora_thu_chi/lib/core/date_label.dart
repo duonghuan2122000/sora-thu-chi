@@ -49,6 +49,20 @@ String dayLabel(int weekday) => switch (weekday) {
   _ => '',
 };
 
+/// Tên thứ **đầy đủ** theo ISO (`1` = Thứ Hai … `7` = Chủ Nhật):
+/// `'Thứ Hai'`…`'Chủ Nhật'` (EN: `Monday`…`Sunday`); ngoài miền → chuỗi rỗng.
+/// Viết literal ngay trước `.tr` để test dịch còn ràng buộc được (R9/R14).
+String weekdayName(int weekday) => switch (weekday) {
+  1 => 'Thứ Hai'.tr,
+  2 => 'Thứ Ba'.tr,
+  3 => 'Thứ Tư'.tr,
+  4 => 'Thứ Năm'.tr,
+  5 => 'Thứ Sáu'.tr,
+  6 => 'Thứ Bảy'.tr,
+  7 => 'Chủ Nhật'.tr,
+  _ => '',
+};
+
 /// Tập ngày → chuỗi cho dòng phụ màn "Thông báo & nhắc nhở" (FR-011): dải liên
 /// tiếp trong tuần (T2…T7) dài **≥3** nén thành `'T2–T7'`, ngày rời liệt kê
 /// riêng, phân cách `', '` (`[1,2,3,5]` → `'T2–T4, T6'`). **Chủ Nhật luôn liệt

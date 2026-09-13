@@ -694,5 +694,31 @@ class SoraTranslations extends Translations {
     'Đừng quên ghi lại thu chi hôm nay nhé!':
         "Don't forget to log today's income and expenses!",
     'Lưu thay đổi': 'Save changes',
+
+    // ---------------------------------------------------------------------
+    // Trung tâm thông báo (PBI 30) — màn `03` + chuông màn Tổng quan. Nội dung
+    // thông báo đã lưu (`title`/`body`) là **snapshot**, KHÔNG dịch lại
+    // (FR-014) ⇒ không có khoá nào ở đây dành cho chúng. Giờ `HH:mm`, ngày
+    // `dd/MM`, dấu `:`/`·` không dịch. Tái dùng 'Tất cả', 'HÔM NAY', 'Thử lại',
+    // 'Thông báo & nhắc nhở' — không thêm lại.
+    // ---------------------------------------------------------------------
+    'Thông báo': 'Notifications',
+    'Chưa đọc': 'Unread',
+    'TUẦN NÀY': 'THIS WEEK',
+    'TRƯỚC ĐÓ': 'EARLIER',
+    'Chưa có thông báo nào': 'No notifications yet',
+    'Thông báo và nhắc nhở sẽ hiện ở đây.':
+        'Notifications and reminders will show up here.',
+    'Không có thông báo chưa đọc': 'No unread notifications',
+    'Bạn đã đọc hết thông báo.': 'You have read every notification.',
+    'Không đọc được thông báo.': 'Could not read notifications.',
+    'Mở cài đặt thông báo': 'Open notification settings',
+    'Thứ Hai': 'Monday',
+    'Thứ Ba': 'Tuesday',
+    'Thứ Tư': 'Wednesday',
+    'Thứ Năm': 'Thursday',
+    'Thứ Sáu': 'Friday',
+    'Thứ Bảy': 'Saturday',
+    'Chủ Nhật': 'Sunday',
   };
 }

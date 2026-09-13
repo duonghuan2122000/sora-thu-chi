@@ -19,7 +19,7 @@ Future<AppDatabase?> _tryMemoryDb() async {
 }
 
 void main() {
-  test('schema vẫn 8 (không migration — PBI 24 giữ nguyên)', () async {
+  test('schema v9 (PBI 30 thêm bảng notifications)', () async {
     final db = await _tryMemoryDb();
     if (db == null) {
       markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -27,7 +27,7 @@ void main() {
     }
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 8);
+    expect(db.schemaVersion, 9);
   });
 
   test('row notificationPrefs vắng → cả bộ mặc định (không seed)', () async {
