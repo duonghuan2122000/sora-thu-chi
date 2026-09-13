@@ -84,7 +84,7 @@
 - [X] T029 QA tay trên emulator theo `quickstart.md` nhóm **A–O** (điểm vào & vô hiệu hoá, bố cục theo mockup `03`, số liệu & màu badge, kỳ đối chiếu rỗng/cả hai rỗng, nút hoán đổi, chip cùng kỳ năm trước, biểu đồ theo ngày, câu Nhận xét, làm mới số liệu, Tối + English, màn hình nhỏ + cỡ chữ lớn + số hàng tỉ, offline/hiệu năng) — ghi lại kết quả từng nhóm. **Ghi rõ trong bàn giao**: QA **Android** là đủ (PBI không đụng native/config) — **iOS chưa QA** (rủi ro 8 plan.md)
 - [X] T030 Tick checklist `.specify/specs/26/checklists/requirements.md` sau khi thi công xong (**giữ nguyên nội dung** đã duyệt)
 - [X] T031 Đồng bộ wiki theo skill `sora-wiki`: cập nhật `wiki-knowledge/entity/` **Báo cáo** (màn `03`: điểm vào icon vùng tiêu đề + vô hiệu hoá theo FR-017, chip kỳ chính **nhãn tĩnh** vs chip đối chiếu **bấm được** ⇄ cùng kỳ năm trước, nút hoán đổi **chỉ đổi chỗ**, `LineChart` 2 đường liền/đứt, câu Nhận xét ghép 2 mệnh đề + `@ref` suy từ ngày, 2 mức trạng thái rỗng, số liệu dựng từ bản chụp RAM), `wiki-knowledge/concept/` **Lộ trình phát triển** (màn `03` xong; còn `04` Xuất báo cáo + bộ lọc nâng cao) và **Design system** (cặp cột tỉ lệ 64 px, token thay cặp trắng-viền `#EFEFEF` của mockup — khác biệt cố ý) + append `wiki-knowledge/log.md` + cập nhật `wiki-knowledge/index.md`
-- [ ] T032 Commit PBI 26 theo skill `git-commit` (Conventional Commits, message tiếng Việt có dấu, **không** trailer `Co-Authored-By`)
+- [X] T032 Commit PBI 26 theo skill `git-commit` (Conventional Commits, message tiếng Việt có dấu, **không** trailer `Co-Authored-By`)
 
 ---
 
