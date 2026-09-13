@@ -14,6 +14,9 @@ sources:
   - ../../.specify/specs/18/data-model.md
   - ../../.specify/specs/19/spec.md
   - ../../.specify/specs/19/data-model.md
+  - ../docs/ai/tinh-nang-quet-hoa-don-ai-local.md
+  - ../../.specify/specs/24/spec.md
+  - ../../.specify/specs/24/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -91,6 +94,34 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 
 **Không đổi theo ngôn ngữ** (tách bạch, §2.2 tài liệu): **định dạng ngày (`dd/MM/yyyy`) và số tiền (`42.500.000 đ`)** — vẫn theo cài đặt Định dạng & Tiền tệ (PBI sau). **Không dịch dữ liệu người dùng**: tên giao dịch, ghi chú, tag, **tên ví** (kể cả ví mẫu `Tiền mặt`/`Vietcombank`/`Thẻ tín dụng VIB`/`Sổ tiết kiệm` — **chốt: coi là dữ liệu, KHÔNG dịch**), tên danh mục tự tạo/đã đổi tên. Riêng **tên danh mục mặc định chưa đổi tên** *có* dịch — quy tắc ở [[Danh mục]]. DB **không đổi** bất kỳ bản ghi nào khi đổi ngôn ngữ.
 
+## Mục Cài đặt "QUÉT HÓA ĐƠN AI" + kiểm tra cấu hình máy (PBI 24 chặng 1 + chặng 2)
+> **PBI 24 (2026-09-13)**: nhóm Cài đặt cho tính năng quét hóa đơn (mockup `docs/ai/scan-11-settings-ai-status.svg`) + màn kiểm tra cấu hình máy (`scan-10`). Nguồn đặc tả `.specify/specs/24/`. Chặng 1 = luồng quét + bộ luật + khối Cài đặt; **chặng 2 = AI nâng cao Tier A/B** (cùng ngày) — trạng thái trung gian "Chưa khả dụng trong bản này" đã **gỡ**.
+
+**Nhóm Cài đặt `scan-11`** — đọc `ScanController` qua `Obx` nên **đổi công tắc ở đây phản ánh ngay vào sheet FAB** (cùng một `Rx`):
+- **"Quét hóa đơn bằng AI"** — công tắc thật bật/tắt tính năng (mặc định **tắt**; tắt ⇒ sheet FAB **không hiện** hàng "Quét hóa đơn (AI)").
+- **"Trạng thái AI"** — tier đã đo + model đang dùng (`Gemini Nano (Tier A)` / `Gemma 3n E2B (Tier B)` / **"Chế độ cơ bản"** khi chưa đo hoặc Tier C).
+- **"Lần kiểm tra gần nhất"** — mốc thời gian, chưa đo ⇒ "Chưa kiểm tra".
+- **"Dung lượng model"** *(chỉ hiện khi đã tải model Tier B)* — dung lượng thật đang chiếm (`1.8 GB`).
+- **"Xoá model"** *(chỉ hiện khi đã tải model)* — xoá khỏi máy rồi tự về **Chế độ cơ bản**; **giao dịch đã lưu không bị ảnh hưởng**.
+- **"Kiểm tra lại cấu hình máy"** và **"Kiểm tra cập nhật model"** — cùng đẩy sang màn `scan-10` (đo lại; nếu Tier B thiếu model thì cho tải lại).
+
+**Lưu trữ — 4 row trong bảng key-value `AppSettings`** (PBI 17): `scanEnabled`, `scanEngineMode`, `scanModelBytes` (dung lượng model Tier B đã tải), `scanDeviceCheck` (JSON kết quả đo). Ghi write-through **chỉ 4 key của mình** — không xoá `themeMode`/`locale`/2 công tắc Tiện ích. **Key vắng = mặc định an toàn** (tắt / Chế độ cơ bản / 0 / chưa kiểm tra), chuỗi lạ hoặc JSON hỏng ⇒ về mặc định, **không ném**. `AppSettings` **vẫn schema v5, không migration** — schemaVersion **v8** của DB đến từ `transactions.source` + bảng `scan_sessions` ([[Giao dịch]]).
+
+**Màn kiểm tra cấu hình máy `scan-10`** (`docs/ai/scan-10-device-check.svg`): app bar teal + back; **4 mục đo** — Bộ nhớ RAM · Dung lượng trống · Hỗ trợ AI trên máy (AICore) · Phiên bản hệ điều hành — mỗi mục hiện giá trị + **Đạt/Không đạt**; **đúng một thẻ kết quả** theo tier đo được (nêu rõ tiêu chí chưa đạt) + nút **"Kiểm tra lại"** chạy lại đo.
+
+**Phân loại tier (ngưỡng đóng, doc §11.2)**: **A** = thiết bị có AICore/Gemini Nano của hệ thống (dùng ngay); **B** = RAM ≥ **4GB** **và** dung lượng trống ≥ **2GB** **và** chip có đường tăng tốc; **C** = còn lại ⇒ **Chế độ cơ bản**. Kết quả **chỉ để chọn chế độ**, không cam kết chất lượng; **Tier C không bao giờ chặn luồng quét** (emulator luôn Tier C).
+
+**Thời điểm đo & tái sử dụng**: lần **vào luồng quét** gọi `needsDeviceCheck()` → chưa từng đo **hoặc** kết quả **quá 30 ngày** mới đẩy màn `scan-10`; mở luồng lần sau **không** chạy lại. Người dùng chọn dùng tiếp ở màn đó ⇒ vào màn chụp bình thường.
+
+**Chọn chế độ ở thẻ kết quả (chặng 2)**:
+- **Tier A** — nút **"Kích hoạt Gemini Nano"**: model do AICore hệ thống quản lý, **không tải gì** ⇒ bật là dùng được ngay.
+- **Tier B** — nút **"Tải model (1.8GB) qua Wifi"** có **tiến trình %**, kèm lựa chọn **"Dùng chế độ cơ bản"** (huỷ tải). **Tải xong mới bật** Gemma 3n; tải **thất bại/bị huỷ ⇒ không bật AI**, người dùng ở lại Chế độ cơ bản (FR-012) — nút đổi thành "Thử lại" kèm thông báo.
+- **Tier C** — nút "Dùng chế độ cơ bản".
+
+**Chọn engine thật khi quét**: Tier B **chỉ chạy khi `modelBytes > 0`** (đã tải xong) — chưa tải thì tự rơi về Chế độ cơ bản thay vì gọi model không tồn tại. Chi tiết fallback + engine ghi vào phiên quét: [[Giao dịch]].
+
+> **⚠ QUYẾT ĐỊNH MỞ — nguồn phân phối model Tier B**: repo HuggingFace đang trỏ tới (`kGemmaModelUrl`) là **gated**, cần token ⇒ lượt tải sẽ thất bại và người dùng ở lại Chế độ cơ bản (an toàn, không vỡ luồng). Phải chốt nguồn công khai (tự host / repo không gated) **trước khi phát hành** Tier B. Xem [[Lộ trình phát triển]].
+
 ## Hồ sơ cá nhân
 | Trường | Chốt |
 |---|---|
@@ -121,6 +152,7 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 - [[Design system]] — màn bảo mật tách shell; numpad & dot PIN dùng lại cho màn nhập tiền ([[Giao dịch]]).
 - [[Ví & Tài khoản]] — tiền tệ mặc định cấp ví mới; Privacy mode; tên ví **không** dịch theo ngôn ngữ.
 - [[Ngân sách]] — tiền tệ mặc định & kỳ tài chính lệch bắt nguồn từ hồ sơ.
-- [[Stack kỹ thuật]] — cơ chế i18n GetX Translations + `flutter_localizations` (PBI 19).
+- [[Stack kỹ thuật]] — cơ chế i18n GetX Translations + `flutter_localizations` (PBI 19); seam quét hóa đơn + kênh native `device_probe` (PBI 24).
+- [[Giao dịch]] — công tắc ở đây quyết định hàng "Quét hóa đơn (AI)" có hiện ở sheet FAB hay không.
 - [[Danh mục]] — quy tắc dịch **tên danh mục mặc định** ở tầng hiển thị.
 - [[Lộ trình phát triển]] — phụ thuộc backup GĐ3; PIN khóa app thuộc MVP.

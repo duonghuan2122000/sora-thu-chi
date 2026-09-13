@@ -16,14 +16,23 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 ## Thư viện chính
 | Thư viện | Mục đích | Module dùng |
 |---|---|---|
-| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets` (schema **v7**), `app_settings` |
+| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions` (schema **v8**), `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
 | `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21) và **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22 — [[Báo cáo]]). Còn lại: line chart xu hướng, biểu đồ màn `03` So sánh kỳ |
 | `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
 | `flutter_secure_storage` | Lưu bí mật khóa app + khóa mã hóa (Keychain/Keystore) | Khóa app — PBI 3: key `pin_salt_hash` (hash PIN), key `lock_state` (chống dò JSON) |
 | `crypto` | Băm **SHA-256** (PBI 3, dep mới) | Hash PIN có muối — [[Hồ sơ & Bảo mật]] |
 | `local_auth` | Sinh trắc học (vân tay/FaceID) | Lớp mở khóa tiện lợi + xác thực data nhạy cảm |
+| `google_mlkit_text_recognition` `^0.17.1` | OCR **bộ Latin đóng gói sẵn**, chạy offline | Quét hóa đơn (PBI 24) — [[Giao dịch]] |
+| `camera` `^0.12.1` | Preview + chụp ảnh (`enableAudio: false`) | Màn chụp `scan-02` |
+| `image_picker` `^1.2.3` | Chọn ảnh từ **thư viện** | Màn chụp — nút "Thư viện" |
+| `image` `^4.9.2` | Tiền xử lý ảnh **thuần Dart** (xoay/resize/contrast/JPEG) | Pipeline trước OCR (chạy trong `compute`) |
+| `device_info_plus` `^13.2.0` | RAM + phiên bản HĐH | Kiểm tra cấu hình `scan-10` |
+| `com.google.mlkit:genai-prompt` `1.0.0-beta4` *(Android native, chặng 2)* | Gọi **Gemini Nano** do AICore hệ thống quản lý (không tải model về app) | Tier A — kênh `sora_thu_chi/device_probe`, method `genAiGenerate` |
+| `flutter_gemma` `^1.8.1` + `flutter_gemma_litertlm` `^1.6.3` *(chặng 2)* | Chạy **Gemma 3n E2B** (`.litertlm`) trên máy + tải/xoá model có tiến trình | Tier B — `GemmaLlm`, `GemmaModelManager` |
 | JSON file | Backup/restore (GĐ3) | Export/import toàn bộ dữ liệu |
+
+- **minSdk Android nâng lên 26** (chặng 2, do ML Kit GenAI Prompt API yêu cầu) — ghi `maxOf(flutter.minSdkVersion, 26)` trong `android/app/build.gradle.kts`.
 
 ## Quyết định kiến trúc ghi nhận
 - **Offline, không API**: tỷ giá quy đổi đa tiền tệ dùng bảng tỷ giá lưu sẵn/nhập tay — **không** real-time API ([[Ví & Tài khoản]]).
@@ -60,6 +69,27 @@ Cơ chế chốt (quyết định user, lệch gợi ý `docs/tool/giai-phap-tie
 - **Nạp lúc boot:** mặc định `system` trước khi `load()` xong; `home` là cổng boot nền trống + phải mở khóa PIN mới thấy nội dung → chấp nhận nháy nền khung đầu, không chặn frame.
 - **Seam & DI theo pattern PBI 17:** abstract `ThemeStore` (`load()→ThemeMode?`, `save`) + `DriftThemeStore` (1 row `themeMode` trong `AppSettings`) + `ensureThemeStore()`/`ensureThemeController()`; `SoraApp` thêm seam `themeStore?`; test bơm `FakeThemeStore` (không khởi tạo sqlite native). Ghi write-through **nối đuôi** để chọn nhanh liên tiếp không bị save cũ đè.
 - Bộ màu 2 theme: xem [[Design system]] §Giao diện Sáng / Tối.
+
+## Quét hóa đơn AI — seam, kênh native & dữ liệu (PBI 24, **chặng 1 + chặng 2**)
+Chặng 1 = **Chế độ cơ bản** (bộ luật, không LLM) + kiểm tra cấu hình máy + mục Cài đặt. **Chặng 2 = AI nâng cao**: Tier A (Gemini Nano qua AICore) + Tier B (Gemma 3n E2B tải ~1.8GB) — cùng seam `ReceiptExtractor`, fallback về bộ luật khi lỗi/timeout.
+
+**5 seam tách khỏi plugin — test widget không cần camera/ML Kit/drift thật** (`lib/core/scan/`):
+- `ReceiptOcr.readText` — impl thật `MlKitReceiptOcr` (TextRecognition bản Latin, nối text + chuẩn hoá `boundingBox` pixel → `ScanRect` 0..1 theo kích thước ảnh).
+- `ReceiptExtractor` — seam **2 engine dùng chung một định dạng kết quả**: `RuleBasedExtractor` (bộ luật) và `LlmExtractor` (chặng 2: timeout **10s** + `try/catch` → gọi lại bộ luật trong cùng seam, ghi `engine` **thực dùng**). Chọn engine theo tier ở `ScanSettings.effectiveEngine` — Tier B **chỉ chạy khi đã tải model** (`modelBytes > 0`), còn lại rơi về bộ luật. Model trả JSON (`amount`/`date`/`merchant`/`category`) → `parseLlmReceipt` (JSON hỏng/không có JSON ⇒ coi như thất bại, không đoán); model **không** trả vùng chữ nên `rect` để trống (màn xác nhận không khoanh vùng).
+- `ScanModelManager.download/cancelDownload/delete/installedBytes` — seam tải/xoá model Tier B; impl `GemmaModelManager` (`flutter_gemma`). Mọi lỗi ⇒ `false` và **không** bật AI (FR-012).
+- `ScanImageStore.save/delete` — impl ghi `<appDocuments>/receipts/<millis>.jpg`; **chỉ** gọi ở nhánh lưu.
+- `DeviceProbe.measure` — impl `PlatformDeviceProbe`: `device_info_plus` (RAM, phiên bản OS) + **MethodChannel `sora_thu_chi/device_probe`** (dung lượng trống, AICore, GPU delegate). Mọi lỗi ⇒ **giá trị mặc định an toàn** (dung lượng 0 ⇒ Tier C, luồng vẫn chạy), không ném.
+- `ScanSettingsStore.load/save` — impl drift 4 key trong `AppSettings`.
+
+**Kênh native `sora_thu_chi/device_probe`** (`DeviceProbeChannel.kt` + `DeviceProbeChannel.swift`, **phải đăng ký** trong `MainActivity`/`AppDelegate` — thiếu đăng ký ⇒ màn `scan-10` treo ở "Đang kiểm tra…"). iOS trả `supportsOnDeviceAi = false` + `supportsGpuDelegate = false`. **Chặng 2 cắm tiếp GenAI vào chính kênh này** (`GenAiChannel.kt`, method `genAiGenerate` — gọi Gemini Nano trên `Dispatchers.Main`, có `kotlinx-coroutines-android`).
+
+**Trạng thái**: `ScanController extends GetxController` giữ `Rx<ScanSettings>` (bám `ThemeController`), write-through **nối đuôi** để chạm nhanh liên tiếp không bị save cũ đè; `ensureScanSettingsStore()`/`ensureScanController()` đăng ký ở gốc `SoraApp`.
+
+**Dữ liệu (schema v8)**: cột `transactions.source` (`textEnum<TxnSource>`, default `manual`) + bảng `scan_sessions` (`image_path`, `raw_text`, `parsed_json`, `engine`, `transaction_id` nullable, `created_at`). Migration `from < 8` chỉ `addColumn` + `createTable`, **không seed**; 🪤 **quên `build_runner` sau khi sửa bảng ⇒ thiếu cột, build lỗi**. Ghi một lần quét = **một `db.transaction()`**: bù `balance` ví + insert `transactions` + insert `scan_sessions`.
+
+**Tiền xử lý ảnh thuần Dart** (`package:image`, chạy trong `compute`): `bakeOrientation` → resize `maxSide 2000` → `adjustColor(contrast: 1.15, saturation: 0)` → JPEG `quality 88`. **Không** dò biên/crop hóa đơn (quyết định R4 — crop theo biên đoán sai làm mất dòng tổng).
+
+**Nền tảng**: 5 package trên nâng **iOS tối thiểu lên 15.5** (Podfile + 3 chỗ `IPHONEOS_DEPLOYMENT_TARGET` — bắt buộc cho ML Kit) và cần 3 khóa quyền (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSMicrophoneUsageDescription`) + `CAMERA` trong AndroidManifest. **Android release (R8/minify) cần `proguard-rules.pro`** `-dontwarn com.google.mlkit.vision.text.**` — plugin tham chiếu cả bộ nhận diện Nhật/Hàn/Trung trong nhánh `initialize` dù app chỉ đóng gói bộ Latin; thiếu luật này ⇒ `assembleRelease` **fail**.
 
 ## Liên kết
 - [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ đã xong ở PBI 19.

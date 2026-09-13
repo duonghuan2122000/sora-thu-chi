@@ -6,7 +6,9 @@ sources:
   - ../docs/design-system-app-thu-chi.md
   - ../docs/transaction/nghiep-vu-thiet-ke-quan-ly-giao-dich.md
   - ../docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md
+  - ../docs/ai/tinh-nang-quet-hoa-don-ai-local.md
   - ../../.specify/specs/18/spec.md
+  - ../../.specify/specs/24/spec.md
 ---
 
 # Design system
@@ -50,6 +52,15 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - Là **token theme** (không hex cứng trong widget) để đạt tương phản ở dark mode; `copyWith`/`lerp` lerp từng phần tử theo chỉ số (độ dài cố định 6).
 - **Cột biểu đồ dòng tiền + 2 số tổng** thì ngược lại: vẫn dùng token teal/coral sẵn có (đúng nghĩa thu/chi), tô bằng `tealOnNeutral`/`coralOnNeutral`.
 
+## Luồng quét hóa đơn (PBI 24 — chặng 1)
+> Mockup `docs/ai/scan-01…04`, `scan-10`, `scan-11`. Điểm vào: bottom sheet từ FAB.
+
+- **Bottom sheet "Thêm giao dịch" (`scan-01`)** — thay điểm vào cũ (push thẳng form): 4 hàng *Khoản Thu / Khoản Chi / Chuyển khoản / Quét hóa đơn (AI)*, mỗi hàng có dòng mô tả; hàng quét mang **nhãn "MỚI"** và **chỉ hiện khi** tính năng đang bật.
+- **Màn chụp `scan-02` — NGOẠI LỆ: nền TỐI CỐ ĐỊNH, không theo theme** (cố ý không đọc `SoraColors`) ⇒ ở giao diện Sáng vẫn là nền đen. Overlay **khung ngắm nét đứt 4 góc**; nút back / đèn flash / **Thư viện** / nút chụp tròn; dòng gợi ý *"Đặt hóa đơn vừa khung, tránh bóng đổ"*. **Không** hiển thị nút "Quét nhiều" của mockup (quét hàng loạt = GĐ2, khác biệt **đã chốt**).
+- **Màn xử lý `scan-03`** — ảnh thu nhỏ + vệt quét, **4 bước** với 3 trạng thái (xong / đang chạy / chưa tới), dòng cam kết *"Không gửi dữ liệu lên bất kỳ máy chủ nào"*. Không đọc được chữ ⇒ thông báo + **"Chụp lại"** / **"Nhập tay"**.
+- **Màn xác nhận `scan-04`** — `SubPageScaffold` app bar teal, **không** bottom nav; nút **"Lưu giao dịch"** cố định ở `bottomNavigationBar` + `SafeArea` (teal, bo `8px`, cao `44px`, **vô hiệu khi số tiền rỗng/≤ 0**). Ảnh gốc trong `InteractiveViewer`; chạm một trường ⇒ **khoanh vùng coral** trên ảnh (không xác định được vùng thì không khoanh).
+- **Chỉ báo độ tin cậy (rule màu, đúng ngữ nghĩa cảnh báo)**: **cao → `tealOnNeutral`** · **trung bình → `textSecondary`** (xám) · **thấp/rỗng → `coralOnNeutral` + chữ "Kiểm tra lại"**. Banner cảnh báo trùng (cùng số tiền ±24h) dùng `coralLightBg` + chữ coral, **không chặn lưu**.
+
 ## Giao diện Sáng / Tối / Theo hệ thống — đã triển khai PBI 18
 > Bộ đôi theme qua **`ThemeExtension<SoraColors>`** (không thêm dependency). Nguồn: `.specify/specs/18`, `docs/tool/giai-phap-tien-ich-ca-nhan-hoa.md §1.2`.
 
@@ -85,6 +96,7 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
   - **Màn chính**: header/teal chứa tiêu đề + số liệu tổng + nội dung cuộn + bottom nav.
   - **Sub-page** (từ Cài đặt): app bar teal + nút back, tiêu đề trắng; **không** bottom nav.
   - **Màn bảo mật** (khóa PIN/sinh trắc): toàn màn hình, không app bar/bottom nav — độc lập, chạy trước khi vào app.
+  - **Màn chụp hóa đơn** (`scan-02`): nền **tối cố định** ngoài hệ theme (xem §Luồng quét hóa đơn).
 - Settings list: nhóm section (tiêu đề nhỏ viết hoa xám nhạt), dòng `ListTile` + đường kẻ mảnh.
 - Numpad (PIN): lưới `3×4`, nút tròn ~48–52px viền mảnh không nền; dot indicator ~12px (đặc teal / rỗng xám).
 
