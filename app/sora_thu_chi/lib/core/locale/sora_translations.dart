@@ -640,5 +640,35 @@ class SoraTranslations extends Translations {
     'Xoá model': 'Delete model',
     'Kiểm tra cập nhật model': 'Check for model update',
     'Đã xoá model': 'Model deleted',
+
+    // ---------------------------------------------------------------------
+    // Thông báo & nhắc nhở (PBI 28) — hàng điểm vào màn Cài đặt + màn cấu hình
+    // 5 nhóm/8 hàng. Giờ/số/% giữ nguyên định dạng (không dịch — FR-015).
+    // ---------------------------------------------------------------------
+    'Thông báo & nhắc nhở': 'Notifications & reminders',
+    'NHẮC NHỞ HÀNG NGÀY': 'DAILY REMINDER',
+    'NGÂN SÁCH': 'BUDGET',
+    'GIAO DỊCH ĐỊNH KỲ': 'RECURRING TRANSACTIONS',
+    'MỤC TIÊU TIẾT KIỆM': 'SAVINGS GOALS',
+    'TỔNG KẾT TỰ ĐỘNG': 'AUTOMATIC SUMMARIES',
+    'Nhắc nhập giao dịch hằng ngày': 'Daily transaction reminder',
+    'Cảnh báo vượt ngân sách': 'Budget overspend alert',
+    // 'Ngưỡng cảnh báo' đã có ở nhóm Ngân sách (PBI 21) — tái dùng, không thêm.
+    'Nhắc hóa đơn sắp đến hạn': 'Upcoming bill reminder',
+    'Nhắc trước': 'Remind ahead',
+    'Nhắc đóng góp mục tiêu': 'Goal contribution reminder',
+    'Tổng kết cuối tuần': 'Weekly summary',
+    'Tổng kết cuối tháng': 'Monthly summary',
+    '@giờ mỗi ngày': 'Every day at @giờ',
+    ' · chỉ nhắc nếu chưa ghi': ' · only if nothing logged yet',
+    'Khi đạt @sớm% và khi vượt @vượt%':
+        'When reaching @sớm% and when over @vượt%',
+    'Sớm: @sớm% · Vượt mức: @vượt%': 'Early: @sớm% · Over: @vượt%',
+    'Tiền điện, tiền nhà, trả nợ...': 'Electricity, rent, loan payments...',
+    '@n ngày trước hạn thanh toán': '@n days before the due date',
+    'Theo chu kỳ đã đặt cho từng mục tiêu':
+        'Follows the schedule set for each goal',
+    'Chủ nhật hằng tuần, @giờ': 'Every Sunday, @giờ',
+    'Ngày cuối tháng, @giờ': 'Last day of the month, @giờ',
   };
 }

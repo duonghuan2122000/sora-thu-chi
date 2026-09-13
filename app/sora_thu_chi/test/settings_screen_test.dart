@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import 'package:sora_thu_chi/core/locale/locale_controller.dart';
+import 'package:sora_thu_chi/core/notification/notification_store.dart';
 import 'package:sora_thu_chi/core/profile/device_profile.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/scan/device_tier.dart';
@@ -14,6 +15,7 @@ import 'package:sora_thu_chi/core/utilities/utilities_store.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/category_list_screen.dart';
+import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
 import 'package:sora_thu_chi/screens/scan/device_check_screen.dart';
 import 'package:sora_thu_chi/screens/settings_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
@@ -21,6 +23,7 @@ import 'package:sora_thu_chi/screens/wallet_list_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_locale_store.dart';
+import 'fakes/fake_notification_store.dart';
 import 'fakes/fake_theme_store.dart';
 import 'fakes/fake_device_probe.dart';
 import 'fakes/fake_scan_model_manager.dart';
@@ -58,12 +61,21 @@ void _registerUtilitiesStore() {
   addTearDown(Get.reset);
 }
 
+/// [NotificationSettingsScreen] mở qua SettingsScreen (store null) tự ensure
+/// store — đăng ký store fake để không khởi tạo drift (sqlite native).
+void _registerNotificationStore() {
+  Get.reset();
+  Get.put<NotificationStore>(FakeNotificationStore());
+  addTearDown(Get.reset);
+}
+
 Future<void> pumpSettings(
   WidgetTester tester, {
   DeviceProfile profile = DeviceProfile.initial,
   VoidCallback? onManageWalletTap,
   VoidCallback? onManageCategoryTap,
   VoidCallback? onManageUtilitiesTap,
+  VoidCallback? onManageNotificationsTap,
   ScanSettings? scanSettings,
   FakeDeviceProbe? probe,
 }) async {
@@ -87,10 +99,18 @@ Future<void> pumpSettings(
           onManageWalletTap: onManageWalletTap,
           onManageCategoryTap: onManageCategoryTap,
           onManageUtilitiesTap: onManageUtilitiesTap,
+          onManageNotificationsTap: onManageNotificationsTap,
         ),
       ),
     ),
   );
+}
+
+/// `ListView` của màn Cài đặt dựng lười — hàng cuối nhóm KHÁC (PBI 28) nằm
+/// ngoài viewport mặc định 800×600, nên test chạm tới nó cần màn cao hơn.
+Future<void> useTallSurface(WidgetTester tester) async {
+  await tester.binding.setSurfaceSize(const Size(390, 900));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
 }
 
 void main() {
@@ -113,7 +133,8 @@ void main() {
       );
     });
 
-    testWidgets('Profile mặc định → đủ khối hồ sơ + 2 nhóm/6 hàng đúng', (tester) async {
+    testWidgets('Profile mặc định → đủ khối hồ sơ + 2 nhóm/7 hàng đúng', (tester) async {
+      await useTallSurface(tester);
       await pumpSettings(tester);
 
       // Header + khối hồ sơ.
@@ -122,7 +143,7 @@ void main() {
       expect(find.text('Người dùng'), findsOneWidget);
       expect(find.text('Chạm để đổi ảnh đại diện'), findsOneWidget);
 
-      // 2 nhóm + 6 hàng.
+      // 2 nhóm + 7 hàng (KHÁC thêm hàng "Thông báo & nhắc nhở" — PBI 28).
       expect(find.text('TÀI KHOẢN'), findsOneWidget);
       expect(find.text('Tiền tệ mặc định'), findsOneWidget);
       expect(find.text('Đổi mã PIN'), findsOneWidget);
@@ -131,6 +152,7 @@ void main() {
       expect(find.text('Quản lý ví'), findsOneWidget);
       expect(find.text('Danh mục'), findsOneWidget);
       expect(find.text('Tiện ích & Cá nhân hóa'), findsOneWidget);
+      expect(find.text('Thông báo & nhắc nhở'), findsOneWidget);
 
       // Giá trị tiền tệ + công tắc sinh trắc học tắt. Công tắc của nhóm
       // "QUÉT HÓA ĐƠN AI" (PBI 24) nằm dưới đáy danh sách nên chưa được dựng.
@@ -139,6 +161,7 @@ void main() {
     });
 
     testWidgets('Hàng đúng thứ tự từ trên xuống', (tester) async {
+      await useTallSurface(tester);
       await pumpSettings(tester);
 
       final ordered = [
@@ -148,6 +171,7 @@ void main() {
         'Quản lý ví',
         'Danh mục',
         'Tiện ích & Cá nhân hóa',
+        'Thông báo & nhắc nhở',
       ];
       double prev = -1;
       for (final label in ordered) {
@@ -299,6 +323,43 @@ void main() {
 
       expect(tapped, isTrue);
       expect(find.byType(UtilitiesScreen), findsNothing);
+      expect(find.byType(BackButton), findsNothing);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+    });
+
+    testWidgets('Tap "Thông báo & nhắc nhở" → đẩy NotificationSettingsScreen, back về', (
+      tester,
+    ) async {
+      await useTallSurface(tester);
+      _registerNotificationStore();
+      await pumpSettings(tester);
+
+      await tester.tap(find.text('Thông báo & nhắc nhở'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NotificationSettingsScreen), findsOneWidget);
+      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.text('NHẮC NHỞ HÀNG NGÀY'), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      expect(find.byType(NotificationSettingsScreen), findsNothing);
+    });
+
+    testWidgets('Bơm onManageNotificationsTap → gọi callback, không đẩy route', (
+      tester,
+    ) async {
+      var tapped = false;
+      await useTallSurface(tester);
+      await pumpSettings(tester, onManageNotificationsTap: () => tapped = true);
+
+      await tester.tap(find.text('Thông báo & nhắc nhở'));
+      await tester.pumpAndSettle();
+
+      expect(tapped, isTrue);
+      expect(find.byType(NotificationSettingsScreen), findsNothing);
       expect(find.byType(BackButton), findsNothing);
       expect(find.byType(SettingsScreen), findsOneWidget);
     });

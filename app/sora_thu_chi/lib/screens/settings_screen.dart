@@ -11,6 +11,7 @@ import '../data/scan_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 import 'category_list_screen.dart';
+import 'notification_settings_screen.dart';
 import 'scan/device_check_screen.dart';
 import 'utilities_screen.dart';
 import 'wallet_list_screen.dart';
@@ -18,10 +19,11 @@ import 'wallet_list_screen.dart';
 /// Màn trung tâm Cài đặt — khối hồ sơ + 2 nhóm mục. Các hàng còn lại là điểm
 /// vào chưa kích hoạt — chạm không mở luồng; riêng hàng "Quản lý ví" điều hướng
 /// sang [WalletListScreen] (FR-001 PBI 5), hàng "Danh mục" sang
-/// [CategoryListScreen] (FR-001 PBI 13) và hàng "Tiện ích & Cá nhân hóa" sang
-/// [UtilitiesScreen] (FR-001 PBI 17).
-/// [profile]/[onManageWalletTap]/[onManageCategoryTap]/[onManageUtilitiesTap]
-/// là seam để test bơm giá trị; shell dùng mặc định.
+/// [CategoryListScreen] (FR-001 PBI 13), hàng "Tiện ích & Cá nhân hóa" sang
+/// [UtilitiesScreen] (FR-001 PBI 17) và hàng "Thông báo & nhắc nhở" sang
+/// [NotificationSettingsScreen] (FR-001 PBI 28).
+/// [profile]/[onManageWalletTap]/[onManageCategoryTap]/[onManageUtilitiesTap]/
+/// [onManageNotificationsTap] là seam để test bơm giá trị; shell dùng mặc định.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
@@ -29,12 +31,14 @@ class SettingsScreen extends StatelessWidget {
     this.onManageWalletTap,
     this.onManageCategoryTap,
     this.onManageUtilitiesTap,
+    this.onManageNotificationsTap,
   });
 
   final DeviceProfile profile;
   final VoidCallback? onManageWalletTap;
   final VoidCallback? onManageCategoryTap;
   final VoidCallback? onManageUtilitiesTap;
+  final VoidCallback? onManageNotificationsTap;
 
   /// Default đẩy màn list ví; khi test bơm callback → gọi callback không push.
   void _openManageWallet(BuildContext context) {
@@ -69,6 +73,20 @@ class SettingsScreen extends StatelessWidget {
     }
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => UtilitiesScreen()),
+    );
+  }
+
+  /// Default đẩy màn Thông báo & nhắc nhở; test bơm callback → không push.
+  void _openManageNotifications(BuildContext context) {
+    final callback = onManageNotificationsTap;
+    if (callback != null) {
+      callback();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationSettingsScreen(),
+      ),
     );
   }
 
@@ -125,6 +143,14 @@ class SettingsScreen extends StatelessWidget {
               _SettingsRow(
                 label: 'Tiện ích & Cá nhân hóa'.tr,
                 onTap: () => _openManageUtilities(context),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: colors.tabInactive,
+                ),
+              ),
+              _SettingsRow(
+                label: 'Thông báo & nhắc nhở'.tr,
+                onTap: () => _openManageNotifications(context),
                 trailing: Icon(
                   Icons.chevron_right,
                   color: colors.tabInactive,

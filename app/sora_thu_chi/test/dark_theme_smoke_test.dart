@@ -15,6 +15,7 @@ import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
 import 'package:sora_thu_chi/screens/pin/pin_lock_screen.dart';
 import 'package:sora_thu_chi/screens/report_category_detail_screen.dart';
 import 'package:sora_thu_chi/screens/report_comparison_screen.dart';
@@ -30,6 +31,7 @@ import 'package:sora_thu_chi/theme/sora_colors.dart';
 
 import 'fakes/fake_device_probe.dart';
 import 'fakes/fake_locale_store.dart';
+import 'fakes/fake_notification_store.dart';
 import 'fakes/fake_scan_image_store.dart';
 import 'fakes/fake_scan_settings_store.dart';
 import 'fakes/fake_theme_store.dart';
@@ -536,6 +538,80 @@ void main() {
         decorationColorOf(const ValueKey('export-privacy-warning')),
         SoraColors.dark.coralLightBg,
       );
+
+      for (var i = 0; i < 3; i++) {
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'Màn Thông báo & nhắc nhở (PBI 28) ở tối: nền/nhãn nhóm/vòng tròn icon '
+    '(teal + coral)/công tắc đọc token tối, không overflow',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        darkApp(NotificationSettingsScreen(store: FakeNotificationStore())),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(NotificationSettingsScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+
+      /// Vòng tròn icon của hàng [label] (Container đầu tiên trong hàng).
+      Color? circleColorOf(String label) {
+        final row = find
+            .ancestor(of: find.text(label), matching: find.byType(Row))
+            .first;
+        final container = tester.widget<Container>(
+          find.descendant(of: row, matching: find.byType(Container)).first,
+        );
+        return (container.decoration as BoxDecoration?)?.color;
+      }
+
+      Color? glyphColorOf(String label) {
+        final row = find
+            .ancestor(of: find.text(label), matching: find.byType(Row))
+            .first;
+        return tester
+            .widget<Icon>(
+              find.descendant(of: row, matching: find.byType(Icon)).first,
+            )
+            .color;
+      }
+
+      // Nhãn nhóm lấy token tối.
+      expect(
+        tester
+            .widget<Text>(find.text('NHẮC NHỞ HÀNG NGÀY'))
+            .style
+            ?.color,
+        SoraColors.dark.tabInactive,
+      );
+      // Cả 2 sắc icon (teal + coral) lấy đúng bảng màu tối.
+      expect(
+        circleColorOf('Nhắc nhập giao dịch hằng ngày'),
+        SoraColors.dark.tealLightBg,
+      );
+      expect(
+        glyphColorOf('Nhắc nhập giao dịch hằng ngày'),
+        SoraColors.dark.tealOnNeutral,
+      );
+      expect(
+        circleColorOf('Cảnh báo vượt ngân sách'),
+        SoraColors.dark.coralLightBg,
+      );
+      expect(
+        glyphColorOf('Cảnh báo vượt ngân sách'),
+        SoraColors.dark.coralOnNeutral,
+      );
+      // 6 công tắc dựng ra ở tối, đều có nhãn bật/tắt rõ (không mất chấm).
+      expect(find.byType(Switch), findsNWidgets(6));
 
       for (var i = 0; i < 3; i++) {
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));

@@ -35,9 +35,13 @@ String formatDayGroupHeader(DateTime date, {DateTime? now}) {
 String formatDateTimeLabel(DateTime d) =>
     '${_two(d.day)}/${_two(d.month)}/${d.year} ${_two(d.hour)}:${_two(d.minute)}';
 
+/// Giờ `'HH:mm'` 24h, mỗi số 2 chữ số — dùng chung cho mọi dòng hiển thị giờ.
+/// Không đổi theo ngôn ngữ (FR-015).
+String formatClock(int hour, int minute) => '${_two(hour)}:${_two(minute)}';
+
 /// Giờ `'HH:mm'` — dòng phụ giao dịch trong kỳ ở màn Chi tiết Ngân sách
 /// (PBI 21, mockup `03`: "Hôm nay, 12:30").
-String formatTimeLabel(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
+String formatTimeLabel(DateTime d) => formatClock(d.hour, d.minute);
 
 /// Định dạng ngày giờ vùng chi tiết giao dịch `'dd/MM/yyyy · HH:mm'` (mỗi số
 /// 2 chữ số, dấu `·`) — hàng "Ngày giờ" màn chi tiết (PBI 10, mockup 04).
