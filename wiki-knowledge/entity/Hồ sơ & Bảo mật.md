@@ -22,6 +22,8 @@ sources:
   - ../../.specify/specs/28/data-model.md
   - ../../.specify/specs/29/spec.md
   - ../../.specify/specs/29/data-model.md
+  - ../../.specify/specs/30/spec.md
+  - ../../.specify/specs/30/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -154,7 +156,7 @@ Bất biến hàng: mỗi hàng có **đúng một** điều khiển — tổng 
 **Kiến trúc code** (khuôn PBI 17): domain thuần `NotificationPrefs` (bất biến, `copyWith`, `toSettings`/`fromSettings` + `defaults`) ở `lib/core/notification/`; seam `NotificationStore` (load/save); `DriftNotificationStore` + `ensureNotificationStore()` (GetX singleton — **1** connection drift trên file sqlite); test bơm `FakeNotificationStore`. Màn là `StatefulWidget` + seam store, **không** GetX controller; **ghi bám đuôi** `_saveTail` để bật/tắt liên tiếp không bị save cũ đè save mới.
 
 **Lệch doc đã ghi nhận (có lý do):**
-- **Không dựng bảng `NotificationRule`/`NotificationLog`** như `docs/notification/notification-solution.md §3.1`: cả hai phục vụ **engine** (lịch, chống bắn trùng qua `lastFiredAt`) và **Trung tâm thông báo** — đều ngoài phạm vi (Q1=A). Khi engine ra đời, row `notificationPrefs` là nguồn để migrate.
+- **Không dựng bảng `NotificationRule`/`NotificationLog`** như `docs/notification/notification-solution.md §3.1`: cả hai phục vụ **engine** (lịch, chống bắn trùng qua `lastFiredAt`) và **Trung tâm thông báo**. *(Cập nhật PBI 30: bảng lịch sử **đã** ra đời — nhưng tên là **`notifications`**, 7 cột phẳng, **không** `payload` JSON; xem mục "Trung tâm thông báo" bên dưới. `NotificationRule` vẫn chưa dựng — thuộc engine.)* Khi engine ra đời, row `notificationPrefs` là nguồn để migrate.
 - **Không lưu** ~~"các ngày trong tuần" của nhắc hàng ngày~~ (**đã bổ sung ở PBI 29** — khoá `dailyWeekdays`, xem mục dưới), **chu kỳ + mốc % của mục tiêu** (là cấu hình **per-mục-tiêu** thuộc module GĐ3, không phải cấp màn), **thứ của tổng kết tuần** (mockup cố định Chủ nhật), ngưỡng riêng từng ngân sách. Thêm trường sau này **không phá** dữ liệu cũ nhờ parse tolerant.
 - **Đường kẻ giữa các hàng** chỉ kẻ **trong** nhóm (khuôn màn Tiện ích) — mockup vẽ 4 đường không nhất quán; không bám lỗi đồ hoạ.
 
@@ -186,6 +188,41 @@ Bất biến hàng: mỗi hàng có **đúng một** điều khiển — tổng 
 **Kiểm thử**: 1 file test mới (`daily_reminder_config_screen_test` 17 ca: bố cục, mũi tên ±1/quay vòng, chip, bản nháp–Lưu–back, nhánh lỗi, English, cỡ chữ 2.0@360×640) + sửa 4 file (`notification_prefs_test` +6 nhóm luật tập ngày, `date_label_test` +2 nhóm nhãn ngày, `notification_settings_screen_test` +7 ca hai vùng chạm/dòng phụ, `dark_theme_smoke_test` +1 màn 02). **`flutter analyze` sạch; 1052 pass + 1 test đỏ CÓ SẴN** `transactions_dao_test` (PBI 11) — baseline PBI 28 là 1004 pass, **số đỏ không tăng**.
 
 **QA tay trên emulator nhóm A–M ĐÃ ĐẠT** (2026-09-13) — người dùng chạy theo `.specify/specs/29/quickstart.md` §2 (hai vùng chạm; đối chiếu mockup `02`; mũi tên quay vòng + xem trước tức thì; chip ngày & chip cuối không tắt được; bản nháp–Lưu–back; DB cũ **thiếu khoá** `dailyWeekdays`; dòng phụ nén dải; **0 thông báo & 0 lần hỏi quyền**; không ảnh hưởng dữ liệu/loại nhắc khác; English; theme Tối; cỡ chữ lớn/màn hẹp). **iOS chưa QA** (PBI không đụng native/config ⇒ Android là đủ).
+
+## Trung tâm thông báo (màn `03`) — đã triển khai PBI 30
+> **PBI 30 (2026-09-13)**: dựng **màn đọc lịch sử thông báo** theo mockup `docs/notification/03-trung-tam-thong-bao.svg` (doc §3.1 `NotificationLog`, §5 điểm vào "biểu tượng chuông ở màn hình Tổng quan"). Nguồn đặc tả `.specify/specs/30/`. Điểm vào: **chuông ở vùng tiêu đề màn Tổng quan** (không phải Cài đặt), `SubPageScaffold` app bar teal + back + **bánh răng**, **không** bottom nav/FAB (FR-002).
+
+**Màn `03`** — 2 tab lọc **"Tất cả" / "Chưa đọc"** + danh sách nhóm theo thời gian **HÔM NAY / TUẦN NÀY / TRƯỚC ĐÓ**, mục = chấm teal 8px (chỉ khi chưa đọc) + vòng tròn 36px theo loại + tiêu đề + dòng mô tả + nhãn thời gian; **2 trạng thái rỗng khác câu** (rỗng chung vs tab "Chưa đọc" rỗng); bánh răng → màn `01` (PBI 28). Token/hình ở [[Design system]].
+
+**Luật nghiệp vụ đã chốt (chốt Q1/Q2/Q3 = 1A/2A/3A, 2026-09-13):**
+- **Q1=A — đợt này KHÔNG có engine ghi lịch sử** ⇒ trên máy thật bảng `notifications` **luôn rỗng**, màn ở trạng thái rỗng. PBI này bàn giao **điểm nối** (`append`) cho engine sau. Đây là **hành vi đã chốt, không phải lỗi**; QA nhóm có dữ liệu phải **chèn tay** vào DB theo quickstart §1.2.
+- **Q2=A — không thao tác hàng loạt**: **không** nút "đánh dấu tất cả đã đọc", **không** xoá một mục, **không** xoá lịch sử. Thao tác đọc **duy nhất** = **chạm vào mục**.
+- **Q3=A — trần lưu 200 mục gần nhất** (`kMaxNotifications = 200`, **hằng số**, không phải cấu hình người dùng); vượt trần → mục **cũ nhất tự bị dọn** theo `created_at` (khoá phụ `id` cho tất định), **không hỏi, không báo**, áp dụng **bất kể đã đọc hay chưa**.
+
+**Chạm một mục (FR-007/FR-008, thứ tự bắt buộc):** đánh dấu **đã đọc trước** (lưu bền), **rồi** mới điều hướng theo loại — nhờ vậy loại **chưa có màn đích** vẫn được đánh dấu, chỉ là không đi đâu:
+| Loại | Đích |
+|---|---|
+| `dailyReminder` | màn **Thêm giao dịch** (mặc định tab Chi) |
+| `budgetAlert` | màn **Chi tiết ngân sách** theo `relatedId`; **thiếu `relatedId` ⇒ không điều hướng** (ngân sách đã xoá thì màn đích tự hiện "Danh mục đã bị xóa") |
+| `periodSummary` | `popUntil(isFirst)` rồi đổi **tab Báo cáo** của shell (qua `onSelectTab`) |
+| `recurringDue`, `goalReminder` | **im lặng**: 0 route, 0 SnackBar, 0 khung "sắp có" (module đích chưa tồn tại) |
+
+**Trạng thái đã đọc — một chiều, gắn với BẢN GHI (không theo loại):** 2 bản ghi cùng loại đọc độc lập; `readAt` chỉ chuyển `null → giá trị`, không bao giờ ngược và **không bị ghi đè** (cưỡng chế trong câu SQL ở [[Stack kỹ thuật]]); lưu **bền** qua đóng app/khởi động lại thiết bị. Màn **chỉ** đọc + cập nhật `read_at` của bảng `notifications`: **0** ghi vào `wallets`/`transactions`/`categories`/`budgets`/`appSettings`, **0** đổi cấu hình màn `01`/`02` (FR-012).
+
+**Chấm đỏ trên chuông Tổng quan (FR-001, SC-013):** chấm hiện ⟺ **có ≥1 mục chưa đọc**; lịch sử rỗng/lỗi đọc ⇒ **không chấm** (lỗi đọc **nuốt**, `_unread = 0`, không crash); chuông **luôn** bấm được; chấm cập nhật **ngay khi quay về** màn Tổng quan (đếm lại **sau** `await Navigator.push`, không đếm trước). State **cục bộ** ở `DashboardScreen` — **không** GetX controller, **không** stream (trạng thái chỉ đổi được ở màn Trung tâm, mà màn đó mở từ chính nó).
+
+**Không làm (ngoài phạm vi):** engine bắn thông báo (PBI sau); `flutter_local_notifications`/`timezone`/quyền/channel (vẫn **0 plugin thông báo**, FR-013); màn `04` mẫu thông báo đẩy; đọc-tất-cả/xoá/ghim/tìm kiếm trong lịch sử/màn chi tiết một thông báo; **seed dữ liệu mẫu trong app** (spec cấm); đưa lịch sử vào backup/restore JSON (GĐ3); widget màn hình chính ([[Lộ trình phát triển]]).
+
+**Lệch doc đã ghi nhận (có lý do):**
+1. **Bảng thật là `notifications`, không phải `NotificationLog`** của doc §3.1 — 7 cột **phẳng** (`kind` + `title` + `body` + `created_at` + `read_at?` + `related_id?`), **không** cột `payload` JSON: đích điều hướng do `kind` quyết định nên chỉ cần mang **một** id. `kind` lưu `.name` (quy ước repo: `TxnSource.manual/aiScan`, `ScanEngine`), khác snake_case của doc. **Vẫn không dựng `NotificationRule`** (thuộc engine).
+2. **"TUẦN NÀY" = 7 ngày gần nhất** (cuốn theo **ngày lịch**), **không** cắt theo tuần lịch bắt đầu Thứ Hai — spec §Giả định định nghĩa đúng như vậy; cắt theo tuần lịch thì mục **hôm qua** rơi vào "TRƯỚC ĐÓ" khi hôm nay là Thứ Hai. Mục **8 ngày** trước ⇒ TRƯỚC ĐÓ (khác cách đếm của ngân sách/báo cáo).
+3. **Nhãn thời gian trong ngày là giờ TUYỆT ĐỐI `HH:mm`**, mockup vẽ "2 giờ trước" — spec §Giả định chốt cố ý (dễ đọc, dễ kiểm thử, mockup không nhất quán giữa các mục). Nhãn 1…7 ngày dùng **tên thứ đầy đủ** ("Thứ Năm"), không dùng `dayLabel` viết tắt (`T5`).
+4. **Chấm trên chuông dùng `AppColors.coral` + viền trắng**, không phải đỏ tươi — xem ngoại lệ ở [[Design system]].
+5. **`DashboardScreen` đổi từ `StatelessWidget` (khung rỗng) sang `StatefulWidget`** để giữ `_unread`; `AppShell` bơm thêm `onSelectTab` xuống màn Tổng quan (khuôn đang bơm cho màn Báo cáo).
+6. **Nâng schema v8 → v9** (bảng mới `notifications`) ⇒ phải sửa `schemaVersion` ở **4 file test drift cũ** — bắt buộc, chỉ đổi con số khẳng định.
+
+**Kiểm thử**: 3 file test mới (`app_notification_test` 15 ca hàm thuần; `notification_history_store_drift_test` 8 ca — **chạy thật trên drift in-memory**, không skip: trần 200, thứ tự, một chiều, không đụng bảng khác; `notification_center_screen_test` 19 ca màn) + 1 fake mới + sửa 6 file (`widget_test` +5 ca chuông/chấm, `dark_theme_smoke_test` +1, 4 file drift đổi version). **`flutter analyze` sạch; 1100 pass + 1 test đỏ CÓ SẴN** (`transactions_dao_test`, PBI 11) — baseline PBI 29 là 1052 pass, **số đỏ không tăng**.
+> **QA tay trên emulator nhóm A–N ĐÃ ĐẠT** (2026-09-13) — người dùng chạy theo `.specify/specs/30/quickstart.md` §2, gồm cả nhóm có dữ liệu **chèn tay** vào DB theo §1.2 (app **không** có cơ chế seed). PBI 30 **hoàn tất 32/32 task**. **iOS chưa QA** (PBI **0** plugin native mới, chỉ thêm bảng sqlite ⇒ rủi ro thấp).
 
 ## Hồ sơ cá nhân
 | Trường | Chốt |
@@ -221,3 +258,4 @@ Bất biến hàng: mỗi hàng có **đúng một** điều khiển — tổng 
 - [[Giao dịch]] — công tắc ở đây quyết định hàng "Quét hóa đơn (AI)" có hiện ở sheet FAB hay không.
 - [[Danh mục]] — quy tắc dịch **tên danh mục mặc định** ở tầng hiển thị.
 - [[Lộ trình phát triển]] — phụ thuộc backup GĐ3; PIN khóa app thuộc MVP.
+- [[Design system]] — token màn Trung tâm (chấm 8px, vòng 36px, 2 tab tự vẽ, ngoại lệ chấm coral trên chuông).

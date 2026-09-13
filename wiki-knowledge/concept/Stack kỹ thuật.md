@@ -7,6 +7,8 @@ sources:
   - ../docs/budget/nghiep-vu-ngan-sach.md
   - ../docs/wallet/nghiep-vu-vi-tai-khoan.md
   - ../../.specify/specs/18/research.md
+  - ../docs/notification/notification-solution.md
+  - ../../.specify/specs/30/data-model.md
 ---
 
 # Stack kỹ thuật
@@ -16,7 +18,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 ## Thư viện chính
 | Thư viện | Mục đích | Module dùng |
 |---|---|---|
-| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions` (schema **v8**), `app_settings` |
+| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions`, **`notifications` (schema **v9** — PBI 30)**, `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
 | `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21), **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22), **`LineChart` + `dashArray`** ở màn `03` So sánh kỳ (PBI 26) — [[Báo cáo]]. Còn lại: line chart xu hướng **một kỳ** ở màn `01` |
 | `pdf` `^3.13.0` *(PBI 27)* | Sinh **PDF thuần Dart** (`pw.Document` + `MultiPage` + `ThemeData.withFont`) — chạy được trong isolate | Màn `04` Xuất báo cáo (định dạng PDF) |
@@ -103,6 +105,15 @@ Chặng 1 = **Chế độ cơ bản** (bộ luật, không LLM) + kiểm tra c�
 - Ba hàm sinh tệp **thuần Dart** (`lib/core/report/report_export.dart` + `report_export_writers.dart`): `buildCsvBytes`, `buildXlsxBytes`, `buildPdfBytes` — không `Widget`/`BuildContext`/asset ⇒ gọi được trong `compute`.
 - 🪤 **Tên tệp khi chia sẻ**: trên Android/iOS `XFile.fromData(bytes, name: …)` **bỏ qua** `name` (cross_file chỉ suy `name` từ `path`) ⇒ phải truyền `ShareParams.fileNameOverrides` — thiếu thì tên tệp chia sẻ thành chuỗi ngẫu nhiên.
 - Seam `ShareExport` (`typedef` + `defaultShareExport`) để test bơm bản giả, **không** mock MethodChannel.
+
+## Lịch sử thông báo — seam & bảng drift (PBI 30, **0 dependency mới**)
+- **Seam MỚI `NotificationHistoryStore`** (3 phương thức: `loadRecent()` / `append(n)` / `markRead(id, readAt)`) trong `lib/core/notification/` — **cố ý không nới** `NotificationStore` của PBI 28 (2 mối quan tâm khác nhau: cấu hình vs lịch sử; nới interface cũ buộc phải sửa `DriftNotificationStore` + `FakeNotificationStore` đã QA mà không được lợi gì). Bỏ `unreadCount` (đếm bằng Dart ở chỗ gọi — tối đa 200 dòng), không `markAllRead`/`delete` (spec cấm).
+- **Bảng drift `notifications` (schema v9)**: `id` autoIncrement · `kind` `textEnum<NotificationKind>()` · `title` · `body` (default `''`) · `created_at` dateTime · `read_at` dateTime **nullable** · `related_id` int **nullable** (không FK — bám nếp `transactions.category_id`: xoá đối tượng nghiệp vụ **không** làm mất lịch sử). Migration `from < 9` chỉ `createTable`, **không seed**; DB mới có bảng nhờ `m.createAll()`. Không index (bảng tối đa 200 dòng, luôn quét cả bảng).
+- **Trần 200 cưỡng chế ở TẦNG GHI** (`kMaxNotifications = 200`, hằng trong `app_notification.dart` — không phải cấu hình người dùng): `append` chèn 1 dòng rồi `SELECT id` top-200 theo `(created_at DESC, id DESC)` + `delete(id.isNotIn(keep))`. Nghĩa là **mọi** đường ghi đều đúng, kể cả engine tương lai; khoá phụ `id` làm thứ tự **tất định** khi trùng `created_at`.
+- **Một chiều ở tầng SQL**: `markRead` = `UPDATE … WHERE id = ? AND read_at IS NULL` — gọi lại **không** đổi `read_at`; id không tồn tại → no-op, không ném. Không có cờ `is_read` thứ hai (`isRead ⟺ readAt != null`).
+- `DriftNotificationHistoryStore` + `ensureNotificationHistoryStore()` (GetX singleton — **1** connection drift trên file sqlite; test `Get.put` fake trước ⇒ không mở drift); test bơm `FakeNotificationHistoryStore`.
+- **Nâng schema ⇒ phải sửa số khẳng định ở 4 file test drift cũ** (`notification_store_drift` / `scan_settings_store_drift` / `utilities_store_drift` / `scan_dao`: `schemaVersion` 8 → 9) — không tránh được, chỉ đổi con số, không đổi hành vi kiểm.
+- ⚠ **Trần 200 kiểm được ở DAO drift thật** trên host Windows này (có sqlite native) — tức test `notification_history_store_drift_test` **không** bị skip, khác mấy test drift phải skip-guard.
 
 ## Liên kết
 - [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ đã xong ở PBI 19.

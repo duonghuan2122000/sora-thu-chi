@@ -11,6 +11,8 @@ sources:
   - ../../.specify/specs/18/spec.md
   - ../../.specify/specs/24/spec.md
   - ../../.specify/specs/25/spec.md
+  - ../docs/notification/03-trung-tam-thong-bao.svg
+  - ../../.specify/specs/30/spec.md
 ---
 
 # Design system
@@ -142,6 +144,15 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - **Hai vùng chạm trên một hàng** (màn `01`, lần đầu trong app): vùng chạm = **cụm icon + khối tiêu đề/dòng phụ**, `trailing` (công tắc) **ngoài** mọi `InkWell` ⇒ chạm công tắc **không** mở màn. Đổi ở **`_itemRow` dùng chung** (một chỗ) nên 2 hàng chevron cũng mất phản hồi mực đúng ở icon chevron — **hành vi "chạm không mở gì" không đổi**.
 - **Nút chính ghim đáy** giữ nguyên khuôn 5 màn form đã có: `SizedBox(height: 44)` + `ElevatedButton` `AppColors.teal` / chữ trắng / `elevation: 0` / bo `8` / chữ `15 w600`; `key: ValueKey('save-primary')`.
 - **Nhãn màn `02`**: nhãn nhóm viết hoa `13 w600` `tabInactive` khuôn màn `01`; nhãn ngày **`T2`…`CN`** sinh từ `dayLabel(int)` (`switch` **literal trước `.tr`** để `sora_translations_test` ràng buộc được — gom vào `const List` sẽ **lọt lưới** test dịch); EN `Mon…Sun`, giờ `HH:mm` và tên app **không** dịch.
+
+## Trung tâm thông báo — màn `03` + chuông Tổng quan (PBI 30)
+- **Hàng 2 tab tự vẽ, KHÔNG `TabBar`/`TabController`** (mockup là **gạch chân**, không pill): `Row` 2 `GestureDetector(opaque)`; mỗi tab = `Container` có `border: Border(bottom: BorderSide(color: teal | transparent, width: 2))` ⇒ **gạch chân rộng đúng theo chữ** (mockup đo theo "Tất cả"), nhãn `13` (`AppColors.teal` w600 khi chọn / `colors.tabInactive` w500 khi không), cách nhau `24`; dưới cùng `Container(height: 1, color: listDivider)`. **Bọc `FittedBox(scaleDown)`** cả hàng tab — ở cỡ chữ 2.0 hàng tab tràn `52px` (khuôn `_HeaderSummary` màn Báo cáo).
+- **Mục danh sách** = `Row(crossAxisAlignment: start)`: **chấm 8px** `AppColors.teal` **chỉ khi chưa đọc** (đã đọc vẫn chiếm đúng 8px ⇒ hàng không xô lệch; canh vào tâm vòng tròn bằng `padding top 14`) → `SizedBox(8)` → **vòng tròn `36px`** nền `tealLightBg`/`coralLightBg` + glyph `20px` `tealOnNeutral`/`coralOnNeutral` → `SizedBox(12)` → `Expanded`. Kẻ `Divider(listDivider, height: 1, indent/endIndent: 20)` sau **mỗi** mục.
+- **Đọc vs chưa đọc khác nhau ở CẢ chấm LẪN chữ** (FR-005): chưa đọc = tiêu đề `textPrimary` w600 + mô tả `textSecondary`; đã đọc = tiêu đề `listLabel` w400 + mô tả `tabInactive`. Nhãn thời gian `11` `tabInactive` nằm **ngoài `Expanded`** (cùng hàng tiêu đề); dòng mô tả **wrap tự nhiên, không `maxLines`** (số liệu không bị cắt).
+- **Coral vẫn chỉ ở ngữ cảnh cảnh báo** (FR-006/FR-015): trong 5 loại thông báo, **duy nhất** `budgetAlert` dùng vòng `coralLightBg` + glyph `coralOnNeutral`; 4 loại còn lại teal. Bộ icon bám màn `01` PBI 28 (`notifications_none` / `warning_amber_rounded` / `event_outlined` / `track_changes` / `pie_chart_outline`).
+- **Nhãn thời gian 3 dạng** (không đổi theo ngôn ngữ, trừ tên thứ): cùng ngày → `HH:mm` (`formatClock`); 1…7 ngày → **tên thứ đầy đủ** `Thứ Hai`…`Chủ Nhật` (`weekdayName(int)` mới ở `date_label.dart`, `switch` **literal trước `.tr`** — EN `Monday`…`Sunday`); cũ hơn → `dd/MM`. Nhãn nhóm `HÔM NAY / TUẦN NÀY / TRƯỚC ĐÓ` viết hoa `11 w600` `tabInactive`, padding `(20, 20, 20, 8)`, **nhóm rỗng không vẽ**.
+- **Trạng thái rỗng 2 câu khác nhau** (FR-011): icon `notifications_none` `44` `tabInactive` + câu chính `16 w600` `textPrimary` + câu phụ `13` `tabInactive`; lịch sử rỗng → "Chưa có thông báo nào"/"Thông báo và nhắc nhở sẽ hiện ở đây."; tab "Chưa đọc" rỗng → "Không có thông báo chưa đọc"/"Bạn đã đọc hết thông báo.".
+- **Chuông màn Tổng quan** ở `ScreenHeader.trailing` (nút tròn `48px`, icon `notifications_none` `24` `AppColors.white`, `Tooltip('Thông báo')`) — **luôn bấm được** kể cả lịch sử rỗng/lỗi đọc. **Chấm chưa đọc = `AppColors.coral` viền trắng `2px`**, `9px`, `Positioned(top: 10, right: 10)` — **ngoại lệ cố ý**: spec viết "chấm đỏ" nhưng bảng màu dự án **không có token đỏ**, và chấm nằm **trên nền teal** nên viền trắng là bắt buộc để đủ tương phản (thêm token đỏ = mở rộng DS cho một chấm 9px). Muốn đỏ thật ⇒ thêm 1 hằng số, đổi 1 dòng.
 
 ## App shell & layout
 - **Bottom nav 5 vị trí**: Tổng quan | Giao dịch | **FAB "Thêm giao dịch" nổi giữa** (nhô lên, hình tròn teal, icon + trắng — hành động lõi) | Báo cáo | Cài đặt.
