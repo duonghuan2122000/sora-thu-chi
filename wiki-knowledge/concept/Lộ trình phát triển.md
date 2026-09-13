@@ -13,6 +13,8 @@ sources:
   - ../../.specify/specs/24/spec.md
   - ../../.specify/specs/25/spec.md
   - ../../.specify/specs/26/spec.md
+  - ../docs/notification/notification-solution.md
+  - ../../.specify/specs/28/spec.md
 ---
 
 # Lộ trình phát triển
@@ -23,7 +25,7 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 | Giai đoạn | Tính năng trọng tâm | Phụ thuộc |
 |---|---|---|
 | **MVP** | Khóa app (PIN/sinh trắc), Quản lý ví, Thêm/sửa/xóa giao dịch, Danh mục, Báo cáo cơ bản (pie/bar) — **màn `01` Tổng quan (PBI 22) + màn `02` Chi tiết theo danh mục (PBI 23) + màn `03` So sánh kỳ (PBI 26) đã xong** | — |
-| **GĐ2** | Ngân sách, Giao dịch định kỳ, Nhắc nhở, Xuất báo cáo Excel/PDF — **màn `04` Xuất báo cáo (PBI 27) đã xong (cả 3 định dạng)** | Giao dịch + Danh mục (MVP); Ngân sách cần module Thông báo (cùng GĐ2) |
+| **GĐ2** | Ngân sách, Giao dịch định kỳ, Nhắc nhở, Xuất báo cáo Excel/PDF — **màn `04` Xuất báo cáo (PBI 27) đã xong (cả 3 định dạng)**; **Nhắc nhở: chỉ màn cấu hình đã xong (PBI 28), chưa có engine** | Giao dịch + Danh mục (MVP); Ngân sách cần module Thông báo (cùng GĐ2) |
 | **GĐ3** | Mục tiêu tiết kiệm, Quản lý nợ, **Backup/Restore JSON** | — |
 
 ### Ghi chú giai đoạn
@@ -56,6 +58,13 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 - **Báo cáo (GĐ2) — màn `04` Xuất báo cáo đã triển khai (PBI 27)** — màn con đè shell, điểm vào là **icon xuất thứ hai trên vùng tiêu đề màn `01`** (**luôn** bấm được, khác nút so sánh). Bộ lọc **riêng của màn, sống trong phiên** (khoảng ngày chặn chéo + nhiều ví + danh mục cha (gồm con) + tag), **hộp tóm tắt** cập nhật ngay, **dòng cảnh báo** hiển thị sẵn (tệp ra khỏi app không còn được bảo vệ), nút xuất **vô hiệu hoá khi 0 giao dịch**. Ba định dạng giao trong **một đợt** (chốt Q2): **PDF** (tổng hợp + biểu đồ **vẽ lại** bằng widget `pdf` + danh sách phân trang, font Roboto nhúng), **Excel** 2 sheet, **CSV** + BOM UTF-8 — cả ba đi **một** đường chia sẻ hệ thống. Dựng tệp trong **isolate nền**; **không schema, không cache**. Lần đầu PBI này **thêm dependency** (`pdf`, `excel_community`, `share_plus`) + asset font. Chi tiết tại [[Báo cáo]], [[Stack kỹ thuật]].
   - **⚠ CHỜ QA TAY nhóm A–P của màn `04`** trên emulator theo `quickstart.md` (đặc biệt: mở tệp PDF/Excel/CSV bằng ứng dụng thật, tên tệp khi chia sẻ, huỷ bảng chia sẻ, chữ tiếng Việt trong PDF). PBI có plugin native (`share_plus`) ⇒ **nên** chạy thêm nhóm chia sẻ/mở tệp trên **iOS** nếu có máy; nếu bỏ qua phải ghi rõ "iOS chưa QA".
   - **Chưa quy đổi đa tiền tệ** trên màn báo cáo (cộng theo số tiền ghi trên giao dịch) — chờ quyết định mở về **nguồn tỷ giá offline** (#5 dưới).
+- **Thông báo & nhắc nhở (GĐ2) — màn CÀI ĐẶT đã triển khai (PBI 28, 2026-09-13)** — điểm vào Cài đặt nhóm KHÁC → "Thông báo & nhắc nhở" (ngay sau "Tiện ích & Cá nhân hóa"); 5 nhóm/8 hàng mockup `01`, **6 công tắc độc lập + 2 hàng chevron chạm không mở gì**; lưu **1 row JSON `notificationPrefs`** (16 trường) trong bảng `AppSettings` **v5** — **schema giữ v8**, 0 dependency, **0 plugin thông báo**. Chi tiết + 3 chốt phạm vi (Q1/Q2/Q3) tại [[Hồ sơ & Bảo mật]].
+  - **⚠ ĐÂY CHỈ LÀ MÀN CẤU HÌNH — chưa có ENGINE**: đợt này **không bắn thông báo nào**, **không xin quyền** (chốt Q1=A). Toàn bộ phần "chạy thật" của module vẫn còn nguyên:
+    - **Engine bắn thông báo** (chọn plugin, lịch chạy, **chống bắn trùng** khi đã ghi giao dịch, nội dung nhắc theo từng loại, **không bắn khi đang ở màn liên quan**, **quyền thông báo** + channel) — chưa có PBI.
+    - **Màn `02`–`04` của `docs/notification/notification-solution.md`** (chỉnh tham số nhắc hàng ngày: chọn ngày trong tuần; cấu hình ngưỡng cảnh báo; cấu hình nhắc trước) — **chính là đích của 2 hàng chevron** đang no-op; chưa có PBI.
+    - **Trung tâm thông báo** (lịch sử, màn `03` của doc) + bảng `NotificationLog` — chưa có PBI.
+    - **Cấu hình per-mục-tiêu** (chu kỳ đóng góp + mốc %) thuộc module **Mục tiêu tiết kiệm (GĐ3)** — chưa có module, chưa có PBI.
+  - **Chưa QA tay trên emulator** (nhóm A–K `quickstart.md`) tại thời điểm ghi wiki này — xem log.
 - Mục tiêu tiết kiệm & quản lý nợ (GĐ3): chỉ liệt kê ở doc tính năng tổng, **chưa có đặc tả module riêng** — nguồn thiếu, cần bổ sung khi triển khai.
 
 ## Module & data dependency (từ đặc tả)

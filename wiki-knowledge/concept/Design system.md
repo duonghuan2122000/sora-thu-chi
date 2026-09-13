@@ -126,6 +126,14 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - **Dòng cảnh báo** (FR-028): nền `coralLightBg` bo `10` + `Icons.warning_amber_rounded` **coral** — dùng coral đúng ngữ nghĩa "cảnh báo" (không phải chi tiêu); **hiển thị sẵn**, **không** hộp thoại xác nhận. Thông báo "bộ lọc rỗng" dùng chữ `coralOnNeutral`.
 - **Nút `Xuất báo cáo`**: teal đặc bo `8` cao `46`, chữ trắng; trạng thái vô hiệu hoá = teal alpha `0.4` (`onPressed: null` khi 0 giao dịch hoặc đang dựng tệp).
 
+## Thông báo & nhắc nhở — màn cài đặt (PBI 28)
+- **Hai sắc icon trong CÙNG một màn** (lần đầu áp quy tắc "coral chỉ cho ngữ cảnh cảnh báo/chi tiêu" ở cấp **hàng**, không phải cấp màn): hàng thuộc nhóm **NGÂN SÁCH** (2 hàng) dùng vòng tròn `coralLightBg` + glyph `coralOnNeutral`; **6 hàng còn lại** dùng `tealLightBg` + `tealOnNeutral`. **Không** thêm token màu nào — chỉ đọc token sẵn có của cả 2 theme.
+- **Hàng danh sách**: khuôn màn Tiện ích — vòng tròn `36px` + glyph `20px`, cột giữa `Expanded` (tiêu đề `maxLines: 1` + ellipsis, dòng phụ `12px` **wrap tự nhiên**), `trailing` **ngoài** `Expanded`. Nhãn nhóm viết hoa `13 w600` màu `tabInactive`, padding `(20, 24, 20, 8)`.
+- **Đường kẻ**: `Divider(color: listDivider, height: 1)` chỉ chèn **giữa các hàng trong nhóm** (không sau hàng cuối, không trước nhãn nhóm) — bám khuôn code, mockup `01` vẽ không nhất quán.
+- **Công tắc**: `Switch` Material mặc định, màu từ `ColorScheme` seed teal — **không** thêm `switchTheme` (đồng nhất 2 công tắc PBI 17 + công tắc quét PBI 24); QA theme tối kiểm tương phản.
+- **Icon theo nhóm** (Material sẵn có): `notifications_none` (nhắc hàng ngày) · `warning_amber_rounded` (2 hàng Ngân sách) · `event_outlined` (2 hàng định kỳ) · `track_changes` (mục tiêu) · `pie_chart_outline` (2 hàng tổng kết) · `chevron_right` (trailing 2 hàng điều hướng).
+- **Giờ hiển thị `HH:mm` 24h** qua `formatClock(hour, minute)` trong `lib/core/date_label.dart` (tái dùng `_two`; `formatTimeLabel` nay gọi lại nó) — giờ/số/% **không** dịch theo ngôn ngữ.
+
 ## App shell & layout
 - **Bottom nav 5 vị trí**: Tổng quan | Giao dịch | **FAB "Thêm giao dịch" nổi giữa** (nhô lên, hình tròn teal, icon + trắng — hành động lõi) | Báo cáo | Cài đặt.
 - Tab chọn: icon + label teal (in đậm); chưa chọn: xám `#9B9B9B`.

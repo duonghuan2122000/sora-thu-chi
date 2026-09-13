@@ -17,6 +17,9 @@ sources:
   - ../docs/ai/tinh-nang-quet-hoa-don-ai-local.md
   - ../../.specify/specs/24/spec.md
   - ../../.specify/specs/24/data-model.md
+  - ../docs/notification/notification-solution.md
+  - ../../.specify/specs/28/spec.md
+  - ../../.specify/specs/28/data-model.md
 ---
 
 # Hồ sơ & Bảo mật
@@ -121,6 +124,37 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 **Chọn engine thật khi quét**: Tier B **chỉ chạy khi `modelBytes > 0`** (đã tải xong) — chưa tải thì tự rơi về Chế độ cơ bản thay vì gọi model không tồn tại. Chi tiết fallback + engine ghi vào phiên quét: [[Giao dịch]].
 
 > **⚠ QUYẾT ĐỊNH MỞ — nguồn phân phối model Tier B**: repo HuggingFace đang trỏ tới (`kGemmaModelUrl`) là **gated**, cần token ⇒ lượt tải sẽ thất bại và người dùng ở lại Chế độ cơ bản (an toàn, không vỡ luồng). Phải chốt nguồn công khai (tự host / repo không gated) **trước khi phát hành** Tier B. Xem [[Lộ trình phát triển]].
+
+## Màn "Thông báo & nhắc nhở" — đã triển khai PBI 28
+> **PBI 28 (2026-09-13)**: dựng **màn cấu hình thông báo** theo mockup `docs/notification/01-cai-dat-thong-bao.svg`. Điểm vào: Cài đặt nhóm **KHÁC → "Thông báo & nhắc nhở"** (**ngay sau** "Tiện ích & Cá nhân hóa"), `SubPageScaffold` app bar teal + back, **không** bottom nav/FAB. Nguồn đặc tả `.specify/specs/28/`, nghiệp vụ gốc `docs/notification/notification-solution.md` (§2 bảng 5 loại). Đây là **màn cài đặt đầu tiên của module Nhắc nhở (GĐ2)**.
+
+**Bố cục — 5 nhóm / 8 hàng**, mỗi hàng vòng tròn `36px` + icon + tiêu đề + **dòng phụ đọc từ cấu hình đã nạp** (không hằng cứng trong widget):
+- **NHẮC NHỞ HÀNG NGÀY** — *Nhắc nhập giao dịch hằng ngày* (**công tắc**, mặc định **bật**).
+- **NGÂN SÁCH** — *Cảnh báo vượt ngân sách* (**công tắc**, bật) + *Ngưỡng cảnh báo* (**chevron**).
+- **GIAO DỊCH ĐỊNH KỲ** — *Nhắc hóa đơn sắp đến hạn* (**công tắc**, bật) + *Nhắc trước* (**chevron**).
+- **MỤC TIÊU TIẾT KIỆM** — *Nhắc đóng góp mục tiêu* (**công tắc**, **tắt** — công tắc duy nhất mockup vẽ ở trạng thái tắt).
+- **TỔNG KẾT TỰ ĐỘNG** — *Tổng kết cuối tuần* + *Tổng kết cuối tháng* (**2 công tắc**, bật).
+
+Bất biến hàng: mỗi hàng có **đúng một** điều khiển — tổng **6 công tắc + 2 chevron**, không hàng nào có cả hai, không hàng nào trống.
+
+**Mặc định (FR-008)**: nhắc hàng ngày **20:30** + cờ **"chỉ nhắc nếu chưa ghi"** bật; ngưỡng **80%/100%**; nhắc trước **3 ngày**; tổng kết tuần/tháng **Chủ nhật / ngày cuối tháng lúc 20:00**; mọi loại bật **trừ** nhắc đóng góp mục tiêu.
+
+**Quyết định phạm vi đợt này — màn cài đặt KHÔNG kèm engine (chốt Q1/Q2/Q3 = 1A/2A/3A, 2026-09-13):**
+- **Q1=A — không có engine bắn thông báo**: đợt này **chỉ ghi nhận cấu hình**. **Không** xin quyền thông báo, **không** bắn thông báo nào, không có channel/lịch/chống trùng. Việc bắn + quyền + màn `02`–`04` của doc + **Trung tâm thông báo** đều **ngoài phạm vi** — xem [[Lộ trình phát triển]].
+- **Q2=A — 2 hàng chevron chạm không mở gì**: *Ngưỡng cảnh báo* và *Nhắc trước* có phản hồi mực nhưng **0** màn mới, **0** thông báo lỗi, **0** khung "sắp có". Đây là **điểm nối** cho PBI chỉnh tham số sau (tiền lệ "điểm vào no-op" PBI 13/17).
+- **Q3=A — 2 nhóm chưa có module vẫn là công tắc thật**: MỤC TIÊU TIẾT KIỆM (module GĐ3 chưa tồn tại) và GIAO DỊCH ĐỊNH KỲ lưu được **y như mọi hàng**, **không** lộ "chưa hỗ trợ", **không** vô hiệu hoá công tắc.
+
+**Lưu trữ — 1 row JSON `notificationPrefs` trong bảng key-value `AppSettings` v5** — **16 trường** (`dailyEnabled/dailyHour/dailyMinute/dailyOnlyIfNoTxnToday`; `budgetEnabled/budgetEarlyPercent/budgetOverPercent`; `recurringEnabled/recurringDaysBefore`; `goalEnabled`; `weeklyEnabled/weeklyHour/weeklyMinute`; `monthlyEnabled/monthlyHour/monthlyMinute`) gói **nguyên khối** bằng `jsonEncode` (tiền lệ `scanDeviceCheck` PBI 24). **Schema giữ v8** — không migration, không `build_runner`, **không thêm dependency**. Ghi **upsert đúng 1 row**, không xoá `themeMode`/`locale`/2 công tắc Tiện ích/4 khoá quét.
+- **Ghi bộ mặc định ngay lần mở đầu**: màn `load()` rồi `save()` luôn khối vừa đọc (idempotent) ⇒ máy chưa từng cấu hình vẫn **có row ngay**, không chờ người dùng thao tác. Đọc-rồi-ghi cũng **chuẩn hoá** giá trị lạ về miền hợp lệ. DB **không seed** row này (chỉ màn mới tạo).
+- **Parse tolerant, không bao giờ ném**: row vắng / JSON hỏng (rác, `null`, mảng) → **cả bộ mặc định**; từng trường sai kiểu hoặc ngoài miền (giờ ∉ 0–23, phút ∉ 0–59, % ∉ 0–100, ngày ∉ 0–30) → **mặc định của riêng trường đó**. DB là dữ liệu người dùng — hỏng không được làm trắng màn.
+- **Tắt một loại không reset tham số của loại đó** (`copyWith` chỉ chạm trường được truyền) ⇒ bật lại đọc ra **đúng** giờ/ngưỡng/số ngày cũ; **tắt cả 6** vẫn là cấu hình hợp lệ, không giá trị nào tự bật lại. **Không có công tắc "bật/tắt tất cả"**.
+
+**Kiến trúc code** (khuôn PBI 17): domain thuần `NotificationPrefs` (bất biến, `copyWith`, `toSettings`/`fromSettings` + `defaults`) ở `lib/core/notification/`; seam `NotificationStore` (load/save); `DriftNotificationStore` + `ensureNotificationStore()` (GetX singleton — **1** connection drift trên file sqlite); test bơm `FakeNotificationStore`. Màn là `StatefulWidget` + seam store, **không** GetX controller; **ghi bám đuôi** `_saveTail` để bật/tắt liên tiếp không bị save cũ đè save mới.
+
+**Lệch doc đã ghi nhận (có lý do):**
+- **Không dựng bảng `NotificationRule`/`NotificationLog`** như `docs/notification/notification-solution.md §3.1`: cả hai phục vụ **engine** (lịch, chống bắn trùng qua `lastFiredAt`) và **Trung tâm thông báo** — đều ngoài phạm vi (Q1=A). Khi engine ra đời, row `notificationPrefs` là nguồn để migrate.
+- **Không lưu** "các ngày trong tuần" của nhắc hàng ngày (mockup cố định "mỗi ngày", chưa có UI chọn ngày — màn `02` là PBI sau), **chu kỳ + mốc % của mục tiêu** (là cấu hình **per-mục-tiêu** thuộc module GĐ3, không phải cấp màn), **thứ của tổng kết tuần** (mockup cố định Chủ nhật), ngưỡng riêng từng ngân sách. Thêm trường sau này **không phá** dữ liệu cũ nhờ parse tolerant.
+- **Đường kẻ giữa các hàng** chỉ kẻ **trong** nhóm (khuôn màn Tiện ích) — mockup vẽ 4 đường không nhất quán; không bám lỗi đồ hoạ.
 
 ## Hồ sơ cá nhân
 | Trường | Chốt |
