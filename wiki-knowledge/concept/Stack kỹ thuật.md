@@ -18,7 +18,10 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 |---|---|---|
 | `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions` (schema **v8**), `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
-| `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21) và **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22 — [[Báo cáo]]). Còn lại: line chart xu hướng, biểu đồ màn `03` So sánh kỳ |
+| `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21), **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22), **`LineChart` + `dashArray`** ở màn `03` So sánh kỳ (PBI 26) — [[Báo cáo]]. Còn lại: line chart xu hướng **một kỳ** ở màn `01` |
+| `pdf` `^3.13.0` *(PBI 27)* | Sinh **PDF thuần Dart** (`pw.Document` + `MultiPage` + `ThemeData.withFont`) — chạy được trong isolate | Màn `04` Xuất báo cáo (định dạng PDF) |
+| `excel_community` `^2.4.0` *(PBI 27)* | Sinh `.xlsx` 2 sheet | Màn `04` Xuất báo cáo (định dạng Excel) |
+| `share_plus` `^13.3.0` *(PBI 27)* | Mở **bảng chia sẻ của hệ điều hành** (`SharePlus.instance.share` + `XFile.fromData`) | Màn `04` — cả 3 định dạng đi **một** đường chia sẻ |
 | `flutter_local_notifications` | Thông báo local push | Nhắc gd định kỳ, cảnh báo budget, nhắc mục tiêu, tổng kết |
 | `flutter_secure_storage` | Lưu bí mật khóa app + khóa mã hóa (Keychain/Keystore) | Khóa app — PBI 3: key `pin_salt_hash` (hash PIN), key `lock_state` (chống dò JSON) |
 | `crypto` | Băm **SHA-256** (PBI 3, dep mới) | Hash PIN có muối — [[Hồ sơ & Bảo mật]] |
@@ -33,6 +36,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 | JSON file | Backup/restore (GĐ3) | Export/import toàn bộ dữ liệu |
 
 - **minSdk Android nâng lên 26** (chặng 2, do ML Kit GenAI Prompt API yêu cầu) — ghi `maxOf(flutter.minSdkVersion, 26)` trong `android/app/build.gradle.kts`.
+- **Không dùng `excel` gốc**: `excel 4.0.6` buộc `archive ^3.6.1` còn `image ^4.9.2` (PBI 25) buộc `archive ^4.0.9` ⇒ resolver từ chối; `excel_community` giữ API nhưng mở `archive >=4.0.9`. **CSV tự viết** (~30 dòng RFC 4180 + BOM) thay vì thêm package `csv`; **không** dùng `printing` (nặng, có native view) vì cả 3 định dạng đi chung `share_plus`.
 
 ## Quyết định kiến trúc ghi nhận
 - **Offline, không API**: tỷ giá quy đổi đa tiền tệ dùng bảng tỷ giá lưu sẵn/nhập tay — **không** real-time API ([[Ví & Tài khoản]]).
@@ -90,6 +94,15 @@ Chặng 1 = **Chế độ cơ bản** (bộ luật, không LLM) + kiểm tra c�
 **Tiền xử lý ảnh thuần Dart** (`package:image`, chạy trong `compute`): `bakeOrientation` → resize `maxSide 2000` → `adjustColor(contrast: 1.15, saturation: 0)` → JPEG `quality 88`. **Không** dò biên/crop hóa đơn (quyết định R4 — crop theo biên đoán sai làm mất dòng tổng).
 
 **Nền tảng**: 5 package trên nâng **iOS tối thiểu lên 15.5** (Podfile + 3 chỗ `IPHONEOS_DEPLOYMENT_TARGET` — bắt buộc cho ML Kit) và cần 3 khóa quyền (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSMicrophoneUsageDescription`) + `CAMERA` trong AndroidManifest. **Android release (R8/minify) cần `proguard-rules.pro`** `-dontwarn com.google.mlkit.vision.text.**` — plugin tham chiếu cả bộ nhận diện Nhật/Hàn/Trung trong nhánh `initialize` dù app chỉ đóng gói bộ Latin; thiếu luật này ⇒ `assembleRelease` **fail**.
+
+## Xuất báo cáo — sinh tệp & chia sẻ (PBI 27)
+
+- 🪤 **Thêm plugin native ⇒ PHẢI build lại + cài lại app** (`flutter run` từ đầu, không đủ hot reload/hot restart). Triệu chứng khi chạy bản cài cũ: `MissingPluginException(No implementation found for method share on channel dev.fluttercommunity.plus/share)` — bản APK build sau khi thêm dep **có** class plugin (`classes*.dex`) + `res/xml/flutter_share_file_paths.xml`, nên gặp lỗi này thì **xoá app khỏi máy rồi cài lại** trước khi nghi code.
+- **Font nhúng**: `assets/fonts/Roboto-Regular.ttf` + `Roboto-Bold.ttf` (Apache-2.0, ~515 KB/file) khai báo trong `pubspec.yaml`. Font mặc định của `pdf` không có dấu tiếng Việt ⇒ **buộc** phải nhúng; **không** tải font lúc chạy (giữ app offline).
+- 🪤 **`rootBundle` không dùng được trong isolate nền** ⇒ font **phải** nạp ở main isolate rồi truyền bytes vào `compute()` cùng phần dữ liệu thuần.
+- Ba hàm sinh tệp **thuần Dart** (`lib/core/report/report_export.dart` + `report_export_writers.dart`): `buildCsvBytes`, `buildXlsxBytes`, `buildPdfBytes` — không `Widget`/`BuildContext`/asset ⇒ gọi được trong `compute`.
+- 🪤 **Tên tệp khi chia sẻ**: trên Android/iOS `XFile.fromData(bytes, name: …)` **bỏ qua** `name` (cross_file chỉ suy `name` từ `path`) ⇒ phải truyền `ShareParams.fileNameOverrides` — thiếu thì tên tệp chia sẻ thành chuỗi ngẫu nhiên.
+- Seam `ShareExport` (`typedef` + `defaultShareExport`) để test bơm bản giả, **không** mock MethodChannel.
 
 ## Liên kết
 - [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ đã xong ở PBI 19.

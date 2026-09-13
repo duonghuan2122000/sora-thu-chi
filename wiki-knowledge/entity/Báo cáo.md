@@ -12,13 +12,14 @@ sources:
   - ../../.specify/specs/22/spec.md
   - ../../.specify/specs/23/spec.md
   - ../../.specify/specs/26/spec.md
+  - ../../.specify/specs/27/spec.md
 ---
 
 # Báo cáo
 
 Module **thống kê/trực quan hoá** thu chi — biến dữ liệu đã ghi thành cái nhìn tổng thể (tiền vào/ra, phân bổ theo danh mục, xu hướng). Tab **Báo cáo** trên app shell; màn Tổng quan là **cửa vào của cả module** (hiện chứa luôn lối vào [[Ngân sách]]).
 
-**Trạng thái:** **màn `01` Tổng quan (PBI 22) + màn `02` Chi tiết theo danh mục (PBI 23) + màn `03` So sánh kỳ (PBI 26) — đã triển khai**. Còn lại của module: Xuất báo cáo PDF/Excel/CSV (`04`) + bộ lọc báo cáo nâng cao — PBI sau. Xem [[Lộ trình phát triển]].
+**Trạng thái:** **màn `01` Tổng quan (PBI 22) + màn `02` Chi tiết theo danh mục (PBI 23) + màn `03` So sánh kỳ (PBI 26) + màn `04` Xuất báo cáo (PBI 27) — đã triển khai**. Còn lại của module: bộ lọc báo cáo nâng cao — PBI sau. Xem [[Lộ trình phát triển]].
 
 ## Mô hình dữ liệu — KHÔNG có schema riêng
 
@@ -54,6 +55,14 @@ Màn báo cáo **chỉ đọc** bảng `transactions` + `categories` (schema **v
 19. **Câu Nhận xét tự động** ghép **mệnh đề chính + mệnh đề danh mục** (không viết 16 câu rời): ưu tiên *cả hai kỳ không có chi tiêu* → *kỳ đối chiếu không có chi tiêu* (nêu **số tiền** chi của kỳ chính, **không** %) → *chênh lệch `0%`* → *chi nhiều hơn / ít hơn @ref @percent%*. Danh mục nêu tên là **danh mục CHA tăng mạnh nhất theo chênh lệch TUYỆT ĐỐI** (gộp con vào cha, đồng hạng xếp tên tăng dần ⇒ tất định); **không** danh mục nào tăng ⇒ câu **không** nêu tên; danh mục **ẩn vẫn được nêu tên**; tiền chi không gắn danh mục không ứng với danh mục nào.
 20. **Chữ `@ref` trong câu Nhận xét suy từ SO SÁNH NGÀY** (`right.start` trước `left.start` ⇒ "kỳ trước", ngược lại "kỳ sau"), **không** lấy theo chế độ đang chọn — sau khi **hoán đổi** câu phải đổi chiều theo.
 21. **Trạng thái rỗng của màn `03` hai mức**: **cả hai vế** rỗng (kể cả kỳ chỉ có chuyển khoản) ⇒ chỉ thông điệp "Chưa có giao dịch nào trong hai kỳ này" + **vẫn giữ** cặp chip/nút hoán đổi (để còn đường đổi chế độ — **không** chặn bằng màn ngõ cụt), **không** vẽ 3 thẻ; **cả hai vế không có chi tiêu nhưng có Thu** ⇒ thẻ xu hướng hiện **ghi chú** thay hai đường phẳng 0 (thẻ Thu nhập vẫn có badge bình thường).
+22. **Bộ lọc của màn `04` là của RIÊNG màn đó**: kế thừa kỳ đang xem **một lần** khi mở, sau đó sống trong phiên; **không** ghi nhớ, **không** áp sang màn `01/02/03`, **không** đổi kỳ của màn `01` (chốt Q1 2026-09-13). Đọc dữ liệu **một lần** lúc mở màn (`allTransactions` + ví + danh mục **đang hoạt động** cả thu lẫn chi) rồi giữ **bản chụp RAM** — đổi bộ lọc **không** đọc lại DB.
+23. **Kết hợp nhóm lọc = VÀ giữa nhóm, HOẶC trong nhóm, rỗng = không giới hạn** (khoảng ngày ∧ ví ∧ danh mục ∧ tag). Chọn **nhiều ví** cùng lúc (khác bộ lọc màn Giao dịch chỉ 1 ví).
+24. **Khoảng ngày nửa mở như mọi màn Báo cáo**: giao dịch đúng **ngày đầu và ngày cuối đều có mặt**; "Đến ngày" hiển thị = `end − 1 ngày`. Bộ chọn ngày **chặn chéo ngay trong picker** (`Từ ngày` ⇒ `lastDate = đến ngày`; `Đến ngày` ⇒ `firstDate = từ ngày`) ⇒ **không** tồn tại khoảng âm/rỗng và **không có nhánh lỗi validate**.
+25. **Danh mục**: chọn **cha ⇒ gồm con cháu** (dùng chung `effectiveCategoryIds` của bộ lọc màn Giao dịch — PBI 12 nay đã nâng thành public); giao dịch cũ **không có `categoryId`** khớp theo **tên đã bỏ dấu**; `transfer`/`adjustment` (không có danh mục) chỉ khớp khi nhóm danh mục **không** được chọn.
+26. **Tag chỉ soi CỘT `tags`** (khác từ khoá màn Giao dịch soi cả ghi chú + tên danh mục): bỏ `#` đầu, `normalizeSearch` hai vế rồi kiểm **chứa** ⇒ `dulich` / `#dulich` / `DULICH` như nhau; giao dịch không có tag **không** khớp khi ô tag có nội dung.
+27. **Danh sách giao dịch trong tệp ĐỦ MỌI LOẠI** (thu, chi, chuyển khoản, điều chỉnh số dư) và **giữ đúng bộ lọc** — **không** group-keep hai vế chuyển khoản (khác bộ lọc màn Giao dịch: vế của ví **không** được chọn **không** vào tệp). Sắp **tăng dần theo ngày** rồi `id` (thứ tự đọc sổ). Con số tổng hợp thì ngược lại: **đi qua đúng** `reportTotals` + `reportBreakdown` của màn `01` ⇒ transfer/adjustment **bị loại** và sai lệch **0 đ** so với màn `01` (SC-004).
+28. **Số tiền trong danh sách ghi số có dấu, không phân tách nghìn, không đơn vị** (bảng tính đọc thành số, cộng được); chỉ chỗ **hiển thị cho người đọc** (màn hình, mục tổng hợp PDF/Excel) mới dùng `formatMoney`. Ngày trong tệp `dd/MM/yyyy` — **không** đổi theo ngôn ngữ.
+29. **Tên tệp ASCII** `bao-cao-thu-chi_<yyyyMMdd>-<yyyyMMdd>.<ext>` (ngày cuối đã trừ 1) — không ký tự cấm, không phụ thuộc tên ví/danh mục dài. **PDF** = tổng hợp + 2 biểu đồ + danh sách phân trang; **Excel** = 2 sheet "Tổng hợp" / "Giao dịch"; **CSV** = chỉ danh sách + **BOM UTF-8** (bảng tính không lỗi font tiếng Việt).
 
 ## Khi nào số liệu được tính lại
 
@@ -109,22 +118,44 @@ Bố cục theo mockup `01`, thứ tự từ trên xuống:
 - **Lối vào bị VÔ HIỆU HOÁ kèm giải thích** khi người dùng **chưa từng** có giao dịch Thu/Chi nào **trước** kỳ đang xem (kịch bản "kỳ đầu tiên dùng app"): icon mờ đi, chạm hiện `SnackBar` "Chưa có dữ liệu để so sánh" thay vì mở màn. Màn `03` **vẫn mở được** khi chỉ **kỳ đối chiếu** rỗng — chỉ hiện ghi chú, **không** chặn bằng màn trắng.
 - `ValueKey` cho QA/test: `report-compare-entry` (màn `01`), `report-comparison-screen`, `report-compare-chip-left`, `report-compare-chip-right`, `report-compare-swap`, `report-compare-badge-<income|expense>`, `report-compare-trend`, `report-compare-insight`, `report-compare-empty`.
 
+## Màn `04` — Xuất báo cáo (đã triển khai, PBI 27)
+
+**Màn con đè shell** (`SubPageScaffold`: app bar teal + nút back, **không** bottom nav, **không** FAB) — vào bằng **biểu tượng xuất (icon thứ hai) trên vùng tiêu đề màn `01`** (`ScreenHeader.trailing`, cùng hàng với nút so sánh). Khác nút so sánh: nút này **LUÔN bấm được**, kể cả kỳ rỗng (kỳ rỗng thì màn `04` mở ra, bộ lọc 0 giao dịch ⇒ nút xuất tự vô hiệu hoá). Thứ tự trên xuống:
+
+1. **`KHOẢNG THỜI GIAN`** — hai trường `Từ ngày` / `Đến ngày` (`dd/MM/yyyy`) nền `softCardBg` bo `8`; chạm mở bộ chọn ngày **chặn chéo** (luật 24). Mặc định = **đúng kỳ đang xem** ở màn `01` (Tháng 9/2026 ⇒ `01/09/2026 – 30/09/2026`).
+2. **`VÍ`** — chip `Tất cả` + một chip mỗi ví (theo thứ tự hiển thị); **chọn nhiều** cùng lúc; chip đang chọn **fill teal chữ trắng**, chưa chọn `softCardBg` chữ `listLabel`.
+3. **`DANH MỤC`** — chip `Tất cả` + **tối đa 3** chip danh mục **cha đang hoạt động** (cả thu lẫn chi, theo `sortOrder`; danh mục **ẩn** không vào chip); phần vượt gộp thành chip **`+N khác`** mở bottom sheet **đầy đủ** danh mục cha với ô chọn nhiều.
+4. **`TAG`** — ô nhập một dòng, hint `Nhập tag để lọc (VD: #dulich)` (luật 26).
+5. **`ĐỊNH DẠNG XUẤT`** — 3 thẻ ngang hàng **loại trừ nhau**, mặc định **PDF** (chốt 2026-09-13: cả 3 định dạng giao trong **một đợt**, không chia chặng): nhãn định dạng **không dịch** (`PDF`/`Excel`/`CSV`), dòng chú thích **có** dịch (`Có biểu đồ` / `Bảng dữ liệu` / `Dữ liệu thô`). Thẻ đang chọn **viền 2 px teal + dấu chọn tròn** góc phải trên.
+6. **Hộp tóm tắt** (nền `softCardBg` bo `10`) 2 dòng: `N giao dịch • <từ> – <đến>` và `Định dạng: <format> (<chú thích>)` — cập nhật **ngay** theo bộ lọc/định dạng (SC-003/SC-007).
+7. **Thông báo rỗng** (chỉ khi 0 giao dịch) + **dòng cảnh báo hiển thị SẴN** (nền `coralLightBg` + icon cảnh báo coral): *"Tệp xuất ra không còn được app bảo vệ. Hãy cẩn thận khi chia sẻ."* — **không** hộp thoại xác nhận, số tiền trong tệp **không** bị che (chốt Q3).
+8. **Nút `Xuất báo cáo`** (teal, cao `46`) — **vô hiệu hoá** khi bộ lọc 0 giao dịch; đang dựng tệp thì đổi chữ thành `Đang tạo tệp…` và **khoá bấm lặp** nhưng phần còn lại của màn vẫn phản hồi; xong ⇒ mở **bảng chia sẻ của hệ điều hành**.
+
+- **Dựng tệp trong isolate nền** (`compute`) để UI không đứng hình (SC-008 < 5 giây); **font PDF nhúng từ asset** (Roboto Regular/Bold, Apache-2.0) và **phải nạp ở main isolate rồi truyền bytes vào** — trong isolate nền không dùng được `rootBundle`.
+- **Biểu đồ trong PDF được VẼ LẠI** bằng widget của thư viện `pdf` (cặp cột Thu/Chi cho ≤ 6 khoảng con của khoảng lọc + thanh ngang phân bổ theo danh mục) — **không** phải ảnh chụp biểu đồ màn `01`: hai widget biểu đồ của màn `01` là private và chụp ảnh cần dựng lại bản sao + `toImage()` offscreen (khó test, dễ flaky). **Lệch có lý do** so với câu chữ FR-012; số liệu và định nghĩa nhóm **y hệt** màn `01` nên SC-004 vẫn 0 đ. Số khoảng ≤ 6 nên khoảng nhiều năm **không** làm chi phí vẽ tăng.
+- **Ghi tệp rồi chia sẻ qua một seam `ShareExport`** (`lib/core/report/export_share.dart`) để test bơm bản giả. **Bẫy đã gặp**: trên Android/iOS `XFile.fromData` **bỏ qua** tham số `name` (cross_file chỉ suy `name` từ `path`) ⇒ tên tệp chia sẻ sẽ là tên ngẫu nhiên nếu không truyền `ShareParams.fileNameOverrides` — seam mặc định **có** truyền override.
+- `ValueKey` cho QA/test: `report-export-entry` (màn `01`), `report-export-screen`, `export-date-from`/`export-date-to`, `export-wallet-all`/`export-wallet-<id>`, `export-cat-all`/`export-cat-<id>`/`export-more-categories`/`export-cat-option-<id>`/`export-cat-done`, `export-tag-field`, `export-format-<pdf|excel|csv>`, `export-summary`, `export-empty-notice`, `export-privacy-warning`, `export-button`.
+
 ## Giới hạn đã biết (đừng tưởng là bug)
 
 - **Đa tiền tệ chưa quy đổi**: màn cộng theo **số tiền ghi trên giao dịch**, giả định một tiền tệ mặc định. Ví tiền tệ khác ⇒ số tổng có thể lệch (nguồn tỷ giá offline vẫn là ⚠ quyết định mở).
 - **Kỳ tài chính lệch ngày** chưa hỗ trợ (màn con `04` nhóm Tiện ích chưa dựng).
 - **Công tắc "Ẩn số dư"** (PBI 17) **chưa** che số tiền trên màn Báo cáo.
 - **Dữ liệu nâng cấp từ trước schema v4** có thể lệch: giao dịch `category_id = null` nhưng tên danh mục khớp cha được vòng tròn xếp vào **"Khác"**, còn màn Giao dịch lọc theo cha vẫn khớp **theo tên** (`_normalizedNames`) ⇒ tổng danh sách **lớn hơn** số trên lát cắt. Chấp nhận hành vi sẵn có của bộ lọc PBI 12, **không** sửa trong PBI 22.
-- **Kỳ đang chọn nằm trong controller dùng chung**: nay có **ba** màn đọc `ReportController` (màn `01`, `02`, `03`) — màn `02`/`03` chỉ **đọc** kỳ đang chọn làm kỳ chính, **không** đổi nó; kỳ đối chiếu của màn `03` là state cục bộ. Nếu sau này cần mỗi màn một kỳ riêng thì phải tách kỳ ra tham số màn.
+- **Kỳ đang chọn nằm trong controller dùng chung**: nay có **bốn** màn đọc `ReportController` (màn `01`, `02`, `03`, `04`) — màn `02`/`03`/`04` chỉ **đọc** kỳ đang chọn làm mặc định, **không** đổi nó; kỳ đối chiếu của màn `03` và bộ lọc của màn `04` là state cục bộ. Nếu sau này cần mỗi màn một kỳ riêng thì phải tách kỳ ra tham số màn.
+- **Tệp xuất ra KHÔNG còn được app bảo vệ**: đã rời khỏi vùng lưu trữ của app (bảng chia sẻ của hệ điều hành, ứng dụng nhận tệp, thư mục tải về) ⇒ không mã hóa, không che số. Đây là **cảnh báo cố ý** hiển thị sẵn trước khi bấm xuất, không phải lỗi.
+- **Màn `04` không tự cập nhật khi dữ liệu đổi ở nơi khác** (kế thừa hành vi màn `01/02/03`): bản chụp đọc một lần lúc mở màn.
+- **iOS chưa QA** cho luồng chia sẻ (`share_plus` là plugin native — Android đã QA).
 
 ## Ngoài phạm vi (đợt này)
 
-Bộ lọc báo cáo nâng cao (khoảng ngày tuỳ chỉnh, theo ví/danh mục/tag, ghi nhớ bộ lọc), biểu đồ xu hướng (line) + đường trung bình động **cho một kỳ** ở màn `01` (màn `03` đã có biến thể **so sánh** hai đường), báo cáo dòng tiền theo từng ví, **dùng lại insight cho thông báo cuối tuần/cuối tháng** (đợt này chỉ hiện trong màn), toggle "xem theo danh mục con" (câu Nhận xét luôn gộp cha), màn Xuất báo cáo (`04`), kéo/vuốt biểu đồ quá 6 đơn vị, bảng tổng hợp/cache số liệu.
+Bộ lọc báo cáo nâng cao **xuyên suốt ba màn Báo cáo** (khoảng ngày tuỳ chỉnh + theo ví/danh mục/tag + ghi nhớ bộ lọc **ở màn `01/02/03`** — màn `04` đã có bộ lọc riêng trong phiên, không ghi nhớ theo chốt Q1), biểu đồ xu hướng (line) + đường trung bình động **cho một kỳ** ở màn `01` (màn `03` đã có biến thể **so sánh** hai đường), báo cáo dòng tiền theo từng ví, **dùng lại insight cho thông báo cuối tuần/cuối tháng** (đợt này chỉ hiện trong màn), toggle "xem theo danh mục con" (câu Nhận xét luôn gộp cha), kéo/vuốt biểu đồ quá 6 đơn vị, bảng tổng hợp/cache số liệu, **ảnh chụp** biểu đồ màn `01` trong PDF (đợt này vẽ lại — xem màn `04`).
 
 ## Liên kết
 
 - [[Giao dịch]] — nguồn dữ liệu + màn đích của drill-down (bộ lọc điền sẵn).
 - [[Danh mục]] — gộp cha–con, danh mục ẩn vẫn tính, màu/icon hiển thị.
 - [[Ngân sách]] — nằm **trong** tab Báo cáo (hàng điều hướng đầu màn).
-- [[Design system]] — bảng màu định tính `chartPalette`, màu teal/coral cho cột.
+- [[Design system]] — bảng màu định tính `chartPalette`, màu teal/coral cho cột, chip/thẻ định dạng/dòng cảnh báo của màn `04`.
 - [[Nguyên tắc nghiệp vụ]] — số dư suy ra, transfer không là thu/chi, ẩn-vs-xoá.
+- [[Stack kỹ thuật]] — 3 thư viện sinh/chia sẻ tệp của màn `04` (`pdf`, `excel_community`, `share_plus`) + font nhúng.

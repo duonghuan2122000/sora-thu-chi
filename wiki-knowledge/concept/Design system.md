@@ -117,6 +117,15 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 - **Nền thẻ**: `softCardBg` bo `10` (giống thẻ màn `01`), thẻ Nhận xét `coralLightBg` + icon `error_outline` coral. **Khác biệt cố ý** với mockup `03` (vẽ thẻ nền trắng + viền `#EFEFEF`): repo **không có token** cho cặp trắng-viền đó, dùng token sẵn có để dark mode đúng mà **không** thêm token mới.
 - **Biểu đồ xu hướng**: `fl_chart` **`LineChart`** — kỳ trái nét **liền** `tealOnNeutral`, kỳ phải nét **đứt** `dashArray: [4, 3]` màu `tabInactive`; chỉ bật **trục hoành** (3 nhãn: `1` / giữa kỳ / ngày cuối — `interval: 1` + hàm nhãn tự ẩn mọi mốc khác), **không** trục tung, **không** lưới, đường đáy `divider`; chấm (`FlDotData`) **ẩn**, không `isCurved`.
 
+## Xuất báo cáo — màn `04` Báo cáo (PBI 27)
+- **Hai icon trên vùng tiêu đề màn `01`**: nút tròn `48px`, icon trắng (`Icons.ios_share` cho xuất, `Icons.compare_arrows` cho so sánh) cạnh nhau trong `ScreenHeader.trailing`. Ô `trailing` của `ScreenHeader` nay **rộng theo nội dung** (trước đây cố định `48px`) để chứa 2 nút mà tiêu đề tự co lại — một nút vẫn ra đúng bề rộng cũ.
+- **Chip chọn lọc** (ví/danh mục, cả màn `04`): `Container` bo `15`, cao `30`, đệm ngang `14`; **đang chọn = fill `AppColors.teal` chữ trắng `w600`**, chưa chọn = `softCardBg` chữ `listLabel`; tên dài cắt ellipsis (tối đa `140`). Chip `Tất cả` là trạng thái "không giới hạn"; phần danh mục vượt 3 chip gộp vào chip `+N khác` mở bottom sheet.
+- **Thẻ định dạng xuất** (3 thẻ ngang hàng, `Row` + `Expanded`): nền `surface` bo `10`; **đang chọn viền `2px` `AppColors.teal` + `Icons.check_circle` teal góc phải trên**, chưa chọn viền `1px` `divider`; bên trong là bubble icon `32px` (`tealLightBg` khi chọn / `softCardBg` khi không) + nhãn định dạng (**không** dịch) + dòng chú thích (**có** dịch).
+- **Ô ngày** (`Từ ngày`/`Đến ngày`): nền `softCardBg` bo `8`, nhãn nhỏ `10` + giá trị `dd/MM/yyyy` `w600`; **ô tag** dùng cùng nền `softCardBg` bo `8`, viền `none`.
+- **Hộp tóm tắt**: nền `softCardBg` bo `10`, 2 dòng (số giao dịch + khoảng ngày; định dạng + chú thích).
+- **Dòng cảnh báo** (FR-028): nền `coralLightBg` bo `10` + `Icons.warning_amber_rounded` **coral** — dùng coral đúng ngữ nghĩa "cảnh báo" (không phải chi tiêu); **hiển thị sẵn**, **không** hộp thoại xác nhận. Thông báo "bộ lọc rỗng" dùng chữ `coralOnNeutral`.
+- **Nút `Xuất báo cáo`**: teal đặc bo `8` cao `46`, chữ trắng; trạng thái vô hiệu hoá = teal alpha `0.4` (`onPressed: null` khi 0 giao dịch hoặc đang dựng tệp).
+
 ## App shell & layout
 - **Bottom nav 5 vị trí**: Tổng quan | Giao dịch | **FAB "Thêm giao dịch" nổi giữa** (nhô lên, hình tròn teal, icon + trắng — hành động lõi) | Báo cáo | Cài đặt.
 - Tab chọn: icon + label teal (in đậm); chưa chọn: xám `#9B9B9B`.
