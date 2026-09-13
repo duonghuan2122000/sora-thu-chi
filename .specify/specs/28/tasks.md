@@ -66,7 +66,7 @@
 - [ ] T025 QA tay trên emulator theo `quickstart.md` nhóm **A–K** (điểm vào & khung màn; đối chiếu mockup `01`; công tắc độc lập & giữ tham số; mặc định & lưu bền qua kill app + khởi động lại thiết bị; 2 hàng chevron im lặng; **không** bắn thông báo & **không** xin quyền; tắt hết không ảnh hưởng chức năng khác; English; chế độ Tối; cỡ chữ lớn/màn nhỏ; 2 nhóm chưa có module) — ghi lại kết quả **từng nhóm**. Bàn giao ghi rõ: QA **Android** đủ cho mọi nhóm; PBI **không** có plugin native mới ⇒ iOS chạy nhanh A/B/D nếu có máy, nếu bỏ qua phải ghi "iOS chưa QA"
 - [X] T026 Tick checklist `.specify/specs/28/checklists/requirements.md` sau khi thi công xong (**giữ nguyên nội dung** đã duyệt)
 - [X] T027 Đồng bộ wiki theo skill `sora-wiki`: cập nhật `wiki-knowledge/entity/` **Hồ sơ & Bảo mật** (màn "Thông báo & nhắc nhở": điểm vào nhóm KHÁC, 5 nhóm/8 hàng, 6 công tắc độc lập + 2 hàng chevron no-op, lưu **1 row JSON** `notificationPrefs` trong `AppSettings` — schema giữ **v8**, mặc định ghi ngay lần mở đầu, tham số giữ nguyên khi tắt/bật lại, **chưa** có engine bắn thông báo), `wiki-knowledge/concept/` **Lộ trình phát triển** (màn cài đặt thông báo xong — PBI 28; ⚠ còn engine bắn thông báo + màn `02`–`04` của doc + trung tâm thông báo) và **Design system** (2 sắc icon theo nhóm teal/coral trong cùng một màn) + append `wiki-knowledge/log.md` + cập nhật `wiki-knowledge/index.md`
-- [ ] T028 Commit PBI 28 theo skill `git-commit` (Conventional Commits, message tiếng Việt có dấu, **không** trailer `Co-Authored-By`)
+- [X] T028 Commit PBI 28 theo skill `git-commit` (Conventional Commits, message tiếng Việt có dấu, **không** trailer `Co-Authored-By`)
 
 ---
 
