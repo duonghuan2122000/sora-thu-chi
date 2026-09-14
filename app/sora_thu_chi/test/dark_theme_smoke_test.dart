@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/backup/backup_controller.dart';
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/notification/app_notification.dart';
@@ -14,8 +15,10 @@ import 'package:sora_thu_chi/core/security/pin_controller.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
+import 'package:sora_thu_chi/data/backup_crypto_cryptography.dart';
 import 'package:sora_thu_chi/data/report_deps.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
+import 'package:sora_thu_chi/screens/backup_restore_screen.dart';
 import 'package:sora_thu_chi/screens/daily_reminder_config_screen.dart';
 import 'package:sora_thu_chi/screens/notification_center_screen.dart';
 import 'package:sora_thu_chi/screens/notification_settings_screen.dart';
@@ -33,7 +36,11 @@ import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 
+import 'fakes/fake_backup_data_source.dart';
+import 'fakes/fake_backup_prefs_store.dart';
+import 'fakes/fake_backup_scheduler.dart';
 import 'fakes/fake_device_probe.dart';
+import 'fakes/fake_local_backup_store.dart';
 import 'fakes/fake_locale_store.dart';
 import 'fakes/fake_notification_history_store.dart';
 import 'fakes/fake_notification_store.dart';
@@ -730,6 +737,42 @@ void main() {
         SoraColors.dark.tabInactive,
       );
       expect(find.text('Tất cả'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Màn Sao lưu & Khôi phục (PBI 35) ở tối: thẻ + khối tự động đọc token tối, không overflow',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final controller = BackupController(
+        prefsStore: FakeBackupPrefsStore(),
+        localStore: FakeLocalBackupStore(),
+        crypto: CryptographyBackupCrypto(),
+        dataSource: FakeBackupDataSource(),
+        scheduler: FakeBackupScheduler(),
+      );
+
+      await tester.pumpWidget(
+        darkApp(
+          BackupRestoreScreen(controller: controller, pickFile: () async => null),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(BackupRestoreScreen));
+      expect(Theme.of(context).brightness, Brightness.dark);
+      expect(SoraColors.of(context).background, SoraColors.dark.background);
+      expect(find.text('Chưa từng sao lưu'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('backup-auto-switch')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('backup-auto-frequency-daily')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

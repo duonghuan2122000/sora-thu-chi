@@ -97,6 +97,7 @@ Future<void> pumpSettings(
   VoidCallback? onManageCategoryTap,
   VoidCallback? onManageUtilitiesTap,
   VoidCallback? onManageNotificationsTap,
+  VoidCallback? onManageBackupTap,
   ScanSettings? scanSettings,
   FakeDeviceProbe? probe,
 }) async {
@@ -121,6 +122,7 @@ Future<void> pumpSettings(
           onManageCategoryTap: onManageCategoryTap,
           onManageUtilitiesTap: onManageUtilitiesTap,
           onManageNotificationsTap: onManageNotificationsTap,
+          onManageBackupTap: onManageBackupTap,
         ),
       ),
     ),
@@ -164,7 +166,7 @@ void main() {
       expect(find.text('Người dùng'), findsOneWidget);
       expect(find.text('Chạm để đổi ảnh đại diện'), findsOneWidget);
 
-      // 2 nhóm + 7 hàng (KHÁC thêm hàng "Thông báo & nhắc nhở" — PBI 28).
+      // 2 nhóm + 8 hàng (KHÁC thêm hàng "Sao lưu & Khôi phục" — PBI 35).
       expect(find.text('TÀI KHOẢN'), findsOneWidget);
       expect(find.text('Tiền tệ mặc định'), findsOneWidget);
       expect(find.text('Đổi mã PIN'), findsOneWidget);
@@ -174,6 +176,7 @@ void main() {
       expect(find.text('Danh mục'), findsOneWidget);
       expect(find.text('Tiện ích & Cá nhân hóa'), findsOneWidget);
       expect(find.text('Thông báo & nhắc nhở'), findsOneWidget);
+      expect(find.text('Sao lưu & Khôi phục'), findsOneWidget);
 
       // Giá trị tiền tệ + công tắc sinh trắc học tắt. Công tắc của nhóm
       // "QUÉT HÓA ĐƠN AI" (PBI 24) nằm dưới đáy danh sách nên chưa được dựng.
@@ -193,6 +196,7 @@ void main() {
         'Danh mục',
         'Tiện ích & Cá nhân hóa',
         'Thông báo & nhắc nhở',
+        'Sao lưu & Khôi phục',
       ];
       double prev = -1;
       for (final label in ordered) {
@@ -384,6 +388,21 @@ void main() {
       expect(find.byType(BackButton), findsNothing);
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
+
+    testWidgets('Bơm onManageBackupTap → gọi callback, không đẩy route', (
+      tester,
+    ) async {
+      var tapped = false;
+      await useTallSurface(tester);
+      await pumpSettings(tester, onManageBackupTap: () => tapped = true);
+
+      await tester.tap(find.text('Sao lưu & Khôi phục'));
+      await tester.pumpAndSettle();
+
+      expect(tapped, isTrue);
+      expect(find.byType(BackButton), findsNothing);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+    });
   });
 
   group('SettingsScreen — nhóm QUÉT HÓA ĐƠN AI (PBI 24)', () {
@@ -517,7 +536,7 @@ void main() {
     testWidgets('Hàng "Kiểm tra lại cấu hình máy" → đẩy màn scan-10',
         (tester) async {
       await pumpSettings(tester);
-      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Kiểm tra lại cấu hình máy'));

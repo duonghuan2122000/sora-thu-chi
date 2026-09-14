@@ -66,15 +66,20 @@ dependencies:
   flutter_local_notifications: ^22.3.1
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
+  # Sao lưu & khôi phục (PBI 35): chọn file khi khôi phục, mã hóa file backup có
+  # mật khẩu, lịch tự động sao lưu nền, đóng gói .zip khi có ảnh đính kèm (đã có
+  # sẵn trong cây phụ thuộc qua `excel_community` — nay dùng ở code chạy thật nên
+  # chuyển từ dev_dependencies sang đây, research R2).
+  file_picker: ^13.0.0
+  cryptography: ^2.7.0
+  workmanager: ^0.10.0
+  archive: ^4.0.9
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   drift_dev: ^2.34.4
   build_runner: ^2.4.15
-  # Test PBI 27 mở lại tệp .xlsx để kiểm cấu trúc (đã có sẵn trong cây phụ thuộc
-  # qua `excel_community` — khai báo tường minh vì test import trực tiếp).
-  archive: ^4.0.9
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

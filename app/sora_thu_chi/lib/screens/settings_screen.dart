@@ -11,6 +11,7 @@ import '../core/widgets/screen_header.dart';
 import '../data/scan_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
+import 'backup_restore_screen.dart';
 import 'category_list_screen.dart';
 import 'notification_settings_screen.dart';
 import 'scan/device_check_screen.dart';
@@ -33,6 +34,7 @@ class SettingsScreen extends StatelessWidget {
     this.onManageCategoryTap,
     this.onManageUtilitiesTap,
     this.onManageNotificationsTap,
+    this.onManageBackupTap,
   });
 
   final DeviceProfile profile;
@@ -40,6 +42,7 @@ class SettingsScreen extends StatelessWidget {
   final VoidCallback? onManageCategoryTap;
   final VoidCallback? onManageUtilitiesTap;
   final VoidCallback? onManageNotificationsTap;
+  final VoidCallback? onManageBackupTap;
 
   /// Default đẩy màn list ví; khi test bơm callback → gọi callback không push.
   void _openManageWallet(BuildContext context) {
@@ -88,6 +91,18 @@ class SettingsScreen extends StatelessWidget {
       MaterialPageRoute<void>(
         builder: (_) => const NotificationSettingsScreen(),
       ),
+    );
+  }
+
+  /// Default đẩy màn Sao lưu & Khôi phục; test bơm callback → không push.
+  void _openManageBackup(BuildContext context) {
+    final callback = onManageBackupTap;
+    if (callback != null) {
+      callback();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const BackupRestoreScreen()),
     );
   }
 
@@ -149,6 +164,14 @@ class SettingsScreen extends StatelessWidget {
               _SettingsRow(
                 label: 'Thông báo & nhắc nhở'.tr,
                 onTap: () => _openManageNotifications(context),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: colors.tabInactive,
+                ),
+              ),
+              _SettingsRow(
+                label: 'Sao lưu & Khôi phục'.tr,
+                onTap: () => _openManageBackup(context),
                 trailing: Icon(
                   Icons.chevron_right,
                   color: colors.tabInactive,

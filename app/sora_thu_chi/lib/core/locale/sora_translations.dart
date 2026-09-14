@@ -761,5 +761,53 @@ class SoraTranslations extends Translations {
     'Thông báo đang bị tắt trong cài đặt hệ điều hành.':
         'Notifications are turned off in your device settings.',
     'Mở cài đặt': 'Open settings',
+
+    // ---------------------------------------------------------------------
+    // Sao lưu & Khôi phục (PBI 35) — màn `01`, sheet `02`/`03`, màn `04`.
+    // ---------------------------------------------------------------------
+    'Sao lưu & Khôi phục': 'Backup & Restore',
+    'Tạo bản sao lưu mới': 'Create a new backup',
+    'Chọn file khôi phục': 'Choose a file to restore',
+    'File backup từ phiên bản app mới hơn, không tương thích':
+        'This backup is from a newer app version and is not compatible',
+    'File backup không hợp lệ hoặc đã bị hỏng':
+        'The backup file is invalid or corrupted',
+    'Không đọc được file backup': 'Could not read the backup file',
+    'Sao lưu gần nhất': 'Last backup',
+    'Chưa từng sao lưu': 'Never backed up',
+    '@wallets ví · @categories danh mục · @transactions giao dịch':
+        '@wallets wallets · @categories categories · @transactions transactions',
+    'Tự động sao lưu': 'Automatic backup',
+    'Hàng ngày': 'Daily',
+    'Hàng tuần': 'Weekly',
+    'Hàng tháng': 'Monthly',
+    'CÁC BẢN SAO LƯU': 'BACKUPS',
+    'Chưa có bản sao lưu nào': 'No backups yet',
+    'Tự động': 'Auto',
+    'Tạo bản sao lưu': 'Create backup',
+    'Đặt mật khẩu bảo vệ file': 'Protect file with a password',
+    'Nhập mật khẩu': 'Enter password',
+    'Không tạo được file sao lưu': 'Could not create the backup file',
+    'Tạo & Chia sẻ': 'Create & Share',
+    'Xác nhận khôi phục': 'Confirm restore',
+    'File này được bảo vệ bằng mật khẩu. Nhập mật khẩu để xem trước khi khôi phục.':
+        'This file is password-protected. Enter the password to preview it before restoring.',
+    'Xác nhận mật khẩu': 'Confirm password',
+    'Sai mật khẩu, vui lòng thử lại': 'Wrong password, please try again',
+    'Không đọc được file': 'Could not read the file',
+    'Dữ liệu hiện tại trên máy sẽ bị ghi đè hoàn toàn và không thể hoàn tác.':
+        'Your current data will be completely overwritten and cannot be undone.',
+    'Tôi hiểu và muốn tiếp tục': 'I understand and want to continue',
+    'Khôi phục dữ liệu': 'Restore data',
+    'Khôi phục thất bại, vui lòng thử lại':
+        'Restore failed, please try again',
+    'Đã tạo bản sao lưu': 'Backup created',
+    'Khôi phục dữ liệu thành công': 'Data restored successfully',
+    'Bạn có thể lưu file này ở nơi an toàn.':
+        'You can save this file somewhere safe.',
+    'Dữ liệu trên máy đã được cập nhật theo file đã chọn.':
+        'Your data has been updated to match the selected file.',
+    'Chia sẻ lại file': 'Share file again',
+    'Về Tổng quan': 'Back to Overview',
   };
 }
