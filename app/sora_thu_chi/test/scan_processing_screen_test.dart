@@ -4,7 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:sora_thu_chi/core/category/category.dart';
+import 'package:sora_thu_chi/core/scan/receipt_extractor.dart';
 import 'package:sora_thu_chi/core/scan/scan_result.dart';
+import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/screens/scan/scan_confirm_screen.dart';
 import 'package:sora_thu_chi/screens/scan/scan_processing_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
@@ -12,6 +15,28 @@ import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'fakes/fake_scan_image_store.dart';
 import 'fakes/fake_scan_ocr.dart';
 import 'fakes/fake_wallet_repository.dart';
+
+/// Extractor giả — chỉ ghi lại tham số [image] nhận được, trả kết quả cố định
+/// (PBI 37: xác nhận `ScanProcessingScreen` truyền đúng bytes ảnh đã tiền xử lý).
+class _RecordingExtractor implements ReceiptExtractor {
+  Uint8List? lastImage;
+
+  @override
+  Future<ScanExtraction> extract({
+    required List<ScanTextLine> lines,
+    required DateTime now,
+    required List<Category> expenseCategories,
+    required List<Category> incomeCategories,
+    ScanEngine engine = ScanEngine.ruleBased,
+    Uint8List? image,
+  }) async {
+    lastImage = image;
+    return ScanExtraction(
+      type: TxnType.expense,
+      amount: const ScanField<int>(value: 55000, confidence: FieldConfidence.high),
+    );
+  }
+}
 
 final _imageBytes = Uint8List.fromList([1, 2, 3, 4]);
 
@@ -45,6 +70,7 @@ Future<Host> pushProcessing(
   required FakeScanOcr ocr,
   required FakeWalletRepository repository,
   FakeScanImageStore? imageStore,
+  ReceiptExtractor? extractor,
 }) async {
   final host = Host();
   await tester.pumpWidget(
@@ -59,6 +85,7 @@ Future<Host> pushProcessing(
                 builder: (_) => ScanProcessingScreen(
                   imagePath: '/tmp/hoa-don.jpg',
                   ocr: ocr,
+                  extractor: extractor,
                   repository: repository,
                   imageStore: imageStore ?? FakeScanImageStore(),
                   now: () => DateTime(2026, 9, 12, 8, 24),
@@ -152,6 +179,23 @@ void main() {
     expect(repository.scannedCalls, isEmpty);
     expect(imageStore.saved, isEmpty);
   });
+
+  testWidgets(
+    'truyền đúng bytes ảnh đã tiền xử lý cho extractor (PBI 37)',
+    (tester) async {
+      useTallView(tester);
+      final extractor = _RecordingExtractor();
+      await pushProcessing(
+        tester,
+        ocr: FakeScanOcr(_invoiceLines),
+        repository: FakeWalletRepository(),
+        extractor: extractor,
+      );
+      await tester.pumpAndSettle();
+
+      expect(extractor.lastImage, _imageBytes);
+    },
+  );
 
   testWidgets('"Nhập tay" → trả manualEntry', (tester) async {
     useTallView(tester);

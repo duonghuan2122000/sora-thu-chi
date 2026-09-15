@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import '../category/category.dart';
 import '../transaction/transaction.dart';
+import 'bank_notif_parser.dart';
 import 'merchant_dictionary.dart';
 import 'receipt_extractor.dart';
 import 'scan_result.dart';
@@ -13,8 +15,14 @@ abstract class ScanLlm {
   /// Engine tương ứng — ghi vào phiên quét khi chính nhánh này chạy thành công.
   ScanEngine get engine;
 
-  /// Gọi model **một lần** cho mỗi lần quét (FR-010), trả văn bản thô.
-  Future<String> generate(String prompt);
+  /// `true` nếu model đọc trực tiếp ảnh (đa phương thức, Tier A, PBI 37) —
+  /// khi đó [LlmExtractor] gửi ảnh kèm prompt thay vì nhét văn bản OCR vào
+  /// prompt. Mặc định `false` (Tier B chỉ nhận văn bản, không đổi hành vi).
+  bool get supportsImage => false;
+
+  /// Gọi model **một lần** cho mỗi lần quét (FR-010), trả văn bản thô. [image]
+  /// chỉ có tác dụng khi [supportsImage] là `true`.
+  Future<String> generate(String prompt, {Uint8List? image});
 }
 
 /// Trích xuất bằng model trên máy, fallback về bộ luật trong **cùng seam**
@@ -39,10 +47,20 @@ class LlmExtractor implements ReceiptExtractor {
     required List<Category> expenseCategories,
     required List<Category> incomeCategories,
     ScanEngine engine = ScanEngine.ruleBased,
+    Uint8List? image,
   }) async {
     try {
+      // Model đọc ảnh trực tiếp (Tier A, PBI 37) ⇒ bỏ văn bản OCR khỏi prompt,
+      // để model tự đọc nội dung từ ảnh đính kèm thay vì từ [lines].
+      final useImage = _llm.supportsImage && image != null;
+      final prompt = buildScanPrompt(
+        lines,
+        expenseCategories,
+        incomeCategories,
+        includeText: !useImage,
+      );
       final raw = await _llm
-          .generate(buildScanPrompt(lines, expenseCategories, incomeCategories))
+          .generate(prompt, image: useImage ? image : null)
           .timeout(timeout);
       final parsed = parseLlmReceipt(
         raw,
@@ -52,7 +70,10 @@ class LlmExtractor implements ReceiptExtractor {
       );
       // Model trả về nhưng không đọc ra JSON ⇒ coi như thất bại, không đoán.
       if (parsed == null) throw const FormatException('LLM trả về không đọc được');
-      return parsed.copyWith(engine: _llm.engine);
+      return parsed.copyWith(
+        engine: _llm.engine,
+        amount: _reconcileAmount(parsed.amount, lines, now),
+      );
     } catch (_) {
       return fallback.extract(
         lines: lines,
@@ -65,6 +86,20 @@ class LlmExtractor implements ReceiptExtractor {
   }
 }
 
+/// Đối chiếu số tiền AI đọc với tín hiệu `high` của bộ luật ảnh ngân hàng
+/// (cỡ chữ nổi bật / đơn vị đi kèm số — [parseBankNotification]). AI chỉ thấy
+/// văn bản thuần, không thấy cỡ chữ nên dễ nhầm số tiền với số tài khoản/mã
+/// giao dịch đứng gần đó; bộ luật thấy cỡ chữ nên đáng tin hơn khi có tín
+/// hiệu mạnh và hai bên lệch nhau.
+ScanField<int> _reconcileAmount(ScanField<int> llmAmount, List<ScanTextLine> lines, DateTime now) {
+  if (!looksLikeBankNotification(lines)) return llmAmount;
+  final ruleAmount = parseBankNotification(lines: lines, now: now).amount;
+  if (ruleAmount.confidence == FieldConfidence.high && ruleAmount.value != llmAmount.value) {
+    return ruleAmount;
+  }
+  return llmAmount;
+}
+
 /// Prompt dùng chung cho cả 2 tier, cả hóa đơn lẫn ảnh thông báo ngân hàng
 /// (R7, PBI 36) — model tự đọc ngữ cảnh để suy `type`, không cần bước phát
 /// hiện loại ảnh riêng cho nhánh AI. Đưa **cả 2** danh sách danh mục, gắn
@@ -72,13 +107,18 @@ class LlmExtractor implements ReceiptExtractor {
 String buildScanPrompt(
   List<ScanTextLine> lines,
   List<Category> expenseCategories,
-  List<Category> incomeCategories,
-) {
+  List<Category> incomeCategories, {
+  bool includeText = true,
+}) {
   final expenseNames = expenseCategories.map((c) => c.name).join(', ');
   final incomeNames = incomeCategories.map((c) => c.name).join(', ');
-  final text = lines.map((l) => l.text).join('\n');
+  // Tier A đọc ảnh trực tiếp (PBI 37) ⇒ không nhét văn bản OCR vào prompt,
+  // chỉ dẫn model tự đọc nội dung từ ảnh đính kèm trong cùng yêu cầu.
+  final contentSection = includeText
+      ? 'Nội dung:\n${lines.map((l) => l.text).join('\n')}'
+      : 'Nội dung cần đọc nằm trong ảnh đính kèm theo yêu cầu này.';
   return '''
-Bạn trích xuất dữ liệu giao dịch tài chính từ văn bản OCR tiếng Việt. Văn bản có thể là:
+Bạn trích xuất dữ liệu giao dịch tài chính bằng tiếng Việt. Nội dung có thể là:
 (a) hóa đơn cửa hàng, hoặc
 (b) thông báo giao dịch ngân hàng (SMS biến động số dư, thông báo app, hoặc email) — loại này thường chứa NHIỀU số dễ gây nhầm lẫn: số tiền giao dịch, số dư trước/sau giao dịch, số tài khoản, mã giao dịch/mã tham chiếu, hạn mức, phí.
 
@@ -96,8 +136,7 @@ Chỉ trả về DUY NHẤT một đối tượng JSON, không giải thích, kh
 "category": nếu type="chi", chọn một trong danh sách chi: $expenseNames; nếu type="thu", chọn một trong danh sách thu: $incomeNames. null nếu không đủ căn cứ.
 }
 
-Nội dung:
-$text
+$contentSection
 ''';
 }
 

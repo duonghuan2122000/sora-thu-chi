@@ -105,6 +105,7 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
         now: now,
         expenseCategories: expense,
         incomeCategories: income,
+        image: processed,
       );
 
       if (!mounted) return;

@@ -1,6 +1,9 @@
 package com.sorathuchi.sora_thu_chi
 
+import com.google.mlkit.genai.prompt.GenerateContentRequest
 import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.ImagePart
+import com.google.mlkit.genai.prompt.TextPart
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +18,10 @@ import kotlinx.coroutines.launch
  * Model do AICore của hệ thống quản lý — **không** tải về app. Mọi lỗi (máy
  * không hỗ trợ, model chưa sẵn sàng, engine bận) trả `error` để tầng Dart rơi về
  * bộ luật (FR-011).
+ *
+ * PBI 37: có `image` kèm theo ⇒ đọc trực tiếp ảnh qua prompt đa phương thức
+ * (`ImagePart` + `TextPart` trong cùng request) thay vì chỉ nhận `prompt` dạng
+ * văn bản OCR.
  */
 class GenAiChannel(private val scope: CoroutineScope) {
     private val model by lazy { Generation.getClient() }
@@ -22,20 +29,25 @@ class GenAiChannel(private val scope: CoroutineScope) {
     /** Trả `true` nếu đã xử lý [call] — ngược lại để kênh cha xử lý tiếp. */
     fun handle(call: MethodCall, result: MethodChannel.Result): Boolean = when (call.method) {
         "genAiGenerate" -> {
-            generate(call.argument<String>("prompt"), result)
+            generate(call.argument<String>("prompt"), call.argument<ByteArray>("image"), result)
             true
         }
         else -> false
     }
 
-    private fun generate(prompt: String?, result: MethodChannel.Result) {
+    private fun generate(prompt: String?, image: ByteArray?, result: MethodChannel.Result) {
         if (prompt == null) {
             result.error("bad_args", "Thiếu prompt", null)
             return
         }
         scope.launch {
             try {
-                val response = model.generateContent(prompt)
+                val response = if (image != null) {
+                    val request = GenerateContentRequest.Builder(ImagePart(image), TextPart(prompt)).build()
+                    model.generateContent(request)
+                } else {
+                    model.generateContent(prompt)
+                }
                 result.success(response.candidates.firstOrNull()?.text)
             } catch (e: Exception) {
                 result.error("genai_failed", e.message, null)

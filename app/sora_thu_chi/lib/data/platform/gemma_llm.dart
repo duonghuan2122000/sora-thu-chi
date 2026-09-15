@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 
@@ -18,7 +20,10 @@ class GemmaLlm implements ScanLlm {
   ScanEngine get engine => ScanEngine.gemma3nE2b;
 
   @override
-  Future<String> generate(String prompt) async {
+  bool get supportsImage => false;
+
+  @override
+  Future<String> generate(String prompt, {Uint8List? image}) async {
     await _ensureEngine();
     final model = await FlutterGemma.getActiveModel(maxTokens: 2048);
     final session = await model.createSession(maxOutputTokens: 512);

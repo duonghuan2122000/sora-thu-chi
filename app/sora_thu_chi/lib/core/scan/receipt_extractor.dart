@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../category/category.dart';
 import 'bank_notif_parser.dart';
 import 'receipt_parser.dart';
@@ -13,6 +15,9 @@ abstract class ReceiptExtractor {
     required List<Category> expenseCategories,
     required List<Category> incomeCategories,
     ScanEngine engine,
+    /// Ảnh đã tiền xử lý (PBI 37) — chỉ [LlmExtractor] dùng khi model đang
+    /// dùng đọc trực tiếp ảnh (Tier A); [RuleBasedExtractor] bỏ qua.
+    Uint8List? image,
   });
 }
 
@@ -29,6 +34,7 @@ class RuleBasedExtractor implements ReceiptExtractor {
     required List<Category> expenseCategories,
     required List<Category> incomeCategories,
     ScanEngine engine = ScanEngine.ruleBased,
+    Uint8List? image,
   }) async {
     final result = looksLikeBankNotification(lines)
         ? parseBankNotification(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,22 +11,32 @@ import 'package:sora_thu_chi/core/transaction/transaction.dart';
 
 /// Model giả: trả [response] (hoặc ném [error], hoặc treo nếu [hang]).
 class FakeLlm implements ScanLlm {
-  FakeLlm(this.response, {this.error, this.hang = false, ScanEngine? engine})
-    : _engine = engine ?? ScanEngine.gemma3nE2b;
+  FakeLlm(
+    this.response, {
+    this.error,
+    this.hang = false,
+    ScanEngine? engine,
+    this.supportsImage = false,
+  }) : _engine = engine ?? ScanEngine.gemma3nE2b;
 
   final String response;
   final Object? error;
   final bool hang;
   final ScanEngine _engine;
 
+  @override
+  final bool supportsImage;
+
   String? lastPrompt;
+  Uint8List? lastImage;
 
   @override
   ScanEngine get engine => _engine;
 
   @override
-  Future<String> generate(String prompt) {
+  Future<String> generate(String prompt, {Uint8List? image}) {
     lastPrompt = prompt;
+    lastImage = image;
     if (error != null) return Future.error(error!);
     if (hang) return Completer<String>().future;
     return Future.value(response);
@@ -61,11 +72,13 @@ Future<ScanExtraction> extract(
   ScanLlm llm, {
   List<ScanTextLine>? input,
   DateTime? now,
+  Uint8List? image,
 }) => extractorFor(llm).extract(
   lines: input ?? receipt,
   now: now ?? DateTime(2026, 9, 13, 10),
   expenseCategories: expenseCategories,
   incomeCategories: const [],
+  image: image,
 );
 
 void main() {
@@ -164,6 +177,58 @@ void main() {
     });
   });
 
+  group('LlmExtractor đọc ảnh trực tiếp (PBI 37)', () {
+    test('model hỗ trợ ảnh + có ảnh ⇒ gửi ảnh, prompt không chứa văn bản OCR', () async {
+      final image = Uint8List.fromList([9, 9, 9]);
+      final llm = FakeLlm('{"amount": 55000}', supportsImage: true);
+      final result = await extract(llm, image: image);
+
+      expect(llm.lastImage, same(image));
+      expect(llm.lastPrompt, isNot(contains('CIRCLE K VIỆT NAM')));
+      expect(llm.lastPrompt, contains('ảnh đính kèm'));
+      expect(result.amount.value, 55000);
+    });
+
+    test('model hỗ trợ ảnh nhưng không có ảnh ⇒ vẫn dùng văn bản OCR', () async {
+      final llm = FakeLlm('{"amount": 55000}', supportsImage: true);
+      await extract(llm);
+
+      expect(llm.lastImage, isNull);
+      expect(llm.lastPrompt, contains('CIRCLE K VIỆT NAM'));
+    });
+
+    test('model không hỗ trợ ảnh (Tier B) ⇒ bỏ qua ảnh, dùng văn bản OCR như cũ', () async {
+      final image = Uint8List.fromList([9, 9, 9]);
+      final llm = FakeLlm('{"amount": 55000}');
+      await extract(llm, image: image);
+
+      expect(llm.lastImage, isNull);
+      expect(llm.lastPrompt, contains('CIRCLE K VIỆT NAM'));
+    });
+
+    test('có ảnh + model ném lỗi ⇒ vẫn rơi về bộ luật dùng dòng OCR (FR-011/FR-004)', () async {
+      final image = Uint8List.fromList([9, 9, 9]);
+      final llm = FakeLlm(
+        '',
+        error: StateError('model chưa tải'),
+        supportsImage: true,
+      );
+      final result = await extract(llm, image: image);
+
+      expect(result.engine, ScanEngine.ruleBased);
+      expect(result.amount.value, 55000);
+    });
+
+    test('có ảnh + model treo quá timeout ⇒ như trên', () async {
+      final image = Uint8List.fromList([9, 9, 9]);
+      final llm = FakeLlm('', hang: true, supportsImage: true);
+      final result = await extract(llm, image: image);
+
+      expect(result.engine, ScanEngine.ruleBased);
+      expect(result.amount.value, 55000);
+    });
+  });
+
   group('buildScanPrompt (PBI 36, R7)', () {
     test('chứa nội dung + cả 2 danh sách danh mục gắn nhãn + khoá "type"', () {
       final prompt = buildScanPrompt(receipt, expenseCategories, incomeCategories);
@@ -173,6 +238,21 @@ void main() {
       expect(prompt, contains('Cà phê'));
       expect(prompt, contains('Lương'));
       expect(prompt, contains('JSON'));
+      expect(prompt, contains('"type"'));
+    });
+
+    test('includeText: false ⇒ không còn văn bản OCR, vẫn giữ hướng dẫn JSON (PBI 37)', () {
+      final prompt = buildScanPrompt(
+        receipt,
+        expenseCategories,
+        incomeCategories,
+        includeText: false,
+      );
+
+      expect(prompt, isNot(contains('CIRCLE K VIỆT NAM')));
+      expect(prompt, isNot(contains('TỔNG CỘNG')));
+      expect(prompt, contains('ảnh đính kèm'));
+      expect(prompt, contains('Cà phê'));
       expect(prompt, contains('"type"'));
     });
   });
