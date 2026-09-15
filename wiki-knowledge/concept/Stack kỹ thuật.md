@@ -34,7 +34,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 | `image_picker` `^1.2.3` | Chọn ảnh từ **thư viện** | Màn chụp — nút "Thư viện" |
 | `image` `^4.9.2` | Tiền xử lý ảnh **thuần Dart** (xoay/resize/contrast/JPEG) | Pipeline trước OCR (chạy trong `compute`) |
 | `device_info_plus` `^13.2.0` | RAM + phiên bản HĐH | Kiểm tra cấu hình `scan-10` |
-| `com.google.mlkit:genai-prompt` `1.0.0-beta4` *(Android native, chặng 2)* | Gọi **Gemini Nano** do AICore hệ thống quản lý (không tải model về app) | Tier A — kênh `sora_thu_chi/device_probe`, method `genAiGenerate` |
+| `com.google.mlkit:genai-prompt` `1.0.0-beta4` *(Android native, chặng 2)* | Gọi **Gemini Nano** do AICore hệ thống quản lý (không tải model về app); PBI 37 dùng `ImagePart`+`TextPart` để đọc ảnh **trực tiếp** (đa phương thức), không qua văn bản OCR | Tier A — kênh `sora_thu_chi/device_probe`, method `genAiGenerate` |
 | `flutter_gemma` `^1.8.1` + `flutter_gemma_litertlm` `^1.6.3` *(chặng 2)* | Chạy **Gemma 3n E2B** (`.litertlm`) trên máy + tải/xoá model có tiến trình | Tier B — `GemmaLlm`, `GemmaModelManager` |
 | JSON file | Backup/restore (GĐ3) | Export/import toàn bộ dữ liệu |
 
@@ -88,7 +88,7 @@ Chặng 1 = **Chế độ cơ bản** (bộ luật, không LLM) + kiểm tra c�
 - `DeviceProbe.measure` — impl `PlatformDeviceProbe`: `device_info_plus` (RAM, phiên bản OS) + **MethodChannel `sora_thu_chi/device_probe`** (dung lượng trống, AICore, GPU delegate). Mọi lỗi ⇒ **giá trị mặc định an toàn** (dung lượng 0 ⇒ Tier C, luồng vẫn chạy), không ném.
 - `ScanSettingsStore.load/save` — impl drift 4 key trong `AppSettings`.
 
-**Kênh native `sora_thu_chi/device_probe`** (`DeviceProbeChannel.kt` + `DeviceProbeChannel.swift`, **phải đăng ký** trong `MainActivity`/`AppDelegate` — thiếu đăng ký ⇒ màn `scan-10` treo ở "Đang kiểm tra…"). iOS trả `supportsOnDeviceAi = false` + `supportsGpuDelegate = false`. **Chặng 2 cắm tiếp GenAI vào chính kênh này** (`GenAiChannel.kt`, method `genAiGenerate` — gọi Gemini Nano trên `Dispatchers.Main`, có `kotlinx-coroutines-android`).
+**Kênh native `sora_thu_chi/device_probe`** (`DeviceProbeChannel.kt` + `DeviceProbeChannel.swift`, **phải đăng ký** trong `MainActivity`/`AppDelegate` — thiếu đăng ký ⇒ màn `scan-10` treo ở "Đang kiểm tra…"). iOS trả `supportsOnDeviceAi = false` + `supportsGpuDelegate = false`. **Chặng 2 cắm tiếp GenAI vào chính kênh này** (`GenAiChannel.kt`, method `genAiGenerate` — gọi Gemini Nano trên `Dispatchers.Main`, có `kotlinx-coroutines-android`). **PBI 37**: `genAiGenerate` nhận thêm argument `image` (bytes) tuỳ chọn — có ảnh ⇒ dựng `GenerateContentRequest` kèm `ImagePart`+`TextPart` (đọc ảnh trực tiếp); không có ⇒ giữ hành vi cũ (`generateContent(prompt)` text thuần).
 
 **Trạng thái**: `ScanController extends GetxController` giữ `Rx<ScanSettings>` (bám `ThemeController`), write-through **nối đuôi** để chạm nhanh liên tiếp không bị save cũ đè; `ensureScanSettingsStore()`/`ensureScanController()` đăng ký ở gốc `SoraApp`.
 

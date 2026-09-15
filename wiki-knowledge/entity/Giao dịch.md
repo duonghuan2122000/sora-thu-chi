@@ -81,6 +81,7 @@ Màn con **"Tìm kiếm & Lọc"** (`05-tim-kiem-loc.svg`), toàn màn hình đ�
 
 **Chọn engine & fallback (chặng 2)** — cùng một seam, màn xác nhận **không biết** engine nào đã chạy:
 - **Tier A** (Gemini Nano, AICore hệ thống) và **Tier B** (Gemma 3n E2B, đã tải model) → gọi LLM **một lần cho mỗi lần quét**; Tier B chưa tải model thì tự rơi về Chế độ cơ bản.
+- **Tier A đọc trực tiếp ảnh** (prompt đa phương thức, PBI 37) — **không** còn nhét văn bản OCR vào prompt; OCR vẫn chạy song song **chỉ** để dành cho fallback bộ luật (dòng dưới) và đối chiếu số tiền ảnh ngân hàng (mục kế tiếp). Tier B vẫn dựa hoàn toàn trên văn bản OCR như trước — không đổi.
 - LLM **timeout 10 giây**, ném lỗi, hoặc trả về không đọc được JSON ⇒ **tự chuyển sang bộ luật cho riêng lần quét đó**: người dùng vẫn ra màn xác nhận, **không** phải chụp lại, **không** thấy thông báo lỗi kỹ thuật; phiên quét ghi `engine = ruleBased` (FR-011/SC-009).
 - LLM **không** trả vùng chữ ⇒ khoanh vùng ảnh gốc để trống ở nhánh AI (nhánh "không xác định vùng" của `scan-04`).
 
