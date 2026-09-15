@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../category/category.dart';
+import '../transaction/transaction.dart';
 import 'merchant_dictionary.dart';
 import 'receipt_extractor.dart';
 import 'scan_result.dart';
@@ -41,12 +42,13 @@ class LlmExtractor implements ReceiptExtractor {
   }) async {
     try {
       final raw = await _llm
-          .generate(buildReceiptPrompt(lines, expenseCategories))
+          .generate(buildScanPrompt(lines, expenseCategories, incomeCategories))
           .timeout(timeout);
       final parsed = parseLlmReceipt(
         raw,
         now: now,
         expenseCategories: expenseCategories,
+        incomeCategories: incomeCategories,
       );
       // Model trả về nhưng không đọc ra JSON ⇒ coi như thất bại, không đoán.
       if (parsed == null) throw const FormatException('LLM trả về không đọc được');
@@ -63,21 +65,40 @@ class LlmExtractor implements ReceiptExtractor {
   }
 }
 
-/// Prompt dùng chung cho cả 2 tier — chỉ hỏi đúng 4 trường và bắt trả JSON,
-/// kèm danh sách tên danh mục hợp lệ để model chọn thay vì bịa tên mới.
-String buildReceiptPrompt(
+/// Prompt dùng chung cho cả 2 tier, cả hóa đơn lẫn ảnh thông báo ngân hàng
+/// (R7, PBI 36) — model tự đọc ngữ cảnh để suy `type`, không cần bước phát
+/// hiện loại ảnh riêng cho nhánh AI. Đưa **cả 2** danh sách danh mục, gắn
+/// nhãn rõ chi/thu, để model chọn đúng danh sách theo `type` nó suy ra.
+String buildScanPrompt(
   List<ScanTextLine> lines,
   List<Category> expenseCategories,
+  List<Category> incomeCategories,
 ) {
-  final names = expenseCategories.map((c) => c.name).join(', ');
+  final expenseNames = expenseCategories.map((c) => c.name).join(', ');
+  final incomeNames = incomeCategories.map((c) => c.name).join(', ');
   final text = lines.map((l) => l.text).join('\n');
-  return 'Bạn trích xuất dữ liệu từ hóa đơn tiếng Việt. '
-      'Chỉ trả về DUY NHẤT một đối tượng JSON, không giải thích, không thêm chữ:\n'
-      '{"amount": <tổng tiền phải trả, đơn vị đồng, chỉ chữ số>, '
-      '"date": "<yyyy-mm-dd hoặc null>", '
-      '"merchant": "<tên cửa hàng hoặc null>", '
-      '"category": "<một trong: $names — hoặc null>"}\n'
-      'Nội dung hóa đơn:\n$text';
+  return '''
+Bạn trích xuất dữ liệu giao dịch tài chính từ văn bản OCR tiếng Việt. Văn bản có thể là:
+(a) hóa đơn cửa hàng, hoặc
+(b) thông báo giao dịch ngân hàng (SMS biến động số dư, thông báo app, hoặc email) — loại này thường chứa NHIỀU số dễ gây nhầm lẫn: số tiền giao dịch, số dư trước/sau giao dịch, số tài khoản, mã giao dịch/mã tham chiếu, hạn mức, phí.
+
+Chỉ trả về DUY NHẤT một đối tượng JSON, không giải thích, không thêm chữ, đúng 5 khoá sau:
+{
+"type": "chi" nếu tiền RA khỏi tài khoản (ghi nợ/debit/mua hàng/dấu trừ "-"), hoặc "thu" nếu tiền VÀO tài khoản (ghi có/credit/dấu cộng "+"). Không chắc chắn ⇒ mặc định "chi".
+"amount": số tiền GIAO DỊCH THỰC TẾ phát sinh (đơn vị đồng, chỉ chữ số, không dấu chấm/phẩy/đơn vị tiền). Đọc kỹ để không nhầm với:
+  - số dư / số dư mới / số dư khả dụng (dù đứng gần số tiền giao dịch hoặc lớn hơn nó — số dư KHÔNG BAO GIỜ là số tiền giao dịch);
+  - số tài khoản (VD "TK 750561");
+  - mã giao dịch / mã tham chiếu / mã lệnh (VD "GD123456", "6258ASCB02UK171D", hoặc số ngày-giờ dính liền trong mã như "-150926-08:34:59" — đây là mã, KHÔNG phải số tiền âm 150926);
+  - hạn mức, phí giao dịch.
+  Ưu tiên số có đơn vị "VND"/"đ" đi kèm ngay sau nó. Số có thể viết với dấu chấm HOẶC dấu phẩy làm phân cách nghìn (VD "29.896.000" và "29,896,000" đều là 29 triệu 896 nghìn); nếu số có phần thập phân ".00"/",00" ở cuối thì bỏ phần đó (tiền VND không có số lẻ).
+"date": ngày giờ giao dịch thực tế, định dạng "yyyy-mm-dd", hoặc null nếu không đọc được rõ. Ưu tiên ngày/giờ đứng cạnh số tiền giao dịch hoặc ở đầu thông báo; KHÔNG dùng ngày "tính đến" của số dư nếu có ngày giao dịch khác rõ ràng hơn.
+"merchant": với hóa đơn — tên cửa hàng; với thông báo ngân hàng — nội dung giao dịch hoặc tên người nhận/gửi (thường theo sau nhãn "GD:", "Nội dung", "Đến:"). null nếu không đọc được.
+"category": nếu type="chi", chọn một trong danh sách chi: $expenseNames; nếu type="thu", chọn một trong danh sách thu: $incomeNames. null nếu không đủ căn cứ.
+}
+
+Nội dung:
+$text
+''';
 }
 
 /// Đọc JSON do model trả về → [ScanExtraction]; `null` khi không có đối tượng
@@ -90,16 +111,23 @@ ScanExtraction? parseLlmReceipt(
   String raw, {
   required DateTime now,
   required List<Category> expenseCategories,
+  List<Category> incomeCategories = const [],
 }) {
   final json = _extractJsonObject(raw);
   if (json == null) return null;
 
+  final typeHit = _asType(json['type']);
   final amount = _asAmount(json['amount']);
   final date = _asDate(json['date']);
   final merchant = _asText(json['merchant']);
-  final category = resolveCategory(_asText(json['category']), expenseCategories);
+  final category = resolveCategory(
+    _asText(json['category']),
+    typeHit.type == TxnType.income ? incomeCategories : expenseCategories,
+  );
 
   return ScanExtraction(
+    type: typeHit.type,
+    typeNeedsReview: typeHit.needsReview,
     amount: amount == null
         ? const ScanField<int>()
         : ScanField<int>(value: amount, confidence: FieldConfidence.medium),
@@ -135,6 +163,25 @@ Map<String, dynamic>? _extractJsonObject(String raw) {
   } catch (_) {
     return null;
   }
+}
+
+class _TypeHit {
+  const _TypeHit(this.type, this.needsReview);
+
+  final TxnType type;
+  final bool needsReview;
+}
+
+/// Loại giao dịch model trả (R7, PBI 36): `"thu"` ⇒ income, `"chi"` ⇒
+/// expense; thiếu/giá trị lạ ⇒ expense mặc định + `typeNeedsReview = true`
+/// (không đoán bừa, giống bộ luật).
+_TypeHit _asType(Object? value) {
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'thu') return const _TypeHit(TxnType.income, false);
+    if (normalized == 'chi') return const _TypeHit(TxnType.expense, false);
+  }
+  return const _TypeHit(TxnType.expense, true);
 }
 
 /// Số tiền: chấp nhận số hoặc chuỗi số; loại giá trị ≤ 0 và < 1000 (ngưỡng

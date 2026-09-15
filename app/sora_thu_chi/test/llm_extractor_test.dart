@@ -6,6 +6,7 @@ import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/category/category_source.dart';
 import 'package:sora_thu_chi/core/scan/llm_extractor.dart';
 import 'package:sora_thu_chi/core/scan/scan_result.dart';
+import 'package:sora_thu_chi/core/transaction/transaction.dart';
 
 /// Model giả: trả [response] (hoặc ném [error], hoặc treo nếu [hang]).
 class FakeLlm implements ScanLlm {
@@ -47,6 +48,9 @@ final receipt = lines([
 
 final expenseCategories = CategorySource.all
     .where((c) => c.type == CategoryType.expense && !c.isHidden)
+    .toList();
+final incomeCategories = CategorySource.all
+    .where((c) => c.type == CategoryType.income && !c.isHidden)
     .toList();
 
 /// Extractor có timeout ngắn để ca "treo" không làm test chậm 10 giây.
@@ -160,14 +164,59 @@ void main() {
     });
   });
 
-  group('buildReceiptPrompt', () {
-    test('chứa nội dung hóa đơn + danh sách danh mục hợp lệ', () {
-      final prompt = buildReceiptPrompt(receipt, expenseCategories);
+  group('buildScanPrompt (PBI 36, R7)', () {
+    test('chứa nội dung + cả 2 danh sách danh mục gắn nhãn + khoá "type"', () {
+      final prompt = buildScanPrompt(receipt, expenseCategories, incomeCategories);
 
       expect(prompt, contains('CIRCLE K VIỆT NAM'));
       expect(prompt, contains('TỔNG CỘNG'));
       expect(prompt, contains('Cà phê'));
+      expect(prompt, contains('Lương'));
       expect(prompt, contains('JSON'));
+      expect(prompt, contains('"type"'));
+    });
+  });
+
+  group('parseLlmReceipt — suy loại thu/chi (PBI 36, R7)', () {
+    ScanExtraction? parse(String raw) => parseLlmReceipt(
+      raw,
+      now: DateTime(2026, 9, 13, 10),
+      expenseCategories: expenseCategories,
+      incomeCategories: incomeCategories,
+    );
+
+    test('"type":"thu" ⇒ TxnType.income + resolve theo incomeCategories', () {
+      final result = parse(
+        '{"amount": 10000000, "type": "thu", "category": "Lương"}',
+      );
+
+      expect(result!.type, TxnType.income);
+      expect(result.typeNeedsReview, isFalse);
+      expect(result.category.value?.name, 'Lương');
+    });
+
+    test('"type":"chi" ⇒ TxnType.expense + resolve theo expenseCategories', () {
+      final result = parse(
+        '{"amount": 55000, "type": "chi", "category": "Cà phê"}',
+      );
+
+      expect(result!.type, TxnType.expense);
+      expect(result.typeNeedsReview, isFalse);
+      expect(result.category.value?.name, 'Cà phê');
+    });
+
+    test('thiếu type ⇒ TxnType.expense + typeNeedsReview = true', () {
+      final result = parse('{"amount": 55000}');
+
+      expect(result!.type, TxnType.expense);
+      expect(result.typeNeedsReview, isTrue);
+    });
+
+    test('type giá trị lạ ⇒ TxnType.expense + typeNeedsReview = true', () {
+      final result = parse('{"amount": 55000, "type": "khong ro"}');
+
+      expect(result!.type, TxnType.expense);
+      expect(result.typeNeedsReview, isTrue);
     });
   });
 }

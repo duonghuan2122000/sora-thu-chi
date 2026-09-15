@@ -11,6 +11,7 @@ import 'package:sora_thu_chi/core/scan/scan_result.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/screens/scan/scan_confirm_screen.dart';
 import 'package:sora_thu_chi/screens/scan/widgets/receipt_viewer.dart';
+import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 
@@ -28,7 +29,9 @@ ScanExtraction extraction({
   FieldConfidence amountConfidence = FieldConfidence.high,
   FieldConfidence merchantConfidence = FieldConfidence.low,
   Category? category,
+  bool typeNeedsReview = false,
 }) => ScanExtraction(
+  typeNeedsReview: typeNeedsReview,
   amount: ScanField(
     value: amount,
     confidence: amountConfidence,
@@ -172,6 +175,54 @@ void main() {
     // Nhãn coral đúng ngữ nghĩa cảnh báo của design system.
     expect(review.style!.color, SoraColors.light.coralOnNeutral);
     expect(high.style!.color, SoraColors.light.tealOnNeutral);
+  });
+
+  testWidgets(
+      'typeNeedsReview: true → hiện "Kiểm tra lại" dưới ô Loại giao dịch',
+      (tester) async {
+    await pumpConfirm(
+      tester,
+      repository: FakeWalletRepository(),
+      scan: extraction(typeNeedsReview: true),
+    );
+
+    expect(find.byKey(const ValueKey('scan-type-review-hint')), findsOneWidget);
+    final hint = tester.widget<Text>(
+      find.byKey(const ValueKey('scan-type-review-hint')),
+    );
+    expect(hint.data, 'Kiểm tra lại');
+    expect(hint.style!.color, SoraColors.light.coralOnNeutral);
+  });
+
+  testWidgets('typeNeedsReview: false → không hiện "Kiểm tra lại"', (tester) async {
+    await pumpConfirm(
+      tester,
+      repository: FakeWalletRepository(),
+      scan: extraction(typeNeedsReview: false),
+    );
+
+    expect(find.byKey(const ValueKey('scan-type-review-hint')), findsNothing);
+  });
+
+  testWidgets(
+      'typeNeedsReview bật → chạm đổi Chi/Thu vẫn hoạt động bình thường',
+      (tester) async {
+    await pumpConfirm(
+      tester,
+      repository: FakeWalletRepository(),
+      scan: extraction(typeNeedsReview: true),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('scan-type-income')));
+    await tester.pump();
+
+    final expenseSegment = tester.widget<Container>(
+      find.descendant(
+        of: find.byKey(const ValueKey('scan-type-income')),
+        matching: find.byType(Container),
+      ),
+    );
+    expect((expenseSegment.decoration as BoxDecoration).color, AppColors.teal);
   });
 
   testWidgets('Chạm trường → ảnh khoanh đúng vùng của trường đó', (tester) async {

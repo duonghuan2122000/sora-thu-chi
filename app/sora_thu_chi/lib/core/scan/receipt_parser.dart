@@ -64,7 +64,7 @@ ScanExtraction parseReceipt({
   List<Category> incomeCategories = const [],
 }) {
   final amount = _parseAmount(lines);
-  final date = _parseDate(lines, now);
+  final date = parseTxnDate(lines, now);
   final merchant = _parseMerchant(lines);
   return ScanExtraction(
     // Hóa đơn luôn khởi tạo là khoản chi (FR-025); người dùng đổi ở màn xác nhận.
@@ -138,9 +138,11 @@ bool _isNonAmountLine(String normalized) {
   return false;
 }
 
-/// Ngày trên hóa đơn: `dd/mm/yyyy`, `dd-mm-yyyy`, `dd.mm.yyyy`, `yyyy-mm-dd`
-/// (kèm giờ `hh:mm` tùy chọn). Không tìm thấy/ngày sai → `now` + `low` (FR-022).
-ScanField<DateTime> _parseDate(List<ScanTextLine> lines, DateTime now) {
+/// Ngày trên hóa đơn hoặc thông báo ngân hàng: `dd/mm/yyyy`, `dd-mm-yyyy`,
+/// `dd.mm.yyyy`, `yyyy-mm-dd` (kèm giờ `hh:mm` tùy chọn, cùng dòng, thứ tự bất
+/// kỳ). Không tìm thấy/ngày sai → `now` + `low` (FR-022; tái dùng cho
+/// `bank_notif_parser.dart`, PBI 36).
+ScanField<DateTime> parseTxnDate(List<ScanTextLine> lines, DateTime now) {
   final patterns = <RegExp>[
     RegExp(r'(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})'),
     RegExp(r'(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})'),

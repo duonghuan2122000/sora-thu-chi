@@ -58,6 +58,7 @@ enum ScanEngine { ruleBased, geminiNano, gemma3nE2b }
 class ScanExtraction {
   const ScanExtraction({
     this.type = TxnType.expense,
+    this.typeNeedsReview = false,
     this.amount = const ScanField<int>(),
     this.date = const ScanField<DateTime>(),
     this.merchant = const ScanField<String>(),
@@ -65,8 +66,14 @@ class ScanExtraction {
     this.engine = ScanEngine.ruleBased,
   });
 
-  /// Luôn `expense` khi khởi tạo (FR-025); người dùng đổi ở màn xác nhận.
+  /// `expense` khi hóa đơn (FR-025); ảnh ngân hàng có thể là `income` ngay từ
+  /// khi trích xuất (PBI 36). Người dùng vẫn đổi được ở màn xác nhận.
   final TxnType type;
+
+  /// `true` khi bộ luật/AI không đủ căn cứ suy loại thu/chi (PBI 36, R8) — màn
+  /// xác nhận hiển thị "Kiểm tra lại" dưới ô Loại giao dịch. Không áp dụng cho
+  /// hóa đơn cửa hàng (luôn `false`).
+  final bool typeNeedsReview;
 
   /// Rỗng ⇒ bắt buộc nhập tay trước khi lưu (FR-021/FR-032).
   final ScanField<int> amount;
@@ -84,6 +91,7 @@ class ScanExtraction {
 
   ScanExtraction copyWith({
     TxnType? type,
+    bool? typeNeedsReview,
     ScanField<int>? amount,
     ScanField<DateTime>? date,
     ScanField<String>? merchant,
@@ -91,6 +99,7 @@ class ScanExtraction {
     ScanEngine? engine,
   }) => ScanExtraction(
     type: type ?? this.type,
+    typeNeedsReview: typeNeedsReview ?? this.typeNeedsReview,
     amount: amount ?? this.amount,
     date: date ?? this.date,
     merchant: merchant ?? this.merchant,
@@ -102,6 +111,7 @@ class ScanExtraction {
   /// Scan History (data-model §2.4).
   Map<String, dynamic> toJson() => {
     'type': type.name,
+    'typeNeedsReview': typeNeedsReview,
     'engine': engine.name,
     'amount': amount.value,
     'amountConfidence': amount.confidence.name,

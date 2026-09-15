@@ -341,6 +341,7 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
         // 1. Loại giao dịch
         _label('LOẠI GIAO DỊCH'.tr, colors),
         _typeSegmented(colors),
+        if (widget.extraction.typeNeedsReview) _typeReviewHint(colors),
         const SizedBox(height: 12),
 
         // 2. Số tiền
@@ -498,6 +499,21 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
       ),
     );
   }
+
+  /// Nhắc kiểm tra lại loại GD (PBI 36, R8) — bộ luật/AI không đủ căn cứ suy
+  /// thu/chi; tái dùng đúng style/màu của [_confidenceChip].
+  Widget _typeReviewHint(SoraColors colors) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Text(
+      'Kiểm tra lại'.tr,
+      key: const ValueKey('scan-type-review-hint'),
+      style: TextStyle(
+        color: colors.coralOnNeutral,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
 
   Widget _fieldRow({
     required Key key,

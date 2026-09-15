@@ -1,4 +1,5 @@
 import '../category/category.dart';
+import 'bank_notif_parser.dart';
 import 'receipt_parser.dart';
 import 'scan_result.dart';
 
@@ -15,7 +16,9 @@ abstract class ReceiptExtractor {
   });
 }
 
-/// Bộ luật cơ bản (Chế độ cơ bản) — gọi thẳng [parseReceipt].
+/// Bộ luật cơ bản (Chế độ cơ bản) — phân nhánh theo loại ảnh (R1, PBI 36):
+/// ảnh thông báo ngân hàng → [parseBankNotification]; còn lại → [parseReceipt]
+/// (hành vi hóa đơn hiện có, không đổi).
 class RuleBasedExtractor implements ReceiptExtractor {
   const RuleBasedExtractor();
 
@@ -26,10 +29,20 @@ class RuleBasedExtractor implements ReceiptExtractor {
     required List<Category> expenseCategories,
     required List<Category> incomeCategories,
     ScanEngine engine = ScanEngine.ruleBased,
-  }) async => parseReceipt(
-    lines: lines,
-    now: now,
-    expenseCategories: expenseCategories,
-    incomeCategories: incomeCategories,
-  ).copyWith(engine: engine);
+  }) async {
+    final result = looksLikeBankNotification(lines)
+        ? parseBankNotification(
+            lines: lines,
+            now: now,
+            expenseCategories: expenseCategories,
+            incomeCategories: incomeCategories,
+          )
+        : parseReceipt(
+            lines: lines,
+            now: now,
+            expenseCategories: expenseCategories,
+            incomeCategories: incomeCategories,
+          );
+    return result.copyWith(engine: engine);
+  }
 }
