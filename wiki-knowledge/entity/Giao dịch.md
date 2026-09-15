@@ -84,6 +84,16 @@ Màn con **"Tìm kiếm & Lọc"** (`05-tim-kiem-loc.svg`), toàn màn hình đ�
 - LLM **timeout 10 giây**, ném lỗi, hoặc trả về không đọc được JSON ⇒ **tự chuyển sang bộ luật cho riêng lần quét đó**: người dùng vẫn ra màn xác nhận, **không** phải chụp lại, **không** thấy thông báo lỗi kỹ thuật; phiên quét ghi `engine = ruleBased` (FR-011/SC-009).
 - LLM **không** trả vùng chữ ⇒ khoanh vùng ảnh gốc để trống ở nhánh AI (nhánh "không xác định vùng" của `scan-04`).
 
+**Nhận diện ảnh thông báo ngân hàng (PBI 36)** — cùng luồng/engine ở trên, **không thêm điểm vào mới**; nguồn AI Scan nay tự suy ra **cả thu lẫn chi** thay vì luôn mặc định là chi như trước:
+> Nguồn: `.specify/specs/36/`.
+- **Nhận diện**: `RuleBasedExtractor` đếm từ khoá ngân hàng (`số dư`, `tài khoản`, `ghi nợ`, `ghi có`, `giao dịch`, `biến động số dư`, `(debit)`, `(credit)`, `mã giao dịch`, `số tiền`) trên toàn văn OCR; khớp **≥ 2** từ khoá ⇒ chạy `parseBankNotification` thay vì `parseReceipt` (1 từ khoá đơn lẻ dễ dương tính giả trên hóa đơn POS in "Mã giao dịch"). Nhánh AI không cần bước phát hiện riêng — 1 prompt chung tự đọc ngữ cảnh và trả `type`.
+- **Số tiền giao dịch (không phải số dư)**: loại **hoàn toàn** dòng chứa "số dư" khỏi ứng viên (khác hóa đơn — vốn chỉ loại dòng ngày/ĐT/MST); trong các dòng còn lại ưu tiên số có dấu `+`/`-` liền trước hoặc cùng dòng với `(debit)`/`(credit)`/`ghi nợ`/`ghi có`/`số tiền`, không có thì lấy số **đầu tiên** xuất hiện (khác hóa đơn — lấy số **lớn nhất**, vì số dư ngân hàng gần như luôn lớn hơn số tiền giao dịch đơn lẻ).
+- **Loại giao dịch (thu/chi)**: `ghi nợ`/`debit`/`-` ⇒ **chi**; `ghi có`/`credit`/`+` ⇒ **thu**; không khớp nhưng có "chuyển tiền thành công" ⇒ **chi** (tiền luôn rời tài khoản nguồn, không tự gán "chuyển khoản nội bộ" của app dù người nhận là ai); không khớp gì ⇒ mặc định **chi** + bật cờ **`typeNeedsReview`**.
+- **`ScanExtraction.typeNeedsReview`** (field mới, mặc định `false`, không đổi schema DB — chỉ thêm khoá vào `parsed_json`): `true` khi bộ luật/AI không đủ căn cứ suy thu/chi ⇒ màn `scan-04` hiện dòng **"Kiểm tra lại"** (coral, tái dùng style chỉ báo độ tin cậy) ngay dưới ô Loại giao dịch. Hóa đơn cửa hàng luôn `typeNeedsReview = false` (hành vi PBI 24 giữ nguyên).
+- **Ghi chú**: tái dùng nguyên field `merchant` (đổ vào ô "Cửa hàng / Ghi chú" và cột `note`) — với ảnh ngân hàng chứa nội dung/người nhận-gửi (nhãn `GD:`, `Nội dung`, `Đến:`) thay vì tên cửa hàng.
+- **Danh mục gợi ý**: nhánh bộ luật để **trống** (không đủ cơ sở như tên cửa hàng); nhánh AI vẫn được yêu cầu gợi ý nếu ngữ cảnh đủ rõ, chọn đúng danh sách chi/thu theo `type` model suy ra (prompt gửi **cả 2** danh sách danh mục có gắn nhãn).
+- **Tổng quát, không giới hạn ngân hàng cụ thể** — dựa từ khoá/mẫu câu tiếng Việt phổ biến, không cứng theo tên/bố cục riêng một ngân hàng.
+
 ## Import CSV/Excel (chưa có PBI)
 - Chọn file → map cột → preview → xác nhận → báo cáo lỗi. Danh mục chưa có → tạo mới hoặc map "Khác". Vẫn **chưa định vị giai đoạn** — [[Lộ trình phát triển]].
 
