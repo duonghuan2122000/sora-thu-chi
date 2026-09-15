@@ -91,7 +91,10 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
       setState(() => _step = 2);
       final lines = await ocr.readText(processed);
 
-      if (lines.isEmpty) {
+      // OCR rỗng bình thường chặn luồng (không có gì để đọc) — trừ khi
+      // extractor tự đọc ảnh (Tier A, PBI 37), lúc đó OCR chỉ phục vụ đối
+      // chiếu/fallback, không phải điều kiện cần.
+      if (lines.isEmpty && !extractor.supportsImage) {
         if (!mounted) return;
         setState(() => _unreadable = true);
         return;

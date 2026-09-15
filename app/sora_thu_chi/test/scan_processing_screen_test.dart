@@ -19,7 +19,12 @@ import 'fakes/fake_wallet_repository.dart';
 /// Extractor giả — chỉ ghi lại tham số [image] nhận được, trả kết quả cố định
 /// (PBI 37: xác nhận `ScanProcessingScreen` truyền đúng bytes ảnh đã tiền xử lý).
 class _RecordingExtractor implements ReceiptExtractor {
+  _RecordingExtractor({this.supportsImage = false});
+
   Uint8List? lastImage;
+
+  @override
+  final bool supportsImage;
 
   @override
   Future<ScanExtraction> extract({
@@ -193,6 +198,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(extractor.lastImage, _imageBytes);
+    },
+  );
+
+  testWidgets(
+    'OCR rỗng nhưng extractor tự đọc ảnh (Tier A) → vẫn đẩy sang màn xác nhận',
+    (tester) async {
+      useTallView(tester);
+      final extractor = _RecordingExtractor(supportsImage: true);
+      await pushProcessing(
+        tester,
+        ocr: FakeScanOcr(const []),
+        repository: FakeWalletRepository(),
+        extractor: extractor,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ScanConfirmScreen), findsOneWidget);
       expect(extractor.lastImage, _imageBytes);
     },
   );

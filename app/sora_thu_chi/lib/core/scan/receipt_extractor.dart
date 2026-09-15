@@ -9,6 +9,10 @@ import 'scan_result.dart';
 /// `LlmExtractor` (Tier A/B) **cùng định dạng kết quả** ⇒ màn xác nhận dùng
 /// chung, và fallback AI→bộ luật chỉ là `try/catch` trong cùng seam (R7/FR-011).
 abstract class ReceiptExtractor {
+  /// `true` nếu extractor tự đọc nội dung từ [extract]'s `image` (Tier A, PBI
+  /// 37) — khi đó OCR đọc rỗng **không** chặn luồng, vì model không cần text.
+  bool get supportsImage => false;
+
   Future<ScanExtraction> extract({
     required List<ScanTextLine> lines,
     required DateTime now,
@@ -26,6 +30,9 @@ abstract class ReceiptExtractor {
 /// (hành vi hóa đơn hiện có, không đổi).
 class RuleBasedExtractor implements ReceiptExtractor {
   const RuleBasedExtractor();
+
+  @override
+  bool get supportsImage => false;
 
   @override
   Future<ScanExtraction> extract({

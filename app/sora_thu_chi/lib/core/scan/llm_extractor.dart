@@ -41,6 +41,9 @@ class LlmExtractor implements ReceiptExtractor {
   final Duration timeout;
 
   @override
+  bool get supportsImage => _llm.supportsImage;
+
+  @override
   Future<ScanExtraction> extract({
     required List<ScanTextLine> lines,
     required DateTime now,
