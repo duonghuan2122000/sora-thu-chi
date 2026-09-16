@@ -618,10 +618,12 @@ class SoraTranslations extends Translations {
     'Model do hệ thống Android quản lý — không cần tải thêm, sẵn sàng dùng ngay.':
         'The model is managed by Android — nothing to download, ready to use.',
     'Kích hoạt Gemini Nano': 'Activate Gemini Nano',
-    'Đủ điều kiện dùng Gemma 3n E2B': 'Eligible for Gemma 3n E2B',
-    'Cần tải model khoảng 1.8GB qua Wifi':
-        'Needs a ~1.8GB model download over Wifi',
-    'Tải model (1.8GB)': 'Download model (1.8GB)',
+    'Gemini Nano không tốt? Dùng Gemma 4 (Tier B) thay thế':
+        'Gemini Nano not working well? Use Gemma 4 (Tier B) instead',
+    'Đủ điều kiện dùng Gemma 4 E2B': 'Eligible for Gemma 4 E2B',
+    'Cần tải model khoảng 3GB qua Wifi':
+        'Needs a ~3GB model download over Wifi',
+    'Tải model (3GB)': 'Download model (3GB)',
     'Chưa đủ điều kiện dùng AI nâng cao': 'Not eligible for advanced AI',
     'Bạn vẫn dùng được ở Chế độ cơ bản': 'You can still use Basic mode',
     'Dùng chế độ cơ bản': 'Use Basic mode',

@@ -86,6 +86,32 @@ void main() {
     expect(store.storedSettings.mode, ScanEngine.geminiNano);
   });
 
+  testWidgets(
+      'Tier A → bấm "dùng Gemma 3n thay thế" → tải model xong bật Tier B',
+      (tester) async {
+    final store = FakeScanSettingsStore();
+    final manager = FakeScanModelManager();
+    final host = await pumpDeviceCheck(
+      tester,
+      probe: FakeDeviceProbe(FakeDeviceProbe.tierA()),
+      store: store,
+      modelManager: manager,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('device-check-switch-to-b')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('device-check-download-b')), findsOneWidget);
+    expect(find.byKey(const ValueKey('device-check-activate-a')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('device-check-download-b')));
+    await tester.pumpAndSettle();
+
+    expect(manager.downloadCount, 1);
+    expect(host.result, isTrue);
+    expect(store.storedSettings.mode, ScanEngine.gemma3nE2b);
+  });
+
   testWidgets('Tier B → tải model xong mới bật Gemma 3n', (tester) async {
     final store = FakeScanSettingsStore();
     final manager = FakeScanModelManager();
@@ -97,7 +123,7 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('device-check-tier-b')), findsOneWidget);
-    expect(find.text('Đủ điều kiện dùng Gemma 3n E2B'), findsOneWidget);
+    expect(find.text('Đủ điều kiện dùng Gemma 4 E2B'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('device-check-download-b')));
     await tester.pumpAndSettle();

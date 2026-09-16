@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Token HuggingFace cá nhân (Tier B, repo gated) — không commit.
+/lib/data/platform/hf_token_local.dart

@@ -227,6 +227,32 @@ void main() {
       expect(result.engine, ScanEngine.ruleBased);
       expect(result.amount.value, 55000);
     });
+
+    test(
+      'ảnh thông báo ngân hàng ⇒ không đối chiếu OCR đè số của model đọc trực tiếp',
+      () async {
+        // Dòng OCR khiến bộ luật (parseBankNotification) đọc nhầm "4349" (mã
+        // giao dịch) làm số tiền với độ tin cậy cao — model đọc ảnh trực tiếp
+        // thấy layout/cỡ chữ thật nên đọc đúng 55000; kỳ vọng giữ số của model.
+        final bankLines = lines(['Số tiền 4349', 'Ghi nợ tài khoản 123456']);
+        final image = Uint8List.fromList([9, 9, 9]);
+        final llm = FakeLlm('{"amount": 55000}', supportsImage: true);
+        final result = await extract(llm, input: bankLines, image: image);
+
+        expect(result.amount.value, 55000);
+      },
+    );
+
+    test(
+      'không có ảnh (Tier B, chỉ văn bản) ⇒ vẫn đối chiếu OCR như trước (regression)',
+      () async {
+        final bankLines = lines(['Số tiền 4349', 'Ghi nợ tài khoản 123456']);
+        final llm = FakeLlm('{"amount": 55000}', supportsImage: true);
+        final result = await extract(llm, input: bankLines);
+
+        expect(result.amount.value, 4349);
+      },
+    );
   });
 
   group('buildScanPrompt (PBI 36, R7)', () {

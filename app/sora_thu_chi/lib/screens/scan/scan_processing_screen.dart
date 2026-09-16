@@ -87,6 +87,13 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
       final processed = preprocess != null
           ? await preprocess(bytes)
           : await compute(preprocessForOcr, bytes);
+      // Tier A đọc ảnh trực tiếp (PBI 37) ⇒ model cần ảnh giữ màu thật, không
+      // dùng bản đã khử màu dành cho OCR (xem doc [preprocessForLlmImage]).
+      final imageForModel = !extractor.supportsImage
+          ? processed
+          : preprocess != null
+          ? processed
+          : await compute(preprocessForLlmImage, bytes);
 
       setState(() => _step = 2);
       final lines = await ocr.readText(processed);
@@ -108,7 +115,7 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
         now: now,
         expenseCategories: expense,
         incomeCategories: income,
-        image: processed,
+        image: imageForModel,
       );
 
       if (!mounted) return;

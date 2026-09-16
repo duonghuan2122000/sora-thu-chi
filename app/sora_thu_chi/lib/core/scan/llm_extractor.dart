@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import '../category/category.dart';
 import '../transaction/transaction.dart';
 import 'bank_notif_parser.dart';
@@ -9,15 +11,15 @@ import 'receipt_extractor.dart';
 import 'scan_result.dart';
 
 /// Seam gọi model AI **trên máy** (Tier A: Gemini Nano qua kênh native; Tier B:
-/// Gemma 3n qua `flutter_gemma`). Impl thật **ném** khi model chưa sẵn sàng hoặc
+/// Gemma 4 qua `flutter_gemma`). Impl thật **ném** khi model chưa sẵn sàng hoặc
 /// người dùng chưa tải — [LlmExtractor] bắt và rơi về bộ luật (FR-011).
 abstract class ScanLlm {
   /// Engine tương ứng — ghi vào phiên quét khi chính nhánh này chạy thành công.
   ScanEngine get engine;
 
-  /// `true` nếu model đọc trực tiếp ảnh (đa phương thức, Tier A, PBI 37) —
-  /// khi đó [LlmExtractor] gửi ảnh kèm prompt thay vì nhét văn bản OCR vào
-  /// prompt. Mặc định `false` (Tier B chỉ nhận văn bản, không đổi hành vi).
+  /// `true` nếu model đọc trực tiếp ảnh (đa phương thức — Tier A từ PBI 37,
+  /// Tier B/Gemma 4 E2B từ sau đó) — khi đó [LlmExtractor] gửi ảnh kèm prompt
+  /// thay vì nhét văn bản OCR vào prompt. Mặc định `false`.
   bool get supportsImage => false;
 
   /// Gọi model **một lần** cho mỗi lần quét (FR-010), trả văn bản thô. [image]
@@ -53,8 +55,9 @@ class LlmExtractor implements ReceiptExtractor {
     Uint8List? image,
   }) async {
     try {
-      // Model đọc ảnh trực tiếp (Tier A, PBI 37) ⇒ bỏ văn bản OCR khỏi prompt,
-      // để model tự đọc nội dung từ ảnh đính kèm thay vì từ [lines].
+      // Model đọc ảnh trực tiếp (Tier A/PBI 37, Tier B/Gemma 4) ⇒ bỏ văn bản
+      // OCR khỏi prompt, để model tự đọc nội dung từ ảnh đính kèm thay vì
+      // từ [lines].
       final useImage = _llm.supportsImage && image != null;
       final prompt = buildScanPrompt(
         lines,
@@ -65,6 +68,10 @@ class LlmExtractor implements ReceiptExtractor {
       final raw = await _llm
           .generate(prompt, image: useImage ? image : null)
           .timeout(timeout);
+      // ponytail: debugPrint để soi prompt/kết quả AI khi chỉnh độ chính xác
+      // Tier A/B — chỉ chạy ở debug build, gỡ khi đã ổn định.
+      debugPrint('[Scan][LLM] prompt:\n$prompt');
+      debugPrint('[Scan][LLM] raw:\n$raw');
       final parsed = parseLlmReceipt(
         raw,
         now: now,
@@ -73,11 +80,18 @@ class LlmExtractor implements ReceiptExtractor {
       );
       // Model trả về nhưng không đọc ra JSON ⇒ coi như thất bại, không đoán.
       if (parsed == null) throw const FormatException('LLM trả về không đọc được');
-      return parsed.copyWith(
+      final result = parsed.copyWith(
         engine: _llm.engine,
-        amount: _reconcileAmount(parsed.amount, lines, now),
+        amount: useImage ? parsed.amount : _reconcileAmount(parsed.amount, lines, now),
       );
-    } catch (_) {
+      debugPrint(
+        '[Scan][LLM] parsed: type=${result.type} amount=${result.amount.value} '
+        'date=${result.date.value} merchant=${result.merchant.value} '
+        'category=${result.category.value?.name}',
+      );
+      return result;
+    } catch (error, stack) {
+      debugPrint('[Scan][LLM] lỗi, rơi về bộ luật: $error\n$stack');
       return fallback.extract(
         lines: lines,
         now: now,
@@ -90,10 +104,11 @@ class LlmExtractor implements ReceiptExtractor {
 }
 
 /// Đối chiếu số tiền AI đọc với tín hiệu `high` của bộ luật ảnh ngân hàng
-/// (cỡ chữ nổi bật / đơn vị đi kèm số — [parseBankNotification]). AI chỉ thấy
-/// văn bản thuần, không thấy cỡ chữ nên dễ nhầm số tiền với số tài khoản/mã
-/// giao dịch đứng gần đó; bộ luật thấy cỡ chữ nên đáng tin hơn khi có tín
-/// hiệu mạnh và hai bên lệch nhau.
+/// (cỡ chữ nổi bật / đơn vị đi kèm số — [parseBankNotification]). Chỉ áp dụng
+/// khi AI đọc **văn bản OCR thuần** (không thấy cỡ chữ nên dễ nhầm số tiền
+/// với số tài khoản/mã giao dịch đứng gần đó) — model đọc ảnh trực tiếp (Tier
+/// A/PBI 37, Tier B/Gemma 4) đã tự thấy cỡ chữ/layout nên bỏ qua bước này
+/// (gọi có điều kiện ở [LlmExtractor.extract]).
 ScanField<int> _reconcileAmount(ScanField<int> llmAmount, List<ScanTextLine> lines, DateTime now) {
   if (!looksLikeBankNotification(lines)) return llmAmount;
   final ruleAmount = parseBankNotification(lines: lines, now: now).amount;

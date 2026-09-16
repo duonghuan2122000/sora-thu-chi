@@ -1,18 +1,26 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 
 import '../../core/scan/model_manager.dart';
+import 'hf_token_local.dart';
 
-/// Nguồn model Tier B (Gemma 3n E2B, định dạng `.litertlm`).
+/// Nguồn model Tier B, định dạng `.litertlm`.
 ///
-/// ponytail: repo HuggingFace này **gated** ⇒ cần token để tải. Chưa chốt được
-/// nguồn phân phối công khai cho bản phát hành (R18 ghi rõ phải kiểm chứng khi
-/// thi công) — hiện để trống token nên lượt tải sẽ thất bại và người dùng ở lại
-/// Chế độ cơ bản (đúng FR-012, không vỡ luồng). Chốt nguồn (tự host / repo không
-/// gated) trước khi phát hành Tier B.
+/// Model thật hiện dùng là **Gemma 4 E2B** (`litert-community/gemma-4-E2B-it-litert-lm`,
+/// **không gated** — xác minh qua HF API `siblings` 2026-09, không cần token).
+/// File `gemma-4-E2B-it.litertlm` là bản chung (không khoá riêng GPU/chip nào)
+/// — repo còn nhiều biến thể tối ưu riêng chip (Qualcomm/Tensor/Intel/Web)
+/// nhưng bản chung chạy được trên mọi máy, đơn giản hơn là dò chip để chọn.
+///
+/// ponytail: hằng số [kHuggingFaceToken] giữ lại (không xoá) — model gated
+/// trước đó (Gemma 3n E2B, `google/...`) cần nó; nếu quay lại nguồn gated,
+/// điền `hf_token_local.dart` là dùng được ngay, không phải nối dây lại.
 const String kGemmaModelUrl =
-    'https://huggingface.co/litert-community/gemma-3n-E2B-it-litert-lm/'
-    'resolve/main/gemma-3n-E2B-int4.litertlm';
+    'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/'
+    'resolve/main/gemma-4-E2B-it.litertlm';
+
+String? get kHuggingFaceToken => hfTokenLocal.isEmpty ? null : hfTokenLocal;
 
 /// Tải/xoá model Tier B bằng `flutter_gemma` (LiteRT-LM, R18).
 ///
@@ -38,14 +46,16 @@ class GemmaModelManager implements ScanModelManager {
     try {
       await FlutterGemma.initialize(
         inferenceEngines: [LiteRtLmEngine()],
+        huggingFaceToken: kHuggingFaceToken,
       );
       await FlutterGemma.installModel(
-        modelType: ModelType.gemmaIt,
+        modelType: ModelType.gemma4,
         fileType: ModelFileType.litertlm,
       ).fromNetwork(kGemmaModelUrl).withProgress((p) => onProgress?.call(p))
        .withCancelToken(token).install();
       return true;
-    } catch (_) {
+    } catch (error, stack) {
+      debugPrint('[Scan][GemmaDownload] lỗi: $error\n$stack');
       return false;
     } finally {
       _cancelToken = null;

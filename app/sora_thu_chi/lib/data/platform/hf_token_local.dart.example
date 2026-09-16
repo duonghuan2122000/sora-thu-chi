@@ -1,0 +1,5 @@
+/// Sao chép file này thành `hf_token_local.dart` (cùng thư mục, đã gitignore)
+/// rồi điền token HuggingFace cá nhân — chỉ cần khi model Tier B trỏ về repo
+/// gated (model mặc định hiện tại, Gemma 4 E2B, không gated nên không cần
+/// token). Không commit file `hf_token_local.dart` thật.
+const String hfTokenLocal = '';

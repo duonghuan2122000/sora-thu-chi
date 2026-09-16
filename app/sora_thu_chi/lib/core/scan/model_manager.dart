@@ -1,4 +1,4 @@
-/// Dung lượng model Tier B (Gemma 3n E2B) hiển thị trên nút tải (mockup
+/// Dung lượng model Tier B (Gemma 4 E2B) hiển thị trên nút tải (mockup
 /// `scan-10`). Con số chỉ để hiển thị — dung lượng thật do [ScanModelManager]
 /// đọc từ file đã tải.
 const int kGemmaModelBytes = 1800000000;

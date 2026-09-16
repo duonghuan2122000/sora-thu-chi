@@ -289,12 +289,17 @@ class _ScanGroup extends StatelessWidget {
     });
   }
 
-  /// Nhãn trạng thái: chưa kiểm tra → Chế độ cơ bản; đã kiểm tra → theo tier.
+  /// Nhãn trạng thái: theo **chế độ đang chọn** (`mode`), không theo tier đo
+  /// được của máy — máy đo Tier A vẫn có thể đang chạy Gemma 4 (Tier B) nếu
+  /// người dùng chủ động chuyển (màn kiểm tra cấu hình máy). `tier` chỉ dùng
+  /// để phân biệt "chưa kiểm tra" / "Tier C" khi `mode` là bộ luật.
   static String _modeLabel(ScanEngine mode, AiTier? tier) {
-    if (tier == AiTier.a) return 'Gemini Nano (Tier A)';
-    if (tier == AiTier.b) return 'Gemma 3n E2B (Tier B)';
-    if (tier == AiTier.c) return 'Chế độ cơ bản (Tier C)'.tr;
-    return 'Chế độ cơ bản'.tr;
+    return switch (mode) {
+      ScanEngine.geminiNano => 'Gemini Nano (Tier A)',
+      ScanEngine.gemma3nE2b => 'Gemma 4 E2B (Tier B)',
+      ScanEngine.ruleBased =>
+        tier == AiTier.c ? 'Chế độ cơ bản (Tier C)'.tr : 'Chế độ cơ bản'.tr,
+    };
   }
 }
 

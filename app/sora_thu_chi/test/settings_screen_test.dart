@@ -470,6 +470,33 @@ void main() {
       expect(find.text('12/09/2026 08:24'), findsOneWidget);
     });
 
+    testWidgets(
+        'Máy đo Tier A nhưng đã chuyển Tier B → hiện đúng Gemma 4 E2B',
+        (tester) async {
+      final checked = DeviceCapability(
+        ramGb: 8,
+        freeStorageGb: 10,
+        supportsOnDeviceAi: true,
+        supportsGpuDelegate: true,
+        osVersion: 'Android 15',
+        checkedAt: DateTime(2026, 9, 16, 9, 0),
+      );
+      await pumpSettings(
+        tester,
+        scanSettings: ScanSettings(
+          enabled: true,
+          mode: ScanEngine.gemma3nE2b,
+          modelBytes: 1800000000,
+          deviceCheck: checked,
+        ),
+      );
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gemma 4 E2B (Tier B)'), findsOneWidget);
+      expect(find.text('Gemini Nano (Tier A)'), findsNothing);
+    });
+
     testWidgets('Đã tải model Tier B → hiện dung lượng + hàng Xoá model',
         (tester) async {
       await pumpSettings(

@@ -71,7 +71,7 @@ DeviceProbe ensureDeviceProbe() {
   return probe;
 }
 
-/// Tải/xoá model Tier B (Gemma 3n) — singleton để [GemmaLlm] và màn Cài đặt
+/// Tải/xoá model Tier B (Gemma 4) — singleton để [GemmaLlm] và màn Cài đặt
 /// dùng chung một phiên tải (huỷ được từ màn kiểm tra cấu hình).
 ScanModelManager ensureScanModelManager() {
   if (Get.isRegistered<ScanModelManager>()) {
@@ -83,10 +83,20 @@ ScanModelManager ensureScanModelManager() {
 }
 
 /// Extractor theo cài đặt hiện tại (T057/FR-012): Tier A → Gemini Nano, Tier B
-/// đã tải model → Gemma 3n, còn lại (kể cả Tier B chưa tải) → bộ luật.
+/// đã tải model → Gemma 4, còn lại (kể cả Tier B chưa tải) → bộ luật.
+///
+/// Tier A lỗi (kể cả AICore thiếu tính năng đa phương thức — lỗi
+/// "FEATURE_NOT_FOUND" quan sát thực tế, mã nội bộ 636 — không có API công khai
+/// để dò trước) ⇒ thử tiếp Tier B trước khi rơi về bộ luật, tận dụng seam
+/// `fallback` sẵn có của [LlmExtractor] thay vì soi mã lỗi. Gemma 4 chưa tải
+/// thì [GemmaLlm.generate] cũng ném ngay (không tự tải mạng) nên chuỗi này vẫn
+/// rơi về bộ luật nhanh như cũ khi máy chỉ có Tier A.
 ReceiptExtractor extractorForSettings(ScanSettings settings) {
   return switch (settings.effectiveEngine) {
-    ScanEngine.geminiNano => LlmExtractor(const GeminiNanoLlm()),
+    ScanEngine.geminiNano => LlmExtractor(
+        const GeminiNanoLlm(),
+        fallback: LlmExtractor(GemmaLlm()),
+      ),
     ScanEngine.gemma3nE2b => LlmExtractor(GemmaLlm()),
     ScanEngine.ruleBased => const RuleBasedExtractor(),
   };

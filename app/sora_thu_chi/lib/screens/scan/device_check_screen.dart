@@ -36,6 +36,11 @@ class _DeviceCheckScreenState extends State<DeviceCheckScreen> {
   int _progress = 0;
   bool _downloadFailed = false;
 
+  /// Máy đo ra Tier A nhưng người dùng bấm chuyển sang Gemma 4 (Tier B) thay
+  /// thế — VD: AICore thiếu tính năng đọc ảnh trên một số máy dù có gói AICore
+  /// (`supportsOnDeviceAi` chỉ báo gói tồn tại, không đo được từng tính năng).
+  bool _switchToTierB = false;
+
   @override
   void initState() {
     super.initState();
@@ -199,18 +204,34 @@ class _DeviceCheckScreenState extends State<DeviceCheckScreen> {
         title: 'Đủ điều kiện — Tier A'.tr,
         subtitle: 'Dùng ngay Gemini Nano'.tr,
         body: 'Model do hệ thống Android quản lý — không cần tải thêm, sẵn sàng dùng ngay.'.tr,
-        action: _primaryButton(
-          'device-check-activate-a',
-          'Kích hoạt Gemini Nano'.tr,
-          _activateGeminiNano,
-        ),
+        action: _switchToTierB
+            ? _gemmaActions(colors)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _primaryButton(
+                    'device-check-activate-a',
+                    'Kích hoạt Gemini Nano'.tr,
+                    _activateGeminiNano,
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 44,
+                    child: TextButton(
+                      key: const ValueKey('device-check-switch-to-b'),
+                      onPressed: () => setState(() => _switchToTierB = true),
+                      child: Text('Gemini Nano không tốt? Dùng Gemma 4 (Tier B) thay thế'.tr),
+                    ),
+                  ),
+                ],
+              ),
         colors: colors,
         accentTeal: true,
       ),
       AiTier.b => _card(
         key: 'device-check-tier-b',
-        title: 'Đủ điều kiện dùng Gemma 3n E2B'.tr,
-        subtitle: 'Cần tải model khoảng 1.8GB qua Wifi'.tr,
+        title: 'Đủ điều kiện dùng Gemma 4 E2B'.tr,
+        subtitle: 'Cần tải model khoảng 3GB qua Wifi'.tr,
         action: _gemmaActions(colors),
         colors: colors,
         accentTeal: true,
@@ -294,7 +315,7 @@ class _DeviceCheckScreenState extends State<DeviceCheckScreen> {
         ],
         _primaryButton(
           'device-check-download-b',
-          _downloadFailed ? 'Thử lại'.tr : 'Tải model (1.8GB)'.tr,
+          _downloadFailed ? 'Thử lại'.tr : 'Tải model (3GB)'.tr,
           _downloadModel,
         ),
         const SizedBox(height: 8),
