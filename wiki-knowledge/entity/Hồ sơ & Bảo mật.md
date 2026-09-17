@@ -306,7 +306,7 @@ Bất biến hàng: mỗi hàng có **đúng một** điều khiển — tổng 
 - Numpad: lưới `3×4`, nút tròn ~48–52px, viền mảnh `#E0E0E0`, không nền; hàng cuối: trái = **để trống** (vị trí vân tay, chưa có sinh trắc đợt này), giữa `0`, phải backspace. Dot indicator ~12px: đặc teal = đã nhập, rỗng xám = chưa.
 
 ## Liên kết
-- [[Design system]] — màn bảo mật tách shell; numpad & dot PIN dùng lại cho màn nhập tiền ([[Giao dịch]]).
+- [[Design system]] — màn bảo mật tách shell; numpad & dot PIN — phong cách numpad còn dùng ở màn xác nhận quét hóa đơn/khoảng số tiền lọc, nhưng màn Thêm giao dịch đã đổi sang bàn phím hệ thống (PBI 38, [[Giao dịch]]).
 - [[Ví & Tài khoản]] — tiền tệ mặc định cấp ví mới; Privacy mode; tên ví **không** dịch theo ngôn ngữ.
 - [[Ngân sách]] — tiền tệ mặc định & kỳ tài chính lệch bắt nguồn từ hồ sơ.
 - [[Stack kỹ thuật]] — cơ chế i18n GetX Translations + `flutter_localizations` (PBI 19); seam quét hóa đơn + kênh native `device_probe` (PBI 24).

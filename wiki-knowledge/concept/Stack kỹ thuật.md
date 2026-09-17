@@ -49,6 +49,14 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 - **Transfer 2 dòng liên kết** bằng `transfer_group_id` → xóa/sửa đồng bộ.
 - Widget "% dùng hạn mức thẻ tín dụng" nên tách widget dùng chung → tái dùng cho thanh tiến độ ngân sách.
 
+## Cập nhật giao diện màn Thêm giao dịch — tái dùng seam có sẵn (PBI 38)
+Không thêm dependency, không migration — chỉ mở seam/API đã tồn tại từ các PBI trước sang một điểm dùng mới:
+- **Bàn phím số hệ thống**: sao chép đúng pattern `_onAmountChanged` (`TextField` + `FilteringTextInputFormatter.digitsOnly` + `formatAmount`/`parseAmount` từ `money_format.dart`) đã dùng ở màn Chuyển tiền — không viết logic format/parse mới.
+- **Tag**: không có bảng `tags` riêng. `distinctTags(List<Transaction>)` (mới, cạnh `parseTags` trong `transaction_detail.dart`) quét cột `tags` của **toàn bộ giao dịch** để suy danh sách gợi ý cho `TagPickerScreen`, gộp + khử trùng không phân biệt hoa/thường — chấp nhận quét toàn bảng ở quy mô dữ liệu cá nhân (ponytail: nâng lên bảng `tags` riêng nếu sau này cần thao tác hàng loạt). `joinTags(List<String>)` đối xứng `parseTags` khi ghi lại cột.
+- **Ảnh hóa đơn**: dùng lại `image_picker` (`ImageSource.camera`/`.gallery`, đã là dependency từ PBI 24) + seam `ScanImageStore`/`LocalScanImageStore` (đã có, ghi vào `<appDocuments>/receipts/`) — **không** dựng lại `ScanCameraScreen` (camera preview tự vẽ dùng cho luồng quét OCR, nặng hơn nhu cầu chỉ đính kèm một ảnh).
+- `WalletRepository.addTransaction` mở rộng 2 tham số optional `tags`/`receiptImage` (default `''`) — ghi thẳng vào 2 cột đã tồn tại từ schema v3 (trước đó chỉ `addScannedTransaction` ghi được `receiptImage`, còn `tags` chưa có đường ghi nào từ nhập tay).
+- `isDirty` (hàm thuần `add_form.dart`) thêm 2 tham số `hasTags`/`hasReceiptImage` — cần thiết để chỉ đính kèm ảnh (không đổi trường nào khác) vẫn được coi là "có thay đổi", nếu không màn sẽ pop thẳng khi X mà bỏ qua bước xóa file ảnh vừa chụp (rác file).
+
 ## Đa ngôn ngữ (i18n) — rule & cơ chế đã thi công (PBI 19)
 Cơ chế chốt: **GetX Translations** (gói `get`, sẵn trong pubspec). Đã triển khai thật ở PBI 19 (màn `03` — [[Hồ sơ & Bảo mật]]).
 

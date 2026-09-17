@@ -27,11 +27,20 @@ Nhóm nghiệp vụ **trung tâm thao tác** (tần suất cao nhất) → gắn
 **Điểm vào FAB đổi ở PBI 24**: FAB giữa nav nay mở **bottom sheet "Thêm giao dịch"** (mockup `scan-01`) với 4 hàng — Khoản Thu / Khoản Chi / Chuyển khoản / **Quét hóa đơn (AI)** (nhãn "MỚI"); hàng quét **chỉ hiện khi** công tắc trong Cài đặt đang bật ([[Hồ sơ & Bảo mật]]). Chọn Thu/Chi → mở form với loại tương ứng sẵn; **Chuyển khoản → form tự mở luồng chuyển một lần**; Quét → `startScanFlow`. Cờ "đã lưu" của shell giữ nguyên ⇒ lưu xong vẫn làm mới danh sách + Tổng quan + Báo cáo.
 
 - Segmented tab `Chi | Thu | Chuyển khoản`, **mặc định mở "Chi"**.
-- Bắt buộc: Số tiền (>0, numpad có phân cách nghìn tự động), Danh mục, Ví, Ngày giờ (default = now). Tùy chọn: ghi chú, tag, ảnh hóa đơn, vị trí GPS.
-- Transfer: thay Danh mục bằng cặp Ví nguồn → đích; không tính thu/chi; validate nguồn ≠ đích + cảnh báo mềm âm quỹ.
+- Bắt buộc: Số tiền (>0, **bàn phím số của hệ thống** — PBI 38, xem dưới), Danh mục, Ví, Ngày giờ (default = now). Tùy chọn: ghi chú, **tag** (nhập được từ PBI 38), **ảnh hóa đơn** (đính kèm được từ PBI 38), vị trí GPS (vẫn chỉ ghi tự động, chưa có ô nhập tay).
+- Transfer: thay Danh mục bằng cặp Ví nguồn → đích; không tính thu/chi; validate nguồn ≠ đích + cảnh báo mềm âm quỹ; **không có dòng Tag/Ảnh hóa đơn** (2 trường này chỉ thuộc form Thu/Chi).
 - **Quick Add**: chỉ Số tiền + Danh mục + Ví (default = lần nhập gần nhất); gọi từ widget/notification.
 - "Lưu & tiếp tục" (snackbar "Thêm giao dịch khác") — nhập chuỗi nhiều khoản.
 - Danh mục phải **cùng type** với giao dịch; transfer **không gắn danh mục** ([[Danh mục]]).
+
+### Cập nhật giao diện màn Thêm giao dịch (PBI 38, đã triển khai)
+> Nguồn: mockup `02-them-giao-dich-v2.svg`, `.specify/specs/38/`.
+
+- **Bàn phím số hệ thống thay numpad tự vẽ**: ô Số tiền nay là `TextField(keyboardType: number)` (bám đúng pattern `_onAmountChanged` đã có sẵn ở màn Chuyển tiền — filter còn chữ số, format lại dấu chấm nghìn, giữ con trỏ cuối), viền màu theo ngữ cảnh loại giao dịch (coral/teal) thay underline cũ. Widget `AmountKeypad` (numpad tự vẽ) **không bị xóa** — vẫn dùng ở màn xác nhận quét hóa đơn và khoảng số tiền của màn Tìm kiếm & Lọc (xem [[Design system]]).
+- **Tag nay ghi được, không chỉ hiển thị**: trước PBI 38, cột `tags` (schema v3) chỉ được `addScannedTransaction` ghi (luồng quét) và màn Chi tiết/Tìm kiếm chỉ *đọc*; `addTransaction` (đường nhập tay) luôn để trống. Nay dòng "Tag" mở màn **`TagPickerScreen`** mới (khuôn `CategoryPickerScreen`) — chọn nhiều tag đã dùng trước đó hoặc gõ tạo tag mới tại chỗ (khử trùng không phân biệt hoa/thường). **Không có bảng `tags` riêng**: danh sách gợi ý suy bằng cách quét `tags` của toàn bộ giao dịch hiện có (`distinctTags`) — chấp nhận được ở quy mô dữ liệu cá nhân, nâng cấp lên bảng riêng nếu sau này cần sửa/xóa tag hàng loạt.
+- **Ảnh hóa đơn nay đính kèm được ở đường nhập tay**: chạm dòng "Ảnh hóa đơn" mở action sheet "Chụp ảnh"/"Chọn từ thư viện" (`image_picker`, không phải camera preview tự vẽ của luồng quét), ảnh lưu qua đúng seam `ScanImageStore`/`LocalScanImageStore` đã có từ PBI 24 (`<appDocuments>/receipts/`). Rời màn không lưu → ảnh vừa chụp/chọn bị xóa (không để rác) — vì vậy `isDirty` (hàm thuần màn Thêm) được bổ sung 2 điều kiện `hasTags`/`hasReceiptImage`, nếu không chỉ đính ảnh mà chưa đổi gì khác sẽ bị coi "sạch" và bỏ qua bước dọn file.
+- `WalletRepository.addTransaction` thêm 2 tham số optional `tags`/`receiptImage` (default `''`, tương thích lời gọi cũ) — ghi thẳng vào 2 cột đã tồn tại từ schema v3, **không migration**.
+- **Chưa làm** (ngoài phạm vi PBI 38): nút/luồng "Sửa giao dịch" từ màn Chi tiết vẫn chưa tồn tại — UI mới sẽ tự áp dụng khi luồng Sửa được xây ở PBI khác; màn quản lý Tag độc lập (đổi tên/xóa/gộp) cũng chưa có.
 
 ## Sửa / xóa / nhân bản
 - Sửa: mở lại màn Thêm với data điền sẵn, tiêu đề "Sửa giao dịch".
@@ -109,7 +118,7 @@ Màn con **"Tìm kiếm & Lọc"** (`05-tim-kiem-loc.svg`), toàn màn hình đ�
 | File | Loại |
 |---|---|
 | `01-danh-sach-giao-dich.svg` | Màn chính (header teal + bottom nav) — card thu/chi tháng này |
-| `02-them-giao-dich.svg` | Full-screen modal (segmented + numpad) |
+| `02-them-giao-dich-v2.svg` | Full-screen modal (segmented + bàn phím số hệ thống + Tag/Ảnh hóa đơn, PBI 38 — thay `02-them-giao-dich.svg` bản numpad cũ) |
 | `03-chon-danh-muc.svg` | Sub-page — lưới 4 cột icon tròn |
 | `04-chi-tiet-giao-dich.svg` | Sub-page — tóm tắt + menu Sửa/Xóa/Nhân bản |
 | `05-tim-kiem-loc.svg` | Sub-page — ô search + chip lọc nhanh |
@@ -124,5 +133,5 @@ Màn con **"Tìm kiếm & Lọc"** (`05-tim-kiem-loc.svg`), toàn màn hình đ�
 - [[Danh mục]] — gắn 1 danh mục cùng type; transfer không danh mục; danh mục gợi ý khi quét hóa đơn.
 - [[Ngân sách]] — gd Chi tính vào budget theo categoryId/subcategory + ví.
 - [[Hồ sơ & Bảo mật]] — công tắc bật tính năng quét + màn kiểm tra cấu hình máy.
-- [[Design system]] — bottom sheet, màn chụp nền tối cố định, chỉ báo độ tin cậy.
-- [[Stack kỹ thuật]] — seam OCR/device-probe/ảnh, kênh native `device_probe`, schema v8.
+- [[Design system]] — bottom sheet, màn chụp nền tối cố định, chỉ báo độ tin cậy, bàn phím số hệ thống (PBI 38).
+- [[Stack kỹ thuật]] — seam OCR/device-probe/ảnh, kênh native `device_probe`, schema v8; tái dùng `ScanImageStore`/`image_picker` cho Ảnh hóa đơn ở màn Thêm giao dịch (PBI 38).

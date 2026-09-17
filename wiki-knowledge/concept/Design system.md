@@ -180,7 +180,7 @@ Material phẳng, app Flutter mobile quản lý thu chi. **Bảng đầy đủ (
 | Phụ đề / mô tả | 11–12px | 400 |
 | Nhãn nhỏ / section header | 9–11px | 400–600, viết hoa |
 
-Font sans-serif hệ thống (Roboto Android). Numpad nhập số tiền (màn thêm gd) tái dùng phong cách numpad khóa PIN + dấu thập phân & backspace.
+Font sans-serif hệ thống (Roboto Android). Numpad tự vẽ (phong cách numpad khóa PIN + dấu thập phân & backspace) vẫn dùng ở màn xác nhận quét hóa đơn và ô khoảng số tiền của màn Tìm kiếm & Lọc; **màn Thêm giao dịch đổi sang bàn phím số của hệ thống từ PBI 38** (viền màu theo ngữ cảnh Thu/Chi thay cho underline + numpad cũ), cùng cơ chế `TextField` đã dùng ở màn Chuyển tiền.
 
 ## Component
 | Thành phần | Style |
