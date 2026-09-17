@@ -32,7 +32,7 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 
 ## Vận hành offline
 - Dữ liệu gắn **1 bản cài đặt trên 1 thiết bị**.
-- Hệ quả: gỡ app/mất máy = mất dữ liệu nếu không backup thủ công → backup JSON là "van an toàn" duy nhất (xem [[Lộ trình phát triển]] GĐ3); **quên PIN không có email/SMS reset** vì không có server.
+- Hệ quả: gỡ app/mất máy = mất dữ liệu nếu không backup thủ công → backup JSON là "van an toàn" duy nhất (xem [[Sao lưu & Khôi phục]], [[Lộ trình phát triển]] GĐ3); **quên PIN không có email/SMS reset** vì không có server.
 - ⚠ Onboarding hoàn chỉnh (chọn tiền tệ, tạo ví đầu tiên...) **chưa tồn tại**; khi có, sẽ gắn quanh luồng thiết lập PIN (xem chốt bên dưới).
 
 ## Khóa app (App Lock)
