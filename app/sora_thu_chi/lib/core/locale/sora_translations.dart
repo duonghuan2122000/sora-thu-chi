@@ -525,6 +525,9 @@ class SoraTranslations extends Translations {
         'Exported files are no longer protected by the app. Share with care.',
     'Đang tạo tệp…': 'Creating file…',
     'Đã tạo tệp': 'File created',
+    'Đã lưu @file vào Tải xuống': 'Saved @file to Downloads',
+    'Cần quyền lưu trữ để lưu tệp báo cáo':
+        'Storage permission is required to save the report file',
     'Không tạo được tệp báo cáo': 'Could not create the report file',
     'Không đọc được dữ liệu để xuất báo cáo':
         'Could not read data to export the report',

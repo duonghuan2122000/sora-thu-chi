@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/report/export_share.dart';
 import 'package:sora_thu_chi/core/report/report_controller.dart';
+import 'package:sora_thu_chi/core/report/report_file_save.dart';
 import 'package:sora_thu_chi/core/report/report_view.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
@@ -133,18 +134,38 @@ class _ThrowingRepo extends FakeWalletRepository {
       throw StateError('lỗi đọc giả lập');
 }
 
-/// Seam chia sẻ giả — ghi lại mọi lần gọi.
-class _FakeShare {
+/// Seam lưu file giả (PBI 41) — ghi lại mọi lần gọi, trả path giả cố định.
+class _FakeSave {
   final List<({String fileName, Uint8List bytes, String mimeType})> calls = [];
   bool fail = false;
-  Completer<void>? gate;
+  bool permissionDenied = false;
 
-  Future<void> call({
+  Future<SavedReportFile> call({
     required String fileName,
     required Uint8List bytes,
     required String mimeType,
   }) async {
     calls.add((fileName: fileName, bytes: bytes, mimeType: mimeType));
+    if (permissionDenied) {
+      throw const ReportStoragePermissionDeniedException();
+    }
+    if (fail) throw StateError('lưu lỗi giả lập');
+    return SavedReportFile(path: 'fake/downloads/$fileName', fileName: fileName);
+  }
+}
+
+/// Seam chia sẻ giả — ghi lại mọi lần gọi.
+class _FakeShare {
+  final List<({String fileName, String filePath, String mimeType})> calls = [];
+  bool fail = false;
+  Completer<void>? gate;
+
+  Future<void> call({
+    required String fileName,
+    required String filePath,
+    required String mimeType,
+  }) async {
+    calls.add((fileName: fileName, filePath: filePath, mimeType: mimeType));
     if (gate != null) await gate!.future;
     if (fail) throw StateError('chia sẻ lỗi giả lập');
   }
@@ -153,6 +174,7 @@ class _FakeShare {
 Future<ReportController> _pump(
   WidgetTester tester,
   FakeWalletRepository repo, {
+  SaveReportFile? save,
   ShareExport? share,
   ReportPeriod period = ReportPeriod.month,
 }) async {
@@ -166,7 +188,7 @@ Future<ReportController> _pump(
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.themeData,
-      home: ReportExportScreen(share: share),
+      home: ReportExportScreen(save: save, share: share),
     ),
   );
   await tester.pumpAndSettle();
@@ -389,9 +411,10 @@ void main() {
   });
 
   group('US4 — xuất PDF thật (font asset + compute)', () {
-    testWidgets('mặc định PDF: seam nhận bytes bắt đầu bằng %PDF', (tester) async {
+    testWidgets('mặc định PDF: seam lưu nhận bytes bắt đầu bằng %PDF', (tester) async {
+      final save = _FakeSave();
       final share = _FakeShare();
-      await _pump(tester, _seededRepo(), share: share.call);
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
 
       await tester.tap(find.byKey(const ValueKey('export-button')));
       await tester.runAsync(
@@ -400,8 +423,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Không tạo được tệp báo cáo'), findsNothing);
-      expect(share.calls, hasLength(1));
-      final call = share.calls.single;
+      expect(save.calls, hasLength(1));
+      final call = save.calls.single;
       expect(call.fileName, 'bao-cao-thu-chi_20260901-20260930.pdf');
       expect(call.mimeType, 'application/pdf');
       expect(
@@ -409,11 +432,14 @@ void main() {
         '%PDF',
         reason: 'bytes phải là tệp PDF hợp lệ',
       );
+      expect(share.calls, hasLength(1));
+      expect(share.calls.single.filePath, 'fake/downloads/${call.fileName}');
     });
 
-    testWidgets('Excel: seam nhận bytes zip (.xlsx)', (tester) async {
+    testWidgets('Excel: seam lưu nhận bytes zip (.xlsx)', (tester) async {
+      final save = _FakeSave();
       final share = _FakeShare();
-      await _pump(tester, _seededRepo(), share: share.call);
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
       await tester.tap(find.byKey(const ValueKey('export-format-excel')));
       await tester.pumpAndSettle();
 
@@ -424,32 +450,36 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Không tạo được tệp báo cáo'), findsNothing);
-      expect(share.calls, hasLength(1));
-      expect(share.calls.single.fileName, endsWith('.xlsx'));
-      expect(share.calls.single.bytes.sublist(0, 2), [0x50, 0x4B]);
+      expect(save.calls, hasLength(1));
+      expect(save.calls.single.fileName, endsWith('.xlsx'));
+      expect(save.calls.single.bytes.sublist(0, 2), [0x50, 0x4B]);
     });
   });
 
   group('US2 — xuất CSV qua seam chia sẻ', () {
     testWidgets('gọi seam đúng 1 lần, tên tệp + mime + bytes đúng',
         (tester) async {
+      final save = _FakeSave();
       final share = _FakeShare();
-      await _pump(tester, _seededRepo(), share: share.call);
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
       await tester.tap(find.byKey(const ValueKey('export-format-csv')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('export-button')));
       await settleExport(tester);
 
-      expect(share.calls, hasLength(1));
-      final call = share.calls.single;
+      expect(save.calls, hasLength(1));
+      final call = save.calls.single;
       expect(call.fileName, 'bao-cao-thu-chi_20260901-20260930.csv');
       expect(call.mimeType, 'text/csv');
       expect(call.bytes, isNotEmpty);
+      expect(share.calls, hasLength(1));
+      expect(share.calls.single.fileName, call.fileName);
     });
 
     testWidgets('bấm 2 lần liên tiếp ⇒ seam chỉ gọi 1 lần', (tester) async {
+      final save = _FakeSave();
       final share = _FakeShare()..gate = Completer<void>();
-      await _pump(tester, _seededRepo(), share: share.call);
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
       await tester.tap(find.byKey(const ValueKey('export-format-csv')));
       await tester.pumpAndSettle();
 
@@ -473,10 +503,11 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('seam ném lỗi ⇒ SnackBar + bộ lọc/định dạng giữ nguyên',
+    testWidgets('seam chia sẻ ném lỗi ⇒ SnackBar + bộ lọc/định dạng giữ nguyên',
         (tester) async {
+      final save = _FakeSave();
       final share = _FakeShare()..fail = true;
-      await _pump(tester, _seededRepo(), share: share.call);
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
       await tester.tap(find.byKey(const ValueKey('export-wallet-2')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('export-format-csv')));
@@ -492,6 +523,56 @@ void main() {
         find.byKey(const ValueKey('export-button')),
       );
       expect(button.onPressed, isNotNull);
+    });
+  });
+
+  group('US1 — thông báo đường dẫn lưu tệp (PBI 41)', () {
+    testWidgets('lưu thành công ⇒ SnackBar báo tên tệp trước khi gọi seam chia sẻ',
+        (tester) async {
+      final save = _FakeSave();
+      final share = _FakeShare();
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
+      await tester.tap(find.byKey(const ValueKey('export-format-csv')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('export-button')));
+      await settleExport(tester);
+
+      final fileName = save.calls.single.fileName;
+      expect(find.textContaining(fileName), findsWidgets);
+      expect(share.calls, hasLength(1));
+      expect(share.calls.single.filePath, 'fake/downloads/$fileName');
+    });
+
+    testWidgets('seam lưu ném lỗi ⇒ thông báo lỗi tạo tệp, không gọi seam chia sẻ',
+        (tester) async {
+      final save = _FakeSave()..fail = true;
+      final share = _FakeShare();
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
+      await tester.tap(find.byKey(const ValueKey('export-format-csv')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('export-button')));
+      await settleExport(tester);
+
+      expect(find.text('Không tạo được tệp báo cáo'), findsOne);
+      expect(share.calls, isEmpty);
+    });
+
+    testWidgets('seam lưu báo thiếu quyền ⇒ thông báo quyền lưu trữ riêng',
+        (tester) async {
+      final save = _FakeSave()..permissionDenied = true;
+      final share = _FakeShare();
+      await _pump(tester, _seededRepo(), save: save.call, share: share.call);
+      await tester.tap(find.byKey(const ValueKey('export-format-csv')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('export-button')));
+      await settleExport(tester);
+
+      expect(find.text('Cần quyền lưu trữ để lưu tệp báo cáo'), findsOne);
+      expect(find.text('Không tạo được tệp báo cáo'), findsNothing);
+      expect(share.calls, isEmpty);
     });
   });
 }

@@ -9,6 +9,7 @@ import '../core/category/category.dart';
 import '../core/report/export_share.dart';
 import '../core/report/report_export.dart';
 import '../core/report/report_export_writers.dart';
+import '../core/report/report_file_save.dart';
 import '../core/report/report_view.dart';
 import '../core/transaction/transaction.dart';
 import '../core/wallet/wallet.dart';
@@ -27,7 +28,11 @@ import '../theme/sora_colors.dart';
 /// đang xem của màn Tổng quan (FR-003). Bộ lọc/định dạng chỉ sống trong phiên
 /// mở màn (FR-027).
 class ReportExportScreen extends StatefulWidget {
-  const ReportExportScreen({super.key, this.share});
+  const ReportExportScreen({super.key, this.save, this.share});
+
+  /// Seam lưu file (PBI 41) — test bơm bản giả; mặc định ghi ra Downloads
+  /// công khai qua kênh native.
+  final SaveReportFile? save;
 
   /// Seam chia sẻ (R12) — test bơm bản giả; mặc định dùng bảng chia sẻ hệ thống.
   final ShareExport? share;
@@ -197,19 +202,44 @@ class _ReportExportScreenState extends State<ReportExportScreen> {
         ),
       );
       if (!mounted) return;
-      await (widget.share ?? defaultShareExport)(
+      final saved = await (widget.save ?? defaultSaveReportFile)(
         fileName: data.fileName,
         bytes: bytes,
         mimeType: format.mimeType,
       );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã lưu @file vào Tải xuống'.trParams({'file': saved.fileName}),
+            ),
+          ),
+        );
+      await (widget.share ?? defaultShareExport)(
+        fileName: saved.fileName,
+        filePath: saved.path,
+        mimeType: format.mimeType,
+      );
+    } on ReportStoragePermissionDeniedException {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(content: Text('Cần quyền lưu trữ để lưu tệp báo cáo'.tr)),
+          );
+      }
     } catch (error, stack) {
       // In ra log để còn chẩn đoán trên thiết bị (SnackBar chỉ nói "không tạo
       // được tệp"); người dùng vẫn thấy thông báo dễ hiểu.
       debugPrint('Xuất báo cáo lỗi: $error\n$stack');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không tạo được tệp báo cáo'.tr)),
-        );
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(content: Text('Không tạo được tệp báo cáo'.tr)),
+          );
       }
     } finally {
       if (mounted) setState(() => _busy = false);

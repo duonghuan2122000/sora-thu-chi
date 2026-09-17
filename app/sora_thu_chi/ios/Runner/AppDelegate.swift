@@ -22,5 +22,10 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DeviceProbeChannel") {
       DeviceProbeChannel.register(messenger: registrar.messenger())
     }
+    // Kênh lưu tệp xuất báo cáo (PBI 41) — thiếu đăng ký thì màn Xuất báo cáo
+    // báo lỗi "MissingPluginException" ngay khi bấm Xuất.
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ReportDownloadsChannel") {
+      ReportDownloadsChannel.register(messenger: registrar.messenger())
+    }
   }
 }

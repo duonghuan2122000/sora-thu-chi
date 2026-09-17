@@ -18,6 +18,13 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
 
+    <!-- Xuất báo cáo — thông báo đường dẫn (PBI 41): chỉ Android 8–9 (API 26–28)
+         cần quyền này để ghi vào thư mục Tải xuống công khai; từ Android 10
+         (API 29+) app dùng MediaStore.Downloads, không cần quyền runtime nên
+         `maxSdkVersion` giới hạn quyền chỉ khai báo hiệu lực ở dải cũ. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+
     <application
         android:label="Sora Thu Chi"
         android:name="${applicationName}"

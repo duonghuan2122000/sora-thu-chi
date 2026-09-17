@@ -10,5 +10,6 @@ class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         DeviceProbeChannel.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
+        ReportDownloadsChannel.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
     }
 }

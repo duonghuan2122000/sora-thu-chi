@@ -74,6 +74,11 @@ dependencies:
   cryptography: ^2.7.0
   workmanager: ^0.10.0
   archive: ^4.0.9
+  # Thông báo đường dẫn file xuất báo cáo (PBI 41): xin quyền lưu trữ runtime
+  # **chỉ trên Android 8–9** (API 26–28) trước khi ghi vào Downloads công khai
+  # qua kênh native `sora_thu_chi/report_downloads` — từ Android 10 trở lên ghi
+  # qua MediaStore không cần quyền này (research R1).
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:
