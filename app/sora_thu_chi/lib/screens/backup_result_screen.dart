@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../core/backup/backup_share.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
-
-Future<void> _defaultShareBackupFile(String path) =>
-    SharePlus.instance.share(ShareParams(files: [XFile(path)]));
 
 /// Chế độ nội dung màn — dùng chung 1 màn cho cả 2 luồng (mockup `04`, doc §6).
 enum BackupResultMode { backup, restore }
@@ -22,7 +18,7 @@ class BackupResultScreen extends StatelessWidget {
     required this.mode,
     this.filePath,
     this.onDone,
-    this.shareFile = _defaultShareBackupFile,
+    this.shareFile = defaultShareBackupFile,
   });
 
   final BackupResultMode mode;

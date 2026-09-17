@@ -831,5 +831,12 @@ class SoraTranslations extends Translations {
         'Your data has been updated to match the selected file.',
     'Chia sẻ lại file': 'Share file again',
     'Về Tổng quan': 'Back to Overview',
+
+    // ---------------------------------------------------------------------
+    // Chọn hành động cho bản sao lưu cũ (PBI 43).
+    // ---------------------------------------------------------------------
+    'Chia sẻ file': 'Share file',
+    'Khôi phục từ bản này': 'Restore from this backup',
+    'Không tìm thấy file': 'File not found',
   };
 }

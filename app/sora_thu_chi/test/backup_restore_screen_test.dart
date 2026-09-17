@@ -60,12 +60,14 @@ Future<void> _pumpScreen(
   WidgetTester tester,
   BackupController controller, {
   Future<String?> Function()? pickFile,
+  Future<void> Function(String path)? shareFile,
   bool usesRealIo = false,
 }) async {
   final widget = MaterialApp(
     home: BackupRestoreScreen(
       controller: controller,
       pickFile: pickFile ?? () async => null,
+      shareFile: shareFile ?? (_) async {},
     ),
   );
   if (usesRealIo) {
@@ -280,5 +282,219 @@ void main() {
         );
       },
     );
+  });
+
+  group('PBI 43 — chọn hành động cho bản sao lưu cũ', () {
+    testWidgets('chạm 1 bản → sheet hiện đúng 2 lựa chọn, chưa gọi hành động nào', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.manual,
+      );
+      var shareCalls = 0;
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore),
+        shareFile: (_) async => shareCalls++,
+      );
+
+      await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('backup-entry-action-share')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('backup-entry-action-restore')),
+        findsOneWidget,
+      );
+      expect(shareCalls, 0);
+      expect(find.byType(RestoreConfirmSheet), findsNothing);
+    });
+
+    testWidgets('chọn "Chia sẻ file" gọi đúng shareFile với path đã chạm, không đổi dữ liệu', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.manual,
+      );
+      final shared = <String>[];
+      final prefsStore = FakeBackupPrefsStore();
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore, prefsStore: prefsStore),
+        shareFile: (path) async => shared.add(path),
+      );
+
+      await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('backup-entry-action-share')));
+      await tester.pumpAndSettle();
+
+      expect(shared, [entry.path]);
+      expect(find.byType(RestoreConfirmSheet), findsNothing);
+      expect(localStore.entries.length, 1);
+      expect(prefsStore.storedPrefs, BackupPrefs.defaults);
+    });
+
+    testWidgets('chia sẻ bản tự động cũng gọi được shareFile bình thường', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.auto,
+      );
+      final shared = <String>[];
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore),
+        shareFile: (path) async => shared.add(path),
+      );
+
+      await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('backup-entry-action-share')));
+      await tester.pumpAndSettle();
+
+      expect(shared, [entry.path]);
+    });
+
+    testWidgets('chọn "Chia sẻ file" khi shareFile lỗi (file thiếu) → báo lỗi, không crash', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.manual,
+      );
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore),
+        shareFile: (_) async => throw const FileSystemException('missing'),
+      );
+
+      await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('backup-entry-action-share')));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final errorLabel = tester.widget<Text>(
+        find.byKey(const ValueKey('backup-restore-error')),
+      );
+      expect(errorLabel.data, 'Không tìm thấy file');
+    });
+
+    testWidgets('đóng sheet không chọn gì → không gọi shareFile, dữ liệu không đổi', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.manual,
+      );
+      var shareCalls = 0;
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore),
+        shareFile: (_) async => shareCalls++,
+      );
+
+      await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+      await tester.pumpAndSettle();
+      // Chạm ra ngoài sheet (vùng mờ phía trên) để đóng mà không chọn gì.
+      await tester.tapAt(const Offset(200, 50));
+      await tester.pumpAndSettle();
+
+      expect(shareCalls, 0);
+      expect(find.byType(RestoreConfirmSheet), findsNothing);
+      expect(
+        find.byKey(const ValueKey('backup-entry-action-share')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('chọn "Khôi phục từ bản này" → mở đúng RestoreConfirmSheet', (
+      tester,
+    ) async {
+      final tempDir = await _tempDir(tester);
+      addTearDown(() => tester.runAsync(() => tempDir.delete(recursive: true)));
+      final localStore = FileSystemLocalBackupStore(rootOverride: tempDir);
+      late LocalBackupEntry entry;
+      await tester.runAsync(() async {
+        final result = await buildBackupFile(
+          data: _sampleData,
+          crypto: FakeBackupCrypto(),
+        );
+        entry = await localStore.write(
+          bytes: result.bytes,
+          extension: 'json',
+          destination: BackupDestination.manual,
+        );
+      });
+
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore),
+        usesRealIo: true,
+      );
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('backup-entry-action-restore')),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RestoreConfirmSheet), findsOneWidget);
+      final sheet = tester.widget<RestoreConfirmSheet>(
+        find.byType(RestoreConfirmSheet),
+      );
+      expect(sheet.path, entry.path);
+    });
+
+    testWidgets('chọn "Khôi phục từ bản này" khi file đã bị xoá → báo lỗi, không crash', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.manual,
+      );
+
+      await _pumpScreen(tester, _controller(localStore: localStore));
+
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(ValueKey('backup-entry-${entry.path}')));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(const ValueKey('backup-entry-action-restore')),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RestoreConfirmSheet), findsNothing);
+      expect(
+        find.byKey(const ValueKey('backup-restore-error')),
+        findsOneWidget,
+      );
+    });
   });
 }

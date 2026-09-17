@@ -6,6 +6,7 @@ import '../core/backup/backup_controller.dart';
 import '../core/backup/backup_file_meta.dart';
 import '../core/backup/backup_prefs.dart';
 import '../core/backup/backup_reader.dart';
+import '../core/backup/backup_share.dart';
 import '../core/backup/local_backup_store.dart';
 import '../core/date_label.dart';
 import '../core/money_format.dart';
@@ -38,10 +39,12 @@ class BackupRestoreScreen extends StatefulWidget {
     super.key,
     this.controller,
     this.pickFile = _defaultPickBackupFile,
+    this.shareFile = defaultShareBackupFile,
   });
 
   final BackupController? controller;
   final PickBackupFile pickFile;
+  final ShareBackupFile shareFile;
 
   @override
   State<BackupRestoreScreen> createState() => _BackupRestoreScreenState();
@@ -122,6 +125,28 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     await _startRestoreFlow(path);
   }
 
+  /// Chạm 1 bản trong "CÁC BẢN SAO LƯU" (PBI 43): mở menu hành động thay vì
+  /// khôi phục ngay — người dùng chọn Chia sẻ hoặc Khôi phục.
+  Future<void> _onTapBackupEntry(String path) async {
+    final action = await _showBackupEntryActionSheet(context);
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _BackupEntryAction.share:
+        await _shareBackupEntry(path);
+      case _BackupEntryAction.restore:
+        await _startRestoreFlow(path);
+    }
+  }
+
+  Future<void> _shareBackupEntry(String path) async {
+    setState(() => _restoreError = null);
+    try {
+      await widget.shareFile(path);
+    } catch (_) {
+      _showError('Không tìm thấy file'.tr);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
@@ -192,7 +217,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         _BackupList(
           entries: _controller.backups,
           colors: colors,
-          onTap: _startRestoreFlow,
+          onTap: _onTapBackupEntry,
         ),
       ],
     );
@@ -489,6 +514,44 @@ class _BackupList extends StatelessWidget {
     if (bytes < 1024) return '$bytes B';
     return '${formatAmount(bytes ~/ 1024)} KB';
   }
+}
+
+/// Lựa chọn hành động cho 1 bản sao lưu trong danh sách (PBI 43).
+enum _BackupEntryAction { share, restore }
+
+/// Bottom sheet 2 lựa chọn khi chạm 1 bản sao lưu — trả `null` nếu người dùng
+/// đóng sheet không chọn gì (khuôn sheet ngắn đã dùng khắp module backup).
+Future<_BackupEntryAction?> _showBackupEntryActionSheet(
+  BuildContext context,
+) {
+  return showModalBottomSheet<_BackupEntryAction>(
+    context: context,
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const ValueKey('backup-entry-action-share'),
+              leading: const Icon(Icons.ios_share_outlined),
+              title: Text('Chia sẻ file'.tr),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_BackupEntryAction.share),
+            ),
+            ListTile(
+              key: const ValueKey('backup-entry-action-restore'),
+              leading: const Icon(Icons.settings_backup_restore_outlined),
+              title: Text('Khôi phục từ bản này'.tr),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_BackupEntryAction.restore),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 class _SectionLabel extends StatelessWidget {
