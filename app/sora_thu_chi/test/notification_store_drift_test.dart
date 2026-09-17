@@ -27,7 +27,7 @@ void main() {
     }
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 10);
+    expect(db.schemaVersion, 11);
   });
 
   test('row notificationPrefs vắng → cả bộ mặc định (không seed)', () async {

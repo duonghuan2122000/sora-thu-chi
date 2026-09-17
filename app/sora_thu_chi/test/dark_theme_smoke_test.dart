@@ -42,6 +42,7 @@ import 'fakes/fake_backup_scheduler.dart';
 import 'fakes/fake_device_probe.dart';
 import 'fakes/fake_local_backup_store.dart';
 import 'fakes/fake_locale_store.dart';
+import 'fakes/fake_scan_log_session.dart';
 import 'fakes/fake_notification_history_store.dart';
 import 'fakes/fake_notification_store.dart';
 import 'fakes/fake_scan_image_store.dart';
@@ -402,6 +403,7 @@ void main() {
             repository: FakeWalletRepository(),
             imageStore: FakeScanImageStore(),
             readBytes: (_) async => Uint8List.fromList([1, 2, 3]),
+            logSession: fakeScanLogSession(),
           ),
         ),
       );

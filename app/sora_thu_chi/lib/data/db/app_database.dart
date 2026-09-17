@@ -9,6 +9,7 @@ import '../../core/budget/budget.dart';
 import '../../core/category/category.dart';
 import '../../core/category/category_source.dart';
 import '../../core/notification/app_notification.dart';
+import '../../core/scan/scan_log.dart';
 import '../../core/scan/scan_result.dart';
 import '../../core/transaction/transaction.dart';
 import '../../core/wallet/wallet.dart';
@@ -174,6 +175,26 @@ class NotificationLedger extends Table {
   Set<Column> get primaryKey => {entryKey};
 }
 
+/// Bảng nhật ký trích xuất AI (data-model.md, schema v11 — PBI 47): mỗi dòng =
+/// 1 phiên quét hóa đơn AI đã kết thúc (lưu/hủy/lỗi), ghi **một lần** lúc kết
+/// thúc — không cập nhật lại (`ScanLogSession.finish`). Độc lập hoàn toàn với
+/// `scan_sessions`/`transactions`: xóa giao dịch không ảnh hưởng bản ghi nhật
+/// ký đã lưu. Trần [kMaxScanLogs] cưỡng chế ở tầng ghi (`DriftScanLogStore`).
+/// Không FK, không seed.
+@DataClassName('ScanExtractionLogsRow')
+class ScanExtractionLogs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get imagePath => text().nullable()();
+  TextColumn get rawText => text().nullable()();
+  TextColumn get extractionJson => text().nullable()();
+  TextColumn get engine => textEnum<ScanEngine>().nullable()();
+  TextColumn get outcome => textEnum<ScanLogOutcome>()();
+  TextColumn get finalValuesJson => text().nullable()();
+  TextColumn get errorMessage => text().nullable()();
+  TextColumn get eventsJson => text().withDefault(const Constant('[]'))();
+}
+
 /// Kết nối mặc định: file sqlite trong thư mục documents của app (offline local).
 QueryExecutor _openConnection() {
   return LazyDatabase(() async {
@@ -193,13 +214,14 @@ QueryExecutor _openConnection() {
     ScanSessions,
     Notifications,
     NotificationLedger,
+    ScanExtractionLogs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -271,6 +293,11 @@ class AppDatabase extends _$AppDatabase {
       // (FR-028/AC#24). Không đụng bảng nào khác.
       if (from < 10) {
         await m.createTable(notificationLedger);
+      }
+      // from < 11 (PBI 47): bảng nhật ký trích xuất AI — thuần tạo, KHÔNG
+      // seed. Không đụng bảng nào khác.
+      if (from < 11) {
+        await m.createTable(scanExtractionLogs);
       }
     },
   );

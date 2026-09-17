@@ -13,6 +13,7 @@ import 'package:sora_thu_chi/screens/scan/scan_processing_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_scan_image_store.dart';
+import 'fakes/fake_scan_log_session.dart';
 import 'fakes/fake_scan_ocr.dart';
 import 'fakes/fake_wallet_repository.dart';
 
@@ -96,6 +97,8 @@ Future<Host> pushProcessing(
                   now: () => DateTime(2026, 9, 12, 8, 24),
                   preprocess: (bytes) async => bytes,
                   readBytes: (_) async => _imageBytes,
+                  scanLogStore: FakeScanLogStore(),
+                  scanLogImageStore: FakeScanLogImageStore(),
                 ),
               ),
             );

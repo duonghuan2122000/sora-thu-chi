@@ -672,6 +672,35 @@ class SoraTranslations extends Translations {
     'Đã xoá model': 'Model deleted',
 
     // ---------------------------------------------------------------------
+    // Nhật ký trích xuất AI (PBI 47) — màn danh sách + chi tiết.
+    // ---------------------------------------------------------------------
+    'Nhật ký trích xuất AI': 'AI extraction log',
+    'Xóa toàn bộ nhật ký?': 'Delete entire log?',
+    'Toàn bộ bản ghi và ảnh đính kèm sẽ bị xóa vĩnh viễn.':
+        'All entries and attached images will be permanently deleted.',
+    'Xóa tất cả': 'Delete all',
+    'Chưa có nhật ký trích xuất AI nào — quét hóa đơn một lần để bắt đầu.':
+        'No AI extraction log yet — scan a receipt once to get started.',
+    'Đã lưu giao dịch': 'Transaction saved',
+    'Đã hủy': 'Cancelled',
+    'Lỗi trích xuất': 'Extraction error',
+    'Chi tiết nhật ký': 'Log detail',
+    'Xóa bản ghi này?': 'Delete this entry?',
+    'Ảnh và dữ liệu của phiên quét này sẽ bị xóa vĩnh viễn.':
+        'This scan session\'s image and data will be permanently deleted.',
+    'Xóa': 'Delete',
+    'LỖI': 'ERROR',
+    'AI ĐỀ XUẤT BAN ĐẦU': 'INITIAL AI SUGGESTION',
+    'Không có dữ liệu.': 'No data.',
+    'GIÁ TRỊ CUỐI ĐÃ LƯU': 'FINAL SAVED VALUES',
+    'Phiên chưa lưu giao dịch.': 'Session did not save a transaction.',
+    'VĂN BẢN OCR': 'OCR TEXT',
+    '(rỗng)': '(empty)',
+    'CHUỖI THAO TÁC': 'ACTION SEQUENCE',
+    'Không có thao tác nào.': 'No actions recorded.',
+    'Quay lại / thoát': 'Back / exit',
+
+    // ---------------------------------------------------------------------
     // Thông báo & nhắc nhở (PBI 28) — hàng điểm vào màn Cài đặt + màn cấu hình
     // 5 nhóm/8 hàng. Giờ/số/% giữ nguyên định dạng (không dịch — FR-015).
     // ---------------------------------------------------------------------

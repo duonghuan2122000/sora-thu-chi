@@ -29,7 +29,7 @@ void main() {
     }
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 10);
+    expect(db.schemaVersion, 11);
     final settings = await DriftScanSettingsStore(db).load();
     expect(settings.enabled, isFalse);
     expect(settings.mode, ScanEngine.ruleBased);

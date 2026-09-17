@@ -15,6 +15,7 @@ import 'backup_restore_screen.dart';
 import 'category_list_screen.dart';
 import 'notification_settings_screen.dart';
 import 'scan/device_check_screen.dart';
+import 'scan_log_list_screen.dart';
 import 'utilities_screen.dart';
 import 'wallet_list_screen.dart';
 
@@ -284,9 +285,22 @@ class _ScanGroup extends StatelessWidget {
             onTap: () => _openDeviceCheck(context),
             trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
+          _SettingsRow(
+            label: 'Nhật ký trích xuất AI'.tr,
+            onTap: () => _openScanLog(context),
+            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
+          ),
         ],
       );
     });
+  }
+
+  /// Mở màn "Nhật ký trích xuất AI" (FR-006/FR-007, PBI 47) — độc lập với công
+  /// tắc quét (xem lại nhật ký cả khi đã tắt tính năng).
+  void _openScanLog(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ScanLogListScreen()),
+    );
   }
 
   /// Nhãn trạng thái: theo **chế độ đang chọn** (`mode`), không theo tier đo

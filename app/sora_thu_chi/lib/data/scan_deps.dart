@@ -7,6 +7,8 @@ import '../core/scan/receipt_extractor.dart';
 import '../core/scan/receipt_ocr.dart';
 import '../core/scan/scan_controller.dart';
 import '../core/scan/scan_image_store.dart';
+import '../core/scan/scan_log_image_store.dart';
+import '../core/scan/scan_log_store.dart';
 import '../core/scan/scan_result.dart';
 import '../core/scan/scan_settings.dart';
 import '../core/scan/scan_settings_store.dart';
@@ -15,6 +17,7 @@ import 'platform/device_probe_platform.dart';
 import 'platform/gemma_llm.dart';
 import 'platform/gemma_model_manager.dart';
 import 'platform/gemini_nano_llm.dart';
+import 'scan_log_store_drift.dart';
 import 'scan_settings_store_drift.dart';
 
 /// Đăng ký các singleton của tính năng quét hóa đơn (bám `ensureThemeStore` /
@@ -58,6 +61,27 @@ ScanImageStore ensureScanImageStore() {
   }
   final store = LocalScanImageStore();
   Get.put<ScanImageStore>(store);
+  return store;
+}
+
+/// Nhật ký trích xuất AI (PBI 47) — trần [kMaxScanLogs] cưỡng chế ở tầng ghi.
+ScanLogStore ensureScanLogStore() {
+  if (Get.isRegistered<ScanLogStore>()) {
+    return Get.find<ScanLogStore>();
+  }
+  final store = DriftScanLogStore(AppDatabase());
+  Get.put<ScanLogStore>(store);
+  return store;
+}
+
+/// Kho ảnh của nhật ký trích xuất AI — riêng với [ensureScanImageStore]
+/// (nhật ký cần ảnh cả khi phiên bị hủy/lỗi, không chỉ khi lưu giao dịch).
+ScanLogImageStore ensureScanLogImageStore() {
+  if (Get.isRegistered<ScanLogImageStore>()) {
+    return Get.find<ScanLogImageStore>();
+  }
+  final store = LocalScanLogImageStore();
+  Get.put<ScanLogImageStore>(store);
   return store;
 }
 

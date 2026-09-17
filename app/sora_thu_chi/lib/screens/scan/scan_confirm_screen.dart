@@ -11,6 +11,8 @@ import '../../core/date_label.dart';
 import '../../core/money_format.dart';
 import '../../core/scan/scan_duplicate.dart';
 import '../../core/scan/scan_image_store.dart';
+import '../../core/scan/scan_log.dart';
+import '../../core/scan/scan_log_session.dart';
 import '../../core/scan/scan_result.dart';
 import '../../core/transaction/add_form.dart';
 import '../../core/transaction/transaction.dart';
@@ -41,6 +43,7 @@ class ScanConfirmScreen extends StatefulWidget {
     this.imageStore,
     this.now,
     this.readBytes,
+    required this.logSession,
   });
 
   final ScanExtraction extraction;
@@ -49,6 +52,10 @@ class ScanConfirmScreen extends StatefulWidget {
   final WalletRepository? repository;
   final ScanImageStore? imageStore;
   final DateTime? now;
+
+  /// Nhật ký trích xuất AI (PBI 47) — phiên do `ScanProcessingScreen` tạo,
+  /// màn này chỉ tích sự kiện sửa/back/lưu rồi gọi `finish()`.
+  final ScanLogSession logSession;
 
   /// Seam test cho bước đọc file ảnh khi lưu (test widget không chạy I/O thật).
   final Future<Uint8List> Function(String path)? readBytes;
@@ -77,6 +84,12 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
   bool _saving = false;
   ScanRect? _activeRect;
   Transaction? _duplicate;
+
+  /// Đã ghi sự kiện `save` + gọi `logSession.finish(saved)` chưa — chặn
+  /// `PopScope` ghi thêm sự kiện `back`/`finish(cancelled)` sau khi đã lưu.
+  bool _saved = false;
+
+  int _nowMillis() => (widget.now ?? DateTime.now()).millisecondsSinceEpoch;
 
   @override
   void initState() {
@@ -128,27 +141,54 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
   bool get _canSave => !_saving && _amount > 0 && _wallet != null;
 
   void _appendDigit(int digit) {
+    final from = _amount;
     setState(() {
       // Lần gõ đầu tiên thay thế số trích xuất (không nối vào đuôi).
       _amount = _amountEdited ? appendAmountDigit(_amount, digit) : digit;
       _amountEdited = true;
     });
+    _logAmountEdit(from);
   }
 
   void _backspace() {
+    final from = _amount;
     setState(() {
       _amountEdited = true;
       _amount = backspaceAmount(_amount);
     });
+    _logAmountEdit(from);
+  }
+
+  void _logAmountEdit(int from) {
+    if (from == _amount) return;
+    widget.logSession.addEvent(
+      ScanLogEvent(
+        type: ScanLogEventType.edit,
+        field: 'amount',
+        fromValue: '$from',
+        toValue: '$_amount',
+        atMillis: _nowMillis(),
+      ),
+    );
   }
 
   void _switchType(TxnType type) {
     if (type == _type) return;
+    final from = _type;
     setState(() {
       _type = type;
       _category = null;
       _activeRect = null;
     });
+    widget.logSession.addEvent(
+      ScanLogEvent(
+        type: ScanLogEventType.edit,
+        field: 'type',
+        fromValue: from.name,
+        toValue: type.name,
+        atMillis: _nowMillis(),
+      ),
+    );
   }
 
   Future<void> _pickDateTime() async {
@@ -164,10 +204,20 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
       initialTime: TimeOfDay.fromDateTime(_date),
     );
     if (time == null || !mounted) return;
+    final from = _date;
     setState(() {
       _date = DateTime(date.year, date.month, date.day, time.hour, time.minute);
       _activeRect = widget.extraction.date.rect;
     });
+    widget.logSession.addEvent(
+      ScanLogEvent(
+        type: ScanLogEventType.edit,
+        field: 'date',
+        fromValue: from.toIso8601String(),
+        toValue: _date.toIso8601String(),
+        atMillis: _nowMillis(),
+      ),
+    );
     await _refreshDuplicate();
   }
 
@@ -179,7 +229,18 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
         ),
       ),
     );
-    if (picked != null && mounted) setState(() => _category = picked);
+    if (picked == null || !mounted) return;
+    final from = _category;
+    setState(() => _category = picked);
+    widget.logSession.addEvent(
+      ScanLogEvent(
+        type: ScanLogEventType.edit,
+        field: 'category',
+        fromValue: from?.name,
+        toValue: picked.name,
+        atMillis: _nowMillis(),
+      ),
+    );
   }
 
   Future<void> _pickWallet() async {
@@ -231,6 +292,7 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
       );
       // Thông báo đẩy (PBI 31): fire-and-forget — lỗi nuốt bên trong engine.
       unawaited(ensureNotificationEngine().onTransactionSaved(at: _date, type: _type));
+      _logSave();
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (_) {
@@ -252,6 +314,43 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
     category: ScanField(value: _category, confidence: widget.extraction.category.confidence),
     engine: widget.extraction.engine,
   );
+
+  /// Ghi diff trường "cửa hàng/ghi chú" (không có callback đổi rời rạc như
+  /// các trường khác — diff tại thời điểm lưu, research.md Quyết định 4 ngoại
+  /// lệ cho trường text tự do) + sự kiện `save`, rồi kết thúc phiên nhật ký.
+  void _logSave() {
+    final originalMerchant = widget.extraction.merchant.value ?? '';
+    final finalMerchant = _merchantCtrl.text.trim();
+    if (finalMerchant != originalMerchant) {
+      widget.logSession.addEvent(
+        ScanLogEvent(
+          type: ScanLogEventType.edit,
+          field: 'merchant',
+          fromValue: originalMerchant,
+          toValue: finalMerchant,
+          atMillis: _nowMillis(),
+        ),
+      );
+    }
+    widget.logSession.addEvent(
+      ScanLogEvent(type: ScanLogEventType.save, atMillis: _nowMillis()),
+    );
+    _saved = true;
+    unawaited(
+      widget.logSession.finish(
+        outcome: ScanLogOutcome.saved,
+        finalValuesJson: jsonEncode({
+          'type': _type.name,
+          'amount': _amount,
+          'date': _date.toIso8601String(),
+          'categoryId': _category?.id,
+          'categoryName': _category?.name,
+          'merchant': finalMerchant,
+          'walletId': _wallet?.id,
+        }),
+      ),
+    );
+  }
 
   static Future<Uint8List> _readFile(String path) => File(path).readAsBytes();
 
@@ -295,15 +394,25 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
           ),
         ),
       );
-    return SubPageScaffold(
-      title: 'Xác nhận hóa đơn'.tr,
-      bottomNavigationBar: saveBar,
-      child: Column(
-        key: const ValueKey('scan-confirm-screen'),
-        children: [
-          Expanded(child: _body(colors)),
-          AmountKeypad(onDigit: _appendDigit, onBackspace: _backspace),
-        ],
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop || _saved) return;
+        widget.logSession.addEvent(
+          ScanLogEvent(type: ScanLogEventType.back, atMillis: _nowMillis()),
+        );
+        unawaited(widget.logSession.finish(outcome: ScanLogOutcome.cancelled));
+      },
+      child: SubPageScaffold(
+        title: 'Xác nhận hóa đơn'.tr,
+        bottomNavigationBar: saveBar,
+        child: Column(
+          key: const ValueKey('scan-confirm-screen'),
+          children: [
+            Expanded(child: _body(colors)),
+            AmountKeypad(onDigit: _appendDigit, onBackspace: _backspace),
+          ],
+        ),
       ),
     );
   }

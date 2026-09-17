@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 
@@ -10,6 +11,10 @@ import '../../core/scan/image_preprocess.dart';
 import '../../core/scan/receipt_extractor.dart';
 import '../../core/scan/receipt_ocr.dart';
 import '../../core/scan/scan_image_store.dart';
+import '../../core/scan/scan_log.dart';
+import '../../core/scan/scan_log_image_store.dart';
+import '../../core/scan/scan_log_session.dart';
+import '../../core/scan/scan_log_store.dart';
 import '../../core/scan/scan_result.dart';
 import '../../data/scan_deps.dart';
 import '../../data/wallet_deps.dart';
@@ -36,6 +41,8 @@ class ScanProcessingScreen extends StatefulWidget {
     this.now,
     this.preprocess,
     this.readBytes,
+    this.scanLogStore,
+    this.scanLogImageStore,
   });
 
   final String imagePath;
@@ -44,6 +51,10 @@ class ScanProcessingScreen extends StatefulWidget {
   final WalletRepository? repository;
   final ScanImageStore? imageStore;
   final DateTime Function()? now;
+
+  /// Seam test cho nhật ký trích xuất AI (PBI 47) — mặc định `ensureScanLogStore()`.
+  final ScanLogStore? scanLogStore;
+  final ScanLogImageStore? scanLogImageStore;
 
   /// Seam test cho bước tiền xử lý; mặc định chạy [preprocessForOcr] trong
   /// isolate (`compute`) để không chặn UI (SC-007).
@@ -68,9 +79,18 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
   int _step = 0;
   bool _unreadable = false;
 
+  /// Nhật ký trích xuất AI (PBI 47) — 1 phiên = 1 lần chụp ảnh; retry (chụp
+  /// lại) tạo `ScanProcessingScreen` mới ⇒ phiên log mới, không tái dùng.
+  late final ScanLogSession _logSession = ScanLogSession(
+    store: widget.scanLogStore ?? ensureScanLogStore(),
+    imageStore: widget.scanLogImageStore ?? ensureScanLogImageStore(),
+    now: widget.now,
+  );
+
   @override
   void initState() {
     super.initState();
+    _logSession.tempImagePath = widget.imagePath;
     _run();
   }
 
@@ -97,11 +117,18 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
 
       setState(() => _step = 2);
       final lines = await ocr.readText(processed);
+      _logSession.rawText = _joinLines(lines);
 
       // OCR rỗng bình thường chặn luồng (không có gì để đọc) — trừ khi
       // extractor tự đọc ảnh (Tier A, PBI 37), lúc đó OCR chỉ phục vụ đối
       // chiếu/fallback, không phải điều kiện cần.
       if (lines.isEmpty && !extractor.supportsImage) {
+        unawaited(
+          _logSession.finish(
+            outcome: ScanLogOutcome.error,
+            errorMessage: 'Không nhận diện được nội dung hóa đơn (OCR rỗng).',
+          ),
+        );
         if (!mounted) return;
         setState(() => _unreadable = true);
         return;
@@ -117,6 +144,7 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
         incomeCategories: income,
         image: imageForModel,
       );
+      _logSession.setExtraction(extraction);
 
       if (!mounted) return;
       setState(() => _step = 4);
@@ -129,12 +157,19 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
             repository: repository,
             imageStore: widget.imageStore,
             now: now,
+            logSession: _logSession,
           ),
         ),
       );
       if (!mounted) return;
       Navigator.of(context).pop(saved == true ? ScanStepResult.saved : ScanStepResult.cancelled);
     } catch (_) {
+      unawaited(
+        _logSession.finish(
+          outcome: ScanLogOutcome.error,
+          errorMessage: 'Lỗi xử lý ảnh hoặc trích xuất.',
+        ),
+      );
       if (!mounted) return;
       setState(() => _unreadable = true);
     }
@@ -151,7 +186,10 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) Navigator.of(context).pop(ScanStepResult.cancelled);
+        if (!didPop) {
+          unawaited(_logSession.finish(outcome: ScanLogOutcome.cancelled));
+          Navigator.of(context).pop(ScanStepResult.cancelled);
+        }
       },
       child: Scaffold(
         appBar: AppBar(title: Text('Quét hóa đơn'.tr)),

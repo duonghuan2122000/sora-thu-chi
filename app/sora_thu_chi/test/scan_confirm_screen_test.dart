@@ -16,6 +16,7 @@ import 'package:sora_thu_chi/theme/app_theme.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 
 import 'fakes/fake_scan_image_store.dart';
+import 'fakes/fake_scan_log_session.dart';
 import 'fakes/fake_wallet_repository.dart';
 
 const _amountRect = ScanRect(left: 0.1, top: 0.5, right: 0.9, bottom: 0.55);
@@ -72,6 +73,7 @@ Future<Host> pumpConfirm(
   ScanExtraction? scan,
   FakeScanImageStore? imageStore,
   bool english = false,
+  FakeScanLogStore? logStore,
 }) async {
   useTallView(tester);
   if (english) {
@@ -97,6 +99,7 @@ Future<Host> pumpConfirm(
                   imageStore: imageStore ?? FakeScanImageStore(),
                   now: DateTime(2026, 9, 12, 8, 24),
                   readBytes: (_) async => Uint8List.fromList([1, 2, 3]),
+                  logSession: fakeScanLogSession(store: logStore),
                 ),
               ),
             );

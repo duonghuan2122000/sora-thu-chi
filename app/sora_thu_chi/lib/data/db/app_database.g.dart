@@ -4566,6 +4566,644 @@ class NotificationLedgerCompanion
   }
 }
 
+class $ScanExtractionLogsTable extends ScanExtractionLogs
+    with TableInfo<$ScanExtractionLogsTable, ScanExtractionLogsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScanExtractionLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _imagePathMeta = const VerificationMeta(
+    'imagePath',
+  );
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+    'image_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rawTextMeta = const VerificationMeta(
+    'rawText',
+  );
+  @override
+  late final GeneratedColumn<String> rawText = GeneratedColumn<String>(
+    'raw_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _extractionJsonMeta = const VerificationMeta(
+    'extractionJson',
+  );
+  @override
+  late final GeneratedColumn<String> extractionJson = GeneratedColumn<String>(
+    'extraction_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<ScanEngine?, String> engine =
+      GeneratedColumn<String>(
+        'engine',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<ScanEngine?>($ScanExtractionLogsTable.$converterenginen);
+  @override
+  late final GeneratedColumnWithTypeConverter<ScanLogOutcome, String> outcome =
+      GeneratedColumn<String>(
+        'outcome',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<ScanLogOutcome>(
+        $ScanExtractionLogsTable.$converteroutcome,
+      );
+  static const VerificationMeta _finalValuesJsonMeta = const VerificationMeta(
+    'finalValuesJson',
+  );
+  @override
+  late final GeneratedColumn<String> finalValuesJson = GeneratedColumn<String>(
+    'final_values_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _errorMessageMeta = const VerificationMeta(
+    'errorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
+    'error_message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventsJsonMeta = const VerificationMeta(
+    'eventsJson',
+  );
+  @override
+  late final GeneratedColumn<String> eventsJson = GeneratedColumn<String>(
+    'events_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    imagePath,
+    rawText,
+    extractionJson,
+    engine,
+    outcome,
+    finalValuesJson,
+    errorMessage,
+    eventsJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scan_extraction_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScanExtractionLogsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('image_path')) {
+      context.handle(
+        _imagePathMeta,
+        imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta),
+      );
+    }
+    if (data.containsKey('raw_text')) {
+      context.handle(
+        _rawTextMeta,
+        rawText.isAcceptableOrUnknown(data['raw_text']!, _rawTextMeta),
+      );
+    }
+    if (data.containsKey('extraction_json')) {
+      context.handle(
+        _extractionJsonMeta,
+        extractionJson.isAcceptableOrUnknown(
+          data['extraction_json']!,
+          _extractionJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('final_values_json')) {
+      context.handle(
+        _finalValuesJsonMeta,
+        finalValuesJson.isAcceptableOrUnknown(
+          data['final_values_json']!,
+          _finalValuesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('error_message')) {
+      context.handle(
+        _errorMessageMeta,
+        errorMessage.isAcceptableOrUnknown(
+          data['error_message']!,
+          _errorMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('events_json')) {
+      context.handle(
+        _eventsJsonMeta,
+        eventsJson.isAcceptableOrUnknown(data['events_json']!, _eventsJsonMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ScanExtractionLogsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScanExtractionLogsRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      imagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_path'],
+      ),
+      rawText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}raw_text'],
+      ),
+      extractionJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}extraction_json'],
+      ),
+      engine: $ScanExtractionLogsTable.$converterenginen.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}engine'],
+        ),
+      ),
+      outcome: $ScanExtractionLogsTable.$converteroutcome.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}outcome'],
+        )!,
+      ),
+      finalValuesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}final_values_json'],
+      ),
+      errorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_message'],
+      ),
+      eventsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}events_json'],
+      )!,
+    );
+  }
+
+  @override
+  $ScanExtractionLogsTable createAlias(String alias) {
+    return $ScanExtractionLogsTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<ScanEngine, String, String> $converterengine =
+      const EnumNameConverter<ScanEngine>(ScanEngine.values);
+  static JsonTypeConverter2<ScanEngine?, String?, String?> $converterenginen =
+      JsonTypeConverter2.asNullable($converterengine);
+  static JsonTypeConverter2<ScanLogOutcome, String, String> $converteroutcome =
+      const EnumNameConverter<ScanLogOutcome>(ScanLogOutcome.values);
+}
+
+class ScanExtractionLogsRow extends DataClass
+    implements Insertable<ScanExtractionLogsRow> {
+  final int id;
+  final DateTime createdAt;
+  final String? imagePath;
+  final String? rawText;
+  final String? extractionJson;
+  final ScanEngine? engine;
+  final ScanLogOutcome outcome;
+  final String? finalValuesJson;
+  final String? errorMessage;
+  final String eventsJson;
+  const ScanExtractionLogsRow({
+    required this.id,
+    required this.createdAt,
+    this.imagePath,
+    this.rawText,
+    this.extractionJson,
+    this.engine,
+    required this.outcome,
+    this.finalValuesJson,
+    this.errorMessage,
+    required this.eventsJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || imagePath != null) {
+      map['image_path'] = Variable<String>(imagePath);
+    }
+    if (!nullToAbsent || rawText != null) {
+      map['raw_text'] = Variable<String>(rawText);
+    }
+    if (!nullToAbsent || extractionJson != null) {
+      map['extraction_json'] = Variable<String>(extractionJson);
+    }
+    if (!nullToAbsent || engine != null) {
+      map['engine'] = Variable<String>(
+        $ScanExtractionLogsTable.$converterenginen.toSql(engine),
+      );
+    }
+    {
+      map['outcome'] = Variable<String>(
+        $ScanExtractionLogsTable.$converteroutcome.toSql(outcome),
+      );
+    }
+    if (!nullToAbsent || finalValuesJson != null) {
+      map['final_values_json'] = Variable<String>(finalValuesJson);
+    }
+    if (!nullToAbsent || errorMessage != null) {
+      map['error_message'] = Variable<String>(errorMessage);
+    }
+    map['events_json'] = Variable<String>(eventsJson);
+    return map;
+  }
+
+  ScanExtractionLogsCompanion toCompanion(bool nullToAbsent) {
+    return ScanExtractionLogsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      imagePath: imagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagePath),
+      rawText: rawText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rawText),
+      extractionJson: extractionJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(extractionJson),
+      engine: engine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(engine),
+      outcome: Value(outcome),
+      finalValuesJson: finalValuesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(finalValuesJson),
+      errorMessage: errorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorMessage),
+      eventsJson: Value(eventsJson),
+    );
+  }
+
+  factory ScanExtractionLogsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScanExtractionLogsRow(
+      id: serializer.fromJson<int>(json['id']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      imagePath: serializer.fromJson<String?>(json['imagePath']),
+      rawText: serializer.fromJson<String?>(json['rawText']),
+      extractionJson: serializer.fromJson<String?>(json['extractionJson']),
+      engine: $ScanExtractionLogsTable.$converterenginen.fromJson(
+        serializer.fromJson<String?>(json['engine']),
+      ),
+      outcome: $ScanExtractionLogsTable.$converteroutcome.fromJson(
+        serializer.fromJson<String>(json['outcome']),
+      ),
+      finalValuesJson: serializer.fromJson<String?>(json['finalValuesJson']),
+      errorMessage: serializer.fromJson<String?>(json['errorMessage']),
+      eventsJson: serializer.fromJson<String>(json['eventsJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'imagePath': serializer.toJson<String?>(imagePath),
+      'rawText': serializer.toJson<String?>(rawText),
+      'extractionJson': serializer.toJson<String?>(extractionJson),
+      'engine': serializer.toJson<String?>(
+        $ScanExtractionLogsTable.$converterenginen.toJson(engine),
+      ),
+      'outcome': serializer.toJson<String>(
+        $ScanExtractionLogsTable.$converteroutcome.toJson(outcome),
+      ),
+      'finalValuesJson': serializer.toJson<String?>(finalValuesJson),
+      'errorMessage': serializer.toJson<String?>(errorMessage),
+      'eventsJson': serializer.toJson<String>(eventsJson),
+    };
+  }
+
+  ScanExtractionLogsRow copyWith({
+    int? id,
+    DateTime? createdAt,
+    Value<String?> imagePath = const Value.absent(),
+    Value<String?> rawText = const Value.absent(),
+    Value<String?> extractionJson = const Value.absent(),
+    Value<ScanEngine?> engine = const Value.absent(),
+    ScanLogOutcome? outcome,
+    Value<String?> finalValuesJson = const Value.absent(),
+    Value<String?> errorMessage = const Value.absent(),
+    String? eventsJson,
+  }) => ScanExtractionLogsRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    imagePath: imagePath.present ? imagePath.value : this.imagePath,
+    rawText: rawText.present ? rawText.value : this.rawText,
+    extractionJson: extractionJson.present
+        ? extractionJson.value
+        : this.extractionJson,
+    engine: engine.present ? engine.value : this.engine,
+    outcome: outcome ?? this.outcome,
+    finalValuesJson: finalValuesJson.present
+        ? finalValuesJson.value
+        : this.finalValuesJson,
+    errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
+    eventsJson: eventsJson ?? this.eventsJson,
+  );
+  ScanExtractionLogsRow copyWithCompanion(ScanExtractionLogsCompanion data) {
+    return ScanExtractionLogsRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
+      rawText: data.rawText.present ? data.rawText.value : this.rawText,
+      extractionJson: data.extractionJson.present
+          ? data.extractionJson.value
+          : this.extractionJson,
+      engine: data.engine.present ? data.engine.value : this.engine,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      finalValuesJson: data.finalValuesJson.present
+          ? data.finalValuesJson.value
+          : this.finalValuesJson,
+      errorMessage: data.errorMessage.present
+          ? data.errorMessage.value
+          : this.errorMessage,
+      eventsJson: data.eventsJson.present
+          ? data.eventsJson.value
+          : this.eventsJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScanExtractionLogsRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('rawText: $rawText, ')
+          ..write('extractionJson: $extractionJson, ')
+          ..write('engine: $engine, ')
+          ..write('outcome: $outcome, ')
+          ..write('finalValuesJson: $finalValuesJson, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('eventsJson: $eventsJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    imagePath,
+    rawText,
+    extractionJson,
+    engine,
+    outcome,
+    finalValuesJson,
+    errorMessage,
+    eventsJson,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScanExtractionLogsRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.imagePath == this.imagePath &&
+          other.rawText == this.rawText &&
+          other.extractionJson == this.extractionJson &&
+          other.engine == this.engine &&
+          other.outcome == this.outcome &&
+          other.finalValuesJson == this.finalValuesJson &&
+          other.errorMessage == this.errorMessage &&
+          other.eventsJson == this.eventsJson);
+}
+
+class ScanExtractionLogsCompanion
+    extends UpdateCompanion<ScanExtractionLogsRow> {
+  final Value<int> id;
+  final Value<DateTime> createdAt;
+  final Value<String?> imagePath;
+  final Value<String?> rawText;
+  final Value<String?> extractionJson;
+  final Value<ScanEngine?> engine;
+  final Value<ScanLogOutcome> outcome;
+  final Value<String?> finalValuesJson;
+  final Value<String?> errorMessage;
+  final Value<String> eventsJson;
+  const ScanExtractionLogsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.imagePath = const Value.absent(),
+    this.rawText = const Value.absent(),
+    this.extractionJson = const Value.absent(),
+    this.engine = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.finalValuesJson = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    this.eventsJson = const Value.absent(),
+  });
+  ScanExtractionLogsCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime createdAt,
+    this.imagePath = const Value.absent(),
+    this.rawText = const Value.absent(),
+    this.extractionJson = const Value.absent(),
+    this.engine = const Value.absent(),
+    required ScanLogOutcome outcome,
+    this.finalValuesJson = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    this.eventsJson = const Value.absent(),
+  }) : createdAt = Value(createdAt),
+       outcome = Value(outcome);
+  static Insertable<ScanExtractionLogsRow> custom({
+    Expression<int>? id,
+    Expression<DateTime>? createdAt,
+    Expression<String>? imagePath,
+    Expression<String>? rawText,
+    Expression<String>? extractionJson,
+    Expression<String>? engine,
+    Expression<String>? outcome,
+    Expression<String>? finalValuesJson,
+    Expression<String>? errorMessage,
+    Expression<String>? eventsJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (imagePath != null) 'image_path': imagePath,
+      if (rawText != null) 'raw_text': rawText,
+      if (extractionJson != null) 'extraction_json': extractionJson,
+      if (engine != null) 'engine': engine,
+      if (outcome != null) 'outcome': outcome,
+      if (finalValuesJson != null) 'final_values_json': finalValuesJson,
+      if (errorMessage != null) 'error_message': errorMessage,
+      if (eventsJson != null) 'events_json': eventsJson,
+    });
+  }
+
+  ScanExtractionLogsCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? createdAt,
+    Value<String?>? imagePath,
+    Value<String?>? rawText,
+    Value<String?>? extractionJson,
+    Value<ScanEngine?>? engine,
+    Value<ScanLogOutcome>? outcome,
+    Value<String?>? finalValuesJson,
+    Value<String?>? errorMessage,
+    Value<String>? eventsJson,
+  }) {
+    return ScanExtractionLogsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      imagePath: imagePath ?? this.imagePath,
+      rawText: rawText ?? this.rawText,
+      extractionJson: extractionJson ?? this.extractionJson,
+      engine: engine ?? this.engine,
+      outcome: outcome ?? this.outcome,
+      finalValuesJson: finalValuesJson ?? this.finalValuesJson,
+      errorMessage: errorMessage ?? this.errorMessage,
+      eventsJson: eventsJson ?? this.eventsJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
+    if (rawText.present) {
+      map['raw_text'] = Variable<String>(rawText.value);
+    }
+    if (extractionJson.present) {
+      map['extraction_json'] = Variable<String>(extractionJson.value);
+    }
+    if (engine.present) {
+      map['engine'] = Variable<String>(
+        $ScanExtractionLogsTable.$converterenginen.toSql(engine.value),
+      );
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(
+        $ScanExtractionLogsTable.$converteroutcome.toSql(outcome.value),
+      );
+    }
+    if (finalValuesJson.present) {
+      map['final_values_json'] = Variable<String>(finalValuesJson.value);
+    }
+    if (errorMessage.present) {
+      map['error_message'] = Variable<String>(errorMessage.value);
+    }
+    if (eventsJson.present) {
+      map['events_json'] = Variable<String>(eventsJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScanExtractionLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('rawText: $rawText, ')
+          ..write('extractionJson: $extractionJson, ')
+          ..write('engine: $engine, ')
+          ..write('outcome: $outcome, ')
+          ..write('finalValuesJson: $finalValuesJson, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('eventsJson: $eventsJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4578,6 +5216,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotificationsTable notifications = $NotificationsTable(this);
   late final $NotificationLedgerTable notificationLedger =
       $NotificationLedgerTable(this);
+  late final $ScanExtractionLogsTable scanExtractionLogs =
+      $ScanExtractionLogsTable(this);
   late final Index transactionsWalletIdIndex = Index(
     'transactions_wallet_id_index',
     'CREATE INDEX transactions_wallet_id_index ON transactions (wallet_id)',
@@ -4595,6 +5235,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     scanSessions,
     notifications,
     notificationLedger,
+    scanExtractionLogs,
     transactionsWalletIdIndex,
   ];
 }
@@ -6922,6 +7563,329 @@ typedef $$NotificationLedgerTableProcessedTableManager =
       NotificationLedgerRow,
       PrefetchHooks Function()
     >;
+typedef $$ScanExtractionLogsTableCreateCompanionBuilder =
+    ScanExtractionLogsCompanion Function({
+      Value<int> id,
+      required DateTime createdAt,
+      Value<String?> imagePath,
+      Value<String?> rawText,
+      Value<String?> extractionJson,
+      Value<ScanEngine?> engine,
+      required ScanLogOutcome outcome,
+      Value<String?> finalValuesJson,
+      Value<String?> errorMessage,
+      Value<String> eventsJson,
+    });
+typedef $$ScanExtractionLogsTableUpdateCompanionBuilder =
+    ScanExtractionLogsCompanion Function({
+      Value<int> id,
+      Value<DateTime> createdAt,
+      Value<String?> imagePath,
+      Value<String?> rawText,
+      Value<String?> extractionJson,
+      Value<ScanEngine?> engine,
+      Value<ScanLogOutcome> outcome,
+      Value<String?> finalValuesJson,
+      Value<String?> errorMessage,
+      Value<String> eventsJson,
+    });
+
+class $$ScanExtractionLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $ScanExtractionLogsTable> {
+  $$ScanExtractionLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rawText => $composableBuilder(
+    column: $table.rawText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get extractionJson => $composableBuilder(
+    column: $table.extractionJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<ScanEngine?, ScanEngine, String> get engine =>
+      $composableBuilder(
+        column: $table.engine,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<ScanLogOutcome, ScanLogOutcome, String>
+  get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<String> get finalValuesJson => $composableBuilder(
+    column: $table.finalValuesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventsJson => $composableBuilder(
+    column: $table.eventsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScanExtractionLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScanExtractionLogsTable> {
+  $$ScanExtractionLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+    column: $table.imagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rawText => $composableBuilder(
+    column: $table.rawText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get extractionJson => $composableBuilder(
+    column: $table.extractionJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get engine => $composableBuilder(
+    column: $table.engine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get finalValuesJson => $composableBuilder(
+    column: $table.finalValuesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventsJson => $composableBuilder(
+    column: $table.eventsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScanExtractionLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScanExtractionLogsTable> {
+  $$ScanExtractionLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
+  GeneratedColumn<String> get rawText =>
+      $composableBuilder(column: $table.rawText, builder: (column) => column);
+
+  GeneratedColumn<String> get extractionJson => $composableBuilder(
+    column: $table.extractionJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<ScanEngine?, String> get engine =>
+      $composableBuilder(column: $table.engine, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<ScanLogOutcome, String> get outcome =>
+      $composableBuilder(column: $table.outcome, builder: (column) => column);
+
+  GeneratedColumn<String> get finalValuesJson => $composableBuilder(
+    column: $table.finalValuesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get eventsJson => $composableBuilder(
+    column: $table.eventsJson,
+    builder: (column) => column,
+  );
+}
+
+class $$ScanExtractionLogsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScanExtractionLogsTable,
+          ScanExtractionLogsRow,
+          $$ScanExtractionLogsTableFilterComposer,
+          $$ScanExtractionLogsTableOrderingComposer,
+          $$ScanExtractionLogsTableAnnotationComposer,
+          $$ScanExtractionLogsTableCreateCompanionBuilder,
+          $$ScanExtractionLogsTableUpdateCompanionBuilder,
+          (
+            ScanExtractionLogsRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ScanExtractionLogsTable,
+              ScanExtractionLogsRow
+            >,
+          ),
+          ScanExtractionLogsRow,
+          PrefetchHooks Function()
+        > {
+  $$ScanExtractionLogsTableTableManager(
+    _$AppDatabase db,
+    $ScanExtractionLogsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScanExtractionLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScanExtractionLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScanExtractionLogsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> imagePath = const Value.absent(),
+                Value<String?> rawText = const Value.absent(),
+                Value<String?> extractionJson = const Value.absent(),
+                Value<ScanEngine?> engine = const Value.absent(),
+                Value<ScanLogOutcome> outcome = const Value.absent(),
+                Value<String?> finalValuesJson = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<String> eventsJson = const Value.absent(),
+              }) => ScanExtractionLogsCompanion(
+                id: id,
+                createdAt: createdAt,
+                imagePath: imagePath,
+                rawText: rawText,
+                extractionJson: extractionJson,
+                engine: engine,
+                outcome: outcome,
+                finalValuesJson: finalValuesJson,
+                errorMessage: errorMessage,
+                eventsJson: eventsJson,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime createdAt,
+                Value<String?> imagePath = const Value.absent(),
+                Value<String?> rawText = const Value.absent(),
+                Value<String?> extractionJson = const Value.absent(),
+                Value<ScanEngine?> engine = const Value.absent(),
+                required ScanLogOutcome outcome,
+                Value<String?> finalValuesJson = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<String> eventsJson = const Value.absent(),
+              }) => ScanExtractionLogsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                imagePath: imagePath,
+                rawText: rawText,
+                extractionJson: extractionJson,
+                engine: engine,
+                outcome: outcome,
+                finalValuesJson: finalValuesJson,
+                errorMessage: errorMessage,
+                eventsJson: eventsJson,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ScanExtractionLogsTable, ScanExtractionLogsRow>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ScanExtractionLogsTable,
+                    ScanExtractionLogsRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScanExtractionLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScanExtractionLogsTable,
+      ScanExtractionLogsRow,
+      $$ScanExtractionLogsTableFilterComposer,
+      $$ScanExtractionLogsTableOrderingComposer,
+      $$ScanExtractionLogsTableAnnotationComposer,
+      $$ScanExtractionLogsTableCreateCompanionBuilder,
+      $$ScanExtractionLogsTableUpdateCompanionBuilder,
+      (
+        ScanExtractionLogsRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ScanExtractionLogsTable,
+          ScanExtractionLogsRow
+        >,
+      ),
+      ScanExtractionLogsRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6942,4 +7906,6 @@ class $AppDatabaseManager {
       $$NotificationsTableTableManager(_db, _db.notifications);
   $$NotificationLedgerTableTableManager get notificationLedger =>
       $$NotificationLedgerTableTableManager(_db, _db.notificationLedger);
+  $$ScanExtractionLogsTableTableManager get scanExtractionLogs =>
+      $$ScanExtractionLogsTableTableManager(_db, _db.scanExtractionLogs);
 }

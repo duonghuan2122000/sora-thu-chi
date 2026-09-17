@@ -18,7 +18,7 @@ Future<AppDatabase?> _tryMemoryDb() async {
 }
 
 void main() {
-  test('load bảng rỗng → mặc định; schemaVersion 10 (PBI 31)', () async {
+  test('load bảng rỗng → mặc định; schemaVersion 11 (PBI 47)', () async {
     final db = await _tryMemoryDb();
     if (db == null) {
       markTestSkipped('Host thiếu sqlite native — bỏ qua DAO drift tích hợp.');
@@ -26,7 +26,7 @@ void main() {
     }
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 10, reason: 'PBI 31 nâng schema v9 → v10');
+    expect(db.schemaVersion, 11, reason: 'PBI 47 nâng schema v10 → v11');
     final store = DriftUtilitiesStore(db);
     final prefs = await store.load();
     expect(prefs.hideBalance, isFalse);
