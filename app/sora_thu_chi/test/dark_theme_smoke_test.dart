@@ -124,7 +124,7 @@ void main() {
     );
     expect(find.text('Giao diện'), findsOneWidget);
     expect(find.text('Theo hệ thống'), findsOneWidget);
-    expect(find.text('Quản lý Tag'), findsOneWidget);
+    expect(find.text('Máy tính khi nhập số tiền'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

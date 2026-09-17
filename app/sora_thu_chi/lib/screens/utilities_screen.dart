@@ -16,20 +16,21 @@ import 'theme_screen.dart';
 
 /// Màn "Tiện ích & Cá nhân hóa" (mockup `01`, PBI 17) — màn con từ Cài đặt: app
 /// bar "Tiện ích & Cá nhân hóa" + back, không bottom nav (FR-001). Thân liệt kê
-/// **3 nhóm / 8 hàng** đúng mockup: HIỂN THỊ / TRẢI NGHIỆM / DỮ LIỆU & TÌM KIẾM
-/// — mỗi hàng vòng nền nhạt + icon teal + tên + dòng phụ + phần cuối. Hàng
-/// Widget màn hình chính hiển thị switch "bật" câm, chạm toàn hàng mở hướng dẫn
-/// ghim widget theo nền tảng (R5); **2 công tắc thật** (Ẩn số dư tắt / Máy tính
-/// bật — FR-006) bật/tắt + nhớ qua [UtilitiesStore] (ghi-through), nhưng chưa
-/// kéo hiệu ứng màn khác (FR-007).
+/// **2 nhóm / 5 hàng**: HIỂN THỊ (Giao diện, Ngôn ngữ) / TRẢI NGHIỆM (Widget
+/// màn hình chính, Ẩn số dư, Máy tính) — 3 hàng chưa có tính năng thật (Định
+/// dạng & Tiền tệ, Tìm kiếm toàn cục, Quản lý Tag) đã bị ẩn khỏi UI (PBI 45)
+/// cho tới khi implement xong. Mỗi hàng vòng nền nhạt + icon teal + tên + dòng
+/// phụ + phần cuối. Hàng Widget màn hình chính hiển thị switch "bật" câm, chạm
+/// toàn hàng mở hướng dẫn ghim widget theo nền tảng (R5); **2 công tắc thật**
+/// (Ẩn số dư tắt / Máy tính bật — FR-006) bật/tắt + nhớ qua [UtilitiesStore]
+/// (ghi-through), nhưng chưa kéo hiệu ứng màn khác (FR-007).
 ///
 /// Hàng "Giao diện" **đã kích hoạt** (PBI 18) và hàng "Ngôn ngữ" **đã kích
 /// hoạt** (PBI 19): phần cuối đọc reactive [ThemeController]/[LocaleController]
 /// (Obx) nên hiện đúng lựa chọn hiện hành — kể cả khi người dùng vừa đổi ở màn
 /// 02/03 rồi quay lại (màn này vẫn mounted dưới route, FR-007); chạm hàng →
-/// push `ThemeScreen`/`LanguageScreen` (FR-001). 3 hàng điều hướng còn lại vẫn
-/// no-op chờ màn con 04–07. Màu màn đọc theo theme qua [SoraColors] nên giao
-/// diện tối không còn vùng trắng chói.
+/// push `ThemeScreen`/`LanguageScreen` (FR-001). Màu màn đọc theo theme qua
+/// [SoraColors] nên giao diện tối không còn vùng trắng chói.
 ///
 /// StatefulWidget (R6) đọc store 1 lần khi mở, không GetX controller; seam
 /// [store] để test bơm fake (R7). Ghi-through nối đuôi để bật/tắt nhanh không
@@ -211,13 +212,6 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
             ),
             onTap: _openLanguageScreen,
           ),
-          _navRow(
-            colors: colors,
-            icon: Icons.tune,
-            name: 'Định dạng & Tiền tệ'.tr,
-            subtitle: 'Ngày, tiền tệ, tuần, kỳ tài chính'.tr,
-            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
-          ),
         ]),
         _SectionLabel('TRẢI NGHIỆM'.tr),
         ..._rows(colors, [
@@ -243,24 +237,6 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
             subtitle: 'Cho phép +, -, x, / khi nhập'.tr,
             value: _prefs.amountCalculatorEnabled,
             onChanged: _toggleCalculator,
-          ),
-        ]),
-        _SectionLabel('DỮ LIỆU & TÌM KIẾM'.tr),
-        ..._rows(colors, [
-          _navRow(
-            colors: colors,
-            icon: Icons.search,
-            name: 'Tìm kiếm toàn cục'.tr,
-            subtitle: 'Giao dịch, danh mục, ví'.tr,
-            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
-          ),
-          // Dòng phụ mô tả sạch (không `#…`/số tag giả — R4/FR-009/SC-008).
-          _navRow(
-            colors: colors,
-            icon: Icons.sell_outlined,
-            name: 'Quản lý Tag'.tr,
-            subtitle: 'Gắn nhãn cho giao dịch'.tr,
-            trailing: Icon(Icons.chevron_right, color: colors.tabInactive),
           ),
         ]),
       ],

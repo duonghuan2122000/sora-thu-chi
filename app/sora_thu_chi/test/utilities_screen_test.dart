@@ -92,19 +92,18 @@ Future<FakeThemeStore> pumpUtilities(
 
 void main() {
   const groupOrder = <String, List<String>>{
-    'HIỂN THỊ': ['Giao diện', 'Ngôn ngữ', 'Định dạng & Tiền tệ'],
+    'HIỂN THỊ': ['Giao diện', 'Ngôn ngữ'],
     'TRẢI NGHIỆM': [
       'Widget màn hình chính',
       'Ẩn số dư (Privacy mode)',
       'Máy tính khi nhập số tiền',
     ],
-    'DỮ LIỆU & TÌM KIẾM': ['Tìm kiếm toàn cục', 'Quản lý Tag'],
   };
 
   List<Switch> switches(WidgetTester tester) =>
       tester.widgetList<Switch>(find.byType(Switch)).toList();
 
-  testWidgets('Bố cục mockup: back + tiêu đề, 3 nhóm/8 hàng đúng thứ tự, icon', (tester) async {
+  testWidgets('Bố cục mockup: back + tiêu đề, 2 nhóm/5 hàng đúng thứ tự, icon', (tester) async {
     await pumpUtilities(tester, store: FakeUtilitiesStore());
 
     // App bar: back + tiêu đề; không bottom nav.
@@ -133,27 +132,24 @@ void main() {
     for (final icon in [
       Icons.wb_sunny_outlined,
       Icons.language,
-      Icons.tune,
       Icons.widgets_outlined,
       Icons.visibility_off_outlined,
       Icons.calculate_outlined,
-      Icons.search,
-      Icons.sell_outlined,
     ]) {
       expect(find.byIcon(icon), findsOneWidget, reason: 'thiếu icon $icon');
     }
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Trailing mặc định: "Theo hệ thống"/"Tiếng Việt" + chevron 5 hàng nav', (tester) async {
+  testWidgets('Trailing mặc định: "Theo hệ thống"/"Tiếng Việt" + chevron 2 hàng nav', (tester) async {
     await pumpUtilities(tester, store: FakeUtilitiesStore());
 
     // PBI 18 đổi nhãn hàng Giao diện sang tên đầy đủ "Theo hệ thống" (R10).
     expect(find.text('Theo hệ thống'), findsOneWidget);
     expect(find.text('Hệ thống'), findsNothing);
     expect(find.text('Tiếng Việt'), findsOneWidget);
-    // 5 hàng điều hướng có chevron sang phải.
-    expect(find.byIcon(Icons.chevron_right), findsNWidgets(5));
+    // 2 hàng điều hướng có chevron sang phải.
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
   });
 
   testWidgets('Giá trị switch từ store: Widget bật, Ẩn số dư tắt, Máy tính bật', (tester) async {
@@ -234,29 +230,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(switches(tester)[0].value, isTrue);
     expect(find.text('Hướng dẫn ghim widget'), findsNothing);
-  });
-
-  testWidgets('3 hàng điều hướng còn no-op: chạm không mở màn/dialog, không lỗi', (tester) async {
-    await pumpUtilities(tester, store: FakeUtilitiesStore());
-
-    // "Giao diện" (PBI 18) và "Ngôn ngữ" (PBI 19) đã kích hoạt → không còn no-op.
-    for (final label in [
-      'Định dạng & Tiền tệ',
-      'Tìm kiếm toàn cục',
-      'Quản lý Tag',
-    ]) {
-      await tester.tap(find.text(label));
-      await tester.pumpAndSettle();
-    }
-
-    // Không route mới (chỉ 1 back duy nhất, không dialog), app không lỗi,
-    // giá trị "Theo hệ thống"/"Tiếng Việt" không đổi.
-    expect(find.byType(BackButton), findsOneWidget);
-    expect(find.text('Hướng dẫn ghim widget'), findsNothing);
-    expect(find.text('Theo hệ thống'), findsOneWidget);
-    expect(find.text('Tiếng Việt'), findsOneWidget);
-    expect(find.byType(UtilitiesScreen), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Hàng "Ngôn ngữ": chạm mở màn 03, back về màn Tiện ích (FR-001)',
@@ -345,14 +318,6 @@ void main() {
     expect(find.text('Theo hệ thống'), findsNothing);
   });
 
-  testWidgets('Quản lý Tag không hiện số tag giả / nhãn # (FR-009/SC-008)', (tester) async {
-    await pumpUtilities(tester, store: FakeUtilitiesStore());
-
-    expect(find.textContaining('12 tag'), findsNothing);
-    expect(find.textContaining('#'), findsNothing);
-    expect(find.text('Gắn nhãn cho giao dịch'), findsOneWidget);
-  });
-
   testWidgets('Cỡ chữ lớn + màn nhỏ: cuộn tới hàng cuối, không overflow', (tester) async {
     registerThemeController();
     registerLocaleController();
@@ -370,13 +335,13 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.dragUntilVisible(
-      find.text('Quản lý Tag'),
+      find.text('Máy tính khi nhập số tiền'),
       find.byType(Scrollable).first,
       const Offset(0, -300),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Quản lý Tag'), findsOneWidget);
+    expect(find.text('Máy tính khi nhập số tiền'), findsOneWidget);
     expect(tester.takeException(), isNull,
         reason: 'Không được có FlutterError (RenderFlex overflow) khi cỡ chữ lớn');
   });
