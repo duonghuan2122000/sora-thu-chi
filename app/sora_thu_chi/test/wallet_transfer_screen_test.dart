@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/core/wallet/wallet_controller.dart';
 import 'package:sora_thu_chi/screens/wallet_transfer_screen.dart';
@@ -111,6 +112,11 @@ Future<void> _open(
   Size? size,
   double textScale = 1.0,
   EdgeInsets safe = EdgeInsets.zero,
+  int? editingTransferGroupId,
+  Wallet? destinationWallet,
+  int? initialAmount,
+  DateTime? initialDate,
+  String? initialNote,
 }) async {
   if (size != null) {
     await tester.binding.setSurfaceSize(size);
@@ -135,6 +141,11 @@ Future<void> _open(
                   builder: (_) => WalletTransferScreen(
                     sourceWallet: source,
                     controller: controller,
+                    editingTransferGroupId: editingTransferGroupId,
+                    destinationWallet: destinationWallet,
+                    initialAmount: initialAmount,
+                    initialDate: initialDate,
+                    initialNote: initialNote,
                   ),
                 ),
               ),
@@ -353,6 +364,123 @@ void main() {
       }
       expect(find.text('Xác nhận chuyển tiền'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('WalletTransferScreen — chế độ sửa (PBI 39)', () {
+    /// Đăng ký controller + repo có sẵn 1 giao dịch Chuyển khoản Vietcombank
+    /// → Momo; trả (controller, repo, id vế nguồn = transferGroupId).
+    Future<(WalletController, FakeWalletRepository, int)> seedEditable() async {
+      Get.reset();
+      final repo = FakeWalletRepository(
+        const [_cashLow, _vcb, _creditVib, _momo, _savingsHidden],
+        null,
+        [],
+      );
+      final controller = WalletController(repo);
+      Get.put(controller);
+      await controller.init();
+      addTearDown(Get.reset);
+      await repo.performTransfer(
+        fromWalletId: _vcb.id,
+        toWalletId: _momo.id,
+        amount: 700000,
+        date: DateTime(2026, 9, 1, 10, 0),
+        note: 'Nạp Momo',
+      );
+      final source = (await repo.allTransactions())
+          .firstWhere((t) => t.walletId == _vcb.id);
+      return (controller, repo, source.id);
+    }
+
+    testWidgets('mở màn: tiêu đề "Sửa chuyển khoản", điền sẵn đúng dữ liệu gốc',
+        (tester) async {
+      final (c, _, groupId) = await seedEditable();
+      await _open(
+        tester,
+        c,
+        _vcb,
+        size: const Size(800, 2000),
+        editingTransferGroupId: groupId,
+        destinationWallet: _momo,
+        initialAmount: 700000,
+        initialDate: DateTime(2026, 9, 1, 10, 0),
+        initialNote: 'Nạp Momo',
+      );
+
+      expect(find.text('Sửa chuyển khoản'), findsOneWidget);
+      expect(find.text('Chuyển tiền giữa ví'), findsNothing);
+      expect(find.text('Lưu thay đổi'), findsOneWidget);
+      expect(find.text('700.000'), findsOneWidget);
+      expect(find.text('Momo'), findsOneWidget);
+      final noteField = tester.widget<TextField>(
+        find.byKey(const ValueKey('note-field')),
+      );
+      expect(noteField.controller!.text, 'Nạp Momo');
+    });
+
+    testWidgets('đổi số tiền rồi Lưu thay đổi → gọi updateTransfer đúng, không tạo dòng mới',
+        (tester) async {
+      final (c, repo, groupId) = await seedEditable();
+      await _open(
+        tester,
+        c,
+        _vcb,
+        size: const Size(800, 2000),
+        editingTransferGroupId: groupId,
+        destinationWallet: _momo,
+        initialAmount: 700000,
+        initialDate: DateTime(2026, 9, 1, 10, 0),
+        initialNote: 'Nạp Momo',
+      );
+
+      await _enterAmount(tester, '1000000');
+      await tester.tap(find.text('Lưu thay đổi'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WalletTransferScreen), findsNothing); // đã pop.
+      final legs = (await repo.allTransactions())
+          .where((t) => t.type == TxnType.transfer)
+          .toList();
+      expect(legs.length, 2, reason: 'sửa không tạo thêm vế mới');
+      final source = legs.firstWhere((t) => t.walletId == _vcb.id);
+      final dest = legs.firstWhere((t) => t.walletId == _momo.id);
+      expect(source.id, groupId);
+      expect(source.amount, -1000000);
+      expect(dest.amount, 1000000);
+      final wallets = await repo.loadAll();
+      // Vietcombank: 14.800.000 − 700.000 (transfer cũ) = 14.100.000; sửa
+      // hoàn tác +700.000 = 14.800.000 rồi trừ lại 1.000.000 = 13.800.000.
+      expect(wallets.firstWhere((w) => w.id == _vcb.id).balance, 13800000);
+      // Momo: 1.450.000 + 700.000 = 2.150.000; hoàn tác −700.000 = 1.450.000
+      // rồi cộng lại 1.000.000 = 2.450.000.
+      expect(wallets.firstWhere((w) => w.id == _momo.id).balance, 2450000);
+    });
+
+    testWidgets('đổi 1 trường rồi rời màn → hộp thoại xác nhận xuất hiện',
+        (tester) async {
+      final (c, _, groupId) = await seedEditable();
+      await _open(
+        tester,
+        c,
+        _vcb,
+        size: const Size(800, 2000),
+        editingTransferGroupId: groupId,
+        destinationWallet: _momo,
+        initialAmount: 700000,
+        initialDate: DateTime(2026, 9, 1, 10, 0),
+        initialNote: 'Nạp Momo',
+      );
+
+      await _enterAmount(tester, '1000000');
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hủy sửa chuyển khoản?'), findsOneWidget);
+      await tester.tap(find.text('Hủy'));
+      await tester.pumpAndSettle();
+      // Chọn "Hủy" ở hộp thoại → ở lại màn sửa.
+      expect(find.text('Sửa chuyển khoản'), findsOneWidget);
     });
   });
 }

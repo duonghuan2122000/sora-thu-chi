@@ -148,6 +148,68 @@ class DriftWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<void> updateTransfer({
+    required int transferGroupId,
+    required int fromWalletId,
+    required int toWalletId,
+    required int amount,
+    required DateTime date,
+    String note = '',
+  }) async {
+    // Một db.transaction(): hoàn tác số dư 2 vế cũ rồi áp lại theo ví/tiền mới
+    // — đúng cho mọi trường hợp đổi/giữ nguyên ví nguồn/đích (bám updateTransaction).
+    await _db.transaction(() async {
+      final sourceLeg = await (_db.select(_db.transactions)
+            ..where((t) => t.id.equals(transferGroupId)))
+          .getSingle();
+      final group = await (_db.select(_db.transactions)
+            ..where((t) => t.transferGroupId.equals(transferGroupId)))
+          .get();
+      final destLeg = group.firstWhere((t) => t.id != transferGroupId);
+
+      final oldSourceWallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(sourceLeg.walletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(sourceLeg.walletId)))
+          .write(WalletsCompanion(balance: Value(oldSourceWallet.balance - sourceLeg.amount)));
+      final oldDestWallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(destLeg.walletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(destLeg.walletId)))
+          .write(WalletsCompanion(balance: Value(oldDestWallet.balance - destLeg.amount)));
+
+      // Đọc lại — nếu ví mới trùng ví cũ, số dư đã phản ánh đúng phần hoàn tác.
+      final newFromWallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(fromWalletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(fromWalletId)))
+          .write(WalletsCompanion(balance: Value(newFromWallet.balance - amount)));
+      final newToWallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(toWalletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(toWalletId)))
+          .write(WalletsCompanion(balance: Value(newToWallet.balance + amount)));
+
+      await (_db.update(_db.transactions)..where((t) => t.id.equals(sourceLeg.id))).write(
+        TransactionsCompanion(
+          walletId: Value(fromWalletId),
+          amount: Value(-amount),
+          transactionDate: Value(date),
+          note: Value(note),
+        ),
+      );
+      await (_db.update(_db.transactions)..where((t) => t.id.equals(destLeg.id))).write(
+        TransactionsCompanion(
+          walletId: Value(toWalletId),
+          amount: Value(amount),
+          transactionDate: Value(date),
+          note: Value(note),
+        ),
+      );
+    });
+  }
+
+  @override
   Future<List<Category>> categories({required CategoryType type}) async {
     // Lọc is_hidden trong SQL; type lọc sau (cột enum dùng converter — so sánh
     // trong Dart cho chắc, bảng nhỏ local).
@@ -277,6 +339,54 @@ class DriftWalletRepository implements WalletRepository {
           receiptImage: Value(receiptImage),
         ),
       );
+    });
+  }
+
+  @override
+  Future<void> updateTransaction({
+    required Transaction original,
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required Category category,
+    required DateTime date,
+    String note = '',
+    String tags = '',
+    String receiptImage = '',
+  }) async {
+    // Một db.transaction(): hoàn tác tác động cũ khỏi ví cũ rồi áp tác động
+    // mới vào ví mới (có thể trùng ví cũ) — đúng cho mọi trường hợp đổi/giữ
+    // nguyên ví (FR-005). Không dùng delta trực tiếp để tránh sai khi đổi ví.
+    final signedAmount = type == TxnType.income ? amount : -amount;
+    await _db.transaction(() async {
+      final oldWallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(original.walletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(original.walletId)))
+          .write(WalletsCompanion(balance: Value(oldWallet.balance - original.amount)));
+
+      // Đọc lại sau khi ghi hoàn tác — nếu trùng ví cũ, số dư đã phản ánh
+      // đúng phần hoàn tác ở trên.
+      final newWallet = await (_db.select(_db.wallets)
+            ..where((t) => t.id.equals(walletId)))
+          .getSingle();
+      await (_db.update(_db.wallets)..where((t) => t.id.equals(walletId)))
+          .write(WalletsCompanion(balance: Value(newWallet.balance + signedAmount)));
+
+      await (_db.update(_db.transactions)..where((t) => t.id.equals(original.id)))
+          .write(
+            TransactionsCompanion(
+              walletId: Value(walletId),
+              type: Value(type),
+              amount: Value(signedAmount),
+              category: Value(category.name),
+              categoryId: Value(category.id),
+              note: Value(note),
+              transactionDate: Value(date),
+              tags: Value(tags),
+              receiptImage: Value(receiptImage),
+            ),
+          );
     });
   }
 

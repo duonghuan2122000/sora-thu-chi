@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_detail.dart';
+import 'package:sora_thu_chi/core/wallet/wallet.dart';
+import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/transaction_detail_screen.dart';
 import 'package:sora_thu_chi/theme/app_colors.dart';
 import 'package:sora_thu_chi/theme/sora_colors.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
+
+import 'fakes/fake_wallet_repository.dart';
 
 /// Mở [screen] như một route đẩy lên trên màn host (có back button) — bơm seam
 /// [loader] trực tiếp, không cần sqlite/fake repo.
@@ -380,5 +386,126 @@ void main() {
       expect(find.text('20/09/2026 · 06:05'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('TransactionDetailScreen — chạm "Sửa" điều hướng (PBI 39)', () {
+    testWidgets(
+      'giao dịch Chi: mở đúng AddTransactionScreen điền sẵn, lưu xong hiển thị dữ liệu mới',
+      (tester) async {
+        Get.reset();
+        addTearDown(Get.reset);
+        final wallet = Wallet(id: 1, name: 'Tiền mặt', type: WalletType.cash, balance: 1000000);
+        // Danh sách giao dịch rỗng tường minh — seed mặc định (11 dòng mẫu) sẽ
+        // đụng `walletId`/id của giao dịch chèn dưới đây.
+        final repo = FakeWalletRepository([wallet], null, []);
+        Get.put<WalletRepository>(repo);
+        final category = (await repo.categories(type: CategoryType.expense))
+            .firstWhere((c) => c.name == 'Nhà ở');
+        await repo.addTransaction(
+          walletId: wallet.id,
+          type: TxnType.expense,
+          amount: 50000,
+          category: category,
+          date: DateTime(2026, 9, 1, 12, 0),
+          note: 'Tiền điện',
+        );
+        final original = (await repo.transactionsOf(wallet.id)).single;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.themeData,
+            home: _Host(
+              screen: TransactionDetailScreen(
+                ref: TransactionDetailRef(transactionId: original.id),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('mở chi tiết'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sửa'));
+        await tester.pumpAndSettle();
+
+        // Mở đúng màn sửa, điền sẵn dữ liệu gốc.
+        expect(find.text('Sửa giao dịch'), findsOneWidget);
+        expect(find.text('Nhà ở'), findsOneWidget);
+        expect(find.text('Tiền mặt'), findsOneWidget);
+
+        await tester.enterText(
+          find.byKey(const ValueKey('amount-field')),
+          '80000',
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('save-transaction')));
+        await tester.pumpAndSettle();
+
+        // Quay lại Chi tiết, đã nạp lại đúng dữ liệu mới.
+        expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+        expect(find.text('-80.000 đ'), findsOneWidget);
+        final updated = (await repo.allTransactions()).single;
+        expect(updated.id, original.id);
+        expect(updated.amount, -80000);
+      },
+    );
+
+    testWidgets(
+      'giao dịch Chuyển khoản: mở đúng WalletTransferScreen điền sẵn, lưu xong hiển thị dữ liệu mới',
+      (tester) async {
+        Get.reset();
+        addTearDown(Get.reset);
+        final vcb = Wallet(id: 1, name: 'Vietcombank', type: WalletType.bank, balance: 14800000);
+        final momo = Wallet(id: 2, name: 'Momo', type: WalletType.eWallet, balance: 1450000);
+        final repo = FakeWalletRepository([vcb, momo], null, []);
+        Get.put<WalletRepository>(repo);
+        await repo.performTransfer(
+          fromWalletId: vcb.id,
+          toWalletId: momo.id,
+          amount: 700000,
+          date: DateTime(2026, 9, 1, 10, 0),
+          note: 'Nạp Momo',
+        );
+        final source = (await repo.allTransactions())
+            .firstWhere((t) => t.walletId == vcb.id);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.themeData,
+            home: _Host(
+              screen: TransactionDetailScreen(
+                ref: TransactionDetailRef(transferGroupId: source.id),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('mở chi tiết'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Sửa'));
+        await tester.pumpAndSettle();
+
+        // Mở đúng màn sửa chuyển khoản, điền sẵn dữ liệu gốc.
+        expect(find.text('Sửa chuyển khoản'), findsOneWidget);
+        expect(find.text('Momo'), findsOneWidget);
+
+        await tester.enterText(
+          find.byKey(const ValueKey('amount-field')),
+          '1000000',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Lưu thay đổi'));
+        await tester.pumpAndSettle();
+
+        // Quay lại Chi tiết, đã nạp lại đúng dữ liệu mới.
+        expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+        expect(find.text('1.000.000 đ'), findsOneWidget);
+        final legs = (await repo.allTransactions())
+            .where((t) => t.type == TxnType.transfer)
+            .toList();
+        expect(legs.length, 2);
+        expect(legs.firstWhere((t) => t.walletId == vcb.id).amount, -1000000);
+        expect(legs.firstWhere((t) => t.walletId == momo.id).amount, 1000000);
+      },
+    );
   });
 }

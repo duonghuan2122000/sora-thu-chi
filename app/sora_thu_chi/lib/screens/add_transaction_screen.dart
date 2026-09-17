@@ -12,7 +12,7 @@ import '../core/money_format.dart';
 import '../core/scan/scan_image_store.dart';
 import '../core/transaction/add_form.dart';
 import '../core/transaction/transaction.dart';
-import '../core/transaction/transaction_detail.dart' show joinTags;
+import '../core/transaction/transaction_detail.dart' show joinTags, parseTags;
 import '../core/wallet/wallet.dart';
 import '../core/wallet/wallet_rules.dart';
 import '../data/notification_deps.dart';
@@ -28,11 +28,18 @@ import 'wallet_transfer_screen.dart';
 /// plugin thật (PBI 38, R). Impl thật: `ImagePicker().pickImage(source: ...)`.
 typedef ReceiptImagePicker = Future<XFile?> Function(ImageSource source);
 
-/// Màn "Thêm giao dịch" (mockup `02-them-giao-dich-v2`, PBI 38) — ghi khoản
-/// thu/chi mới, màn toàn màn hình (app bar teal: X đóng / check lưu, **không**
-/// bottom nav). Segmented Chi|Thu|Chuyển khoản (mặc định Chi); số tiền gõ bằng
-/// bàn phím số của hệ thống; 6 trường Danh mục/Ví/Ngày giờ/Tag/Ảnh hóa đơn/Ghi
-/// chú; nút "Lưu giao dịch" cố định. Stateful + [WalletRepository] inject
+/// Chuỗi rỗng (giá trị mặc định cột `receipt_image`/`tags` khi không có) → coi
+/// như chưa đính kèm (PBI 39, chế độ sửa nạp từ [Transaction] domain).
+String? _emptyToNull(String? s) => (s == null || s.isEmpty) ? null : s;
+
+/// Màn "Thêm/Sửa giao dịch" (mockup `02-them-giao-dich-v2`, PBI 38 + chế độ
+/// sửa PBI 39) — ghi khoản thu/chi mới **hoặc** sửa khoản đã có (qua
+/// [editing]), màn toàn màn hình (app bar teal: X đóng / check lưu, **không**
+/// bottom nav). Segmented Chi|Thu|Chuyển khoản (mặc định Chi, khóa mục
+/// "Chuyển khoản" khi [editing] != null — R4); số tiền gõ bằng bàn phím số
+/// của hệ thống; 6 trường Danh mục/Ví/Ngày giờ/Tag/Ảnh hóa đơn/Ghi chú; nút
+/// "Lưu giao dịch" cố định. Điểm vào chế độ sửa: nút "Sửa" ở
+/// `transaction_detail_screen.dart`. Stateful + [WalletRepository] inject
 /// (không GetX — màn tác vụ một-lần, R11).
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({
@@ -41,13 +48,16 @@ class AddTransactionScreen extends StatefulWidget {
     this.initialType = TxnType.expense,
     this.pickImage,
     this.imageStore,
+    this.editing,
+    this.initialCategory,
+    this.initialWallet,
   });
 
   /// Seam test: mặc định null → [ensureWalletRepository] khi vào (R11).
   final WalletRepository? repository;
 
   /// Loại mở sẵn (PBI 24 R14) — `transfer` thì màn tự mở luồng chuyển khoản sau
-  /// khi nạp ví xong. Mặc định `expense` = hành vi cũ.
+  /// khi nạp ví xong. Mặc định `expense` = hành vi cũ. Bỏ qua khi [editing] != null.
   final TxnType initialType;
 
   /// Seam test đính kèm Ảnh hóa đơn (PBI 38) — mặc định `ImagePicker().pickImage`.
@@ -56,6 +66,21 @@ class AddTransactionScreen extends StatefulWidget {
   /// Seam test nơi lưu file ảnh hóa đơn — mặc định [LocalScanImageStore] (tái
   /// dùng đúng seam của luồng quét OCR, `<appDocuments>/receipts/`).
   final ScanImageStore? imageStore;
+
+  /// Giao dịch Thu/Chi gốc đang sửa (PBI 39) — `null` = chế độ Thêm mới (hành
+  /// vi cũ). Khác `null` → màn nạp sẵn toàn bộ trường, đổi tiêu đề "Sửa giao
+  /// dịch", khóa tab "Chuyển khoản" (R4), `_save()` gọi `updateTransaction`.
+  final Transaction? editing;
+
+  /// Danh mục gốc của [editing] — truyền kèm vì [Transaction] chỉ giữ
+  /// `categoryId`/tên snapshot, không đủ dựng lại đối tượng [Category] cho picker.
+  final Category? initialCategory;
+
+  /// Ví gốc của [editing] — tương tự [initialCategory].
+  final Wallet? initialWallet;
+
+  /// Đang ở chế độ sửa — tiện dùng ở nhiều nơi trong state.
+  bool get isEditing => editing != null;
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -68,19 +93,42 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late final ScanImageStore _imageStore = widget.imageStore ?? LocalScanImageStore();
   late final DateTime _openedAt = DateTime.now();
 
-  late TxnType _type = widget.initialType;
-  final TextEditingController _amountCtrl = TextEditingController();
-  int get _amount => parseAmount(_amountCtrl.text);
-  Category? _category;
-  Wallet? _wallet;
-  late DateTime _date = DateTime.now();
-  final TextEditingController _noteCtrl = TextEditingController();
-  List<String> _tags = [];
+  Transaction? get _editing => widget.editing;
 
-  /// Đường dẫn ảnh hóa đơn đã copy vào kho `receipts/` — `null` = chưa đính
-  /// kèm. Nếu rời màn không lưu, file này bị xóa (không để rác, bám R12 của
-  /// luồng quét OCR).
-  String? _receiptImagePath;
+  late TxnType _type = _editing?.type ?? widget.initialType;
+  late final TextEditingController _amountCtrl = TextEditingController(
+    text: _editing == null ? '' : formatAmount(_editing!.amount.abs()),
+  );
+  int get _amount => parseAmount(_amountCtrl.text);
+  late Category? _category = widget.initialCategory;
+  late Wallet? _wallet = widget.initialWallet;
+  late DateTime _date = _editing?.date ?? DateTime.now();
+  late final TextEditingController _noteCtrl = TextEditingController(
+    text: _editing?.note ?? '',
+  );
+  late List<String> _tags = parseTags(_editing?.tags ?? '');
+
+  /// Baseline tag gốc (chế độ sửa) — so sánh nội dung (không chỉ có/không) để
+  /// phát hiện đổi tag dù vẫn còn ít nhất 1 tag trước/sau (FR-006). Tính thẳng
+  /// từ [_editing] (không đọc lại `_tags`) — `late` chỉ khởi tạo ở lần đọc đầu
+  /// tiên, mà lúc đó `_tags` có thể đã bị đổi (test (q) từng lộ bug này).
+  late final List<String> _initialTags = parseTags(_editing?.tags ?? '');
+
+  /// Đường dẫn ảnh hóa đơn hiện tại — `null` = chưa đính kèm. Ở chế độ sửa,
+  /// khởi tạo bằng ảnh đã có sẵn của giao dịch gốc (đã lưu, **không** phải
+  /// file chờ commit — không được xóa khi hủy nếu chưa đổi, khác
+  /// [_originalReceiptImage]). Nếu rời màn không lưu và đã đổi sang ảnh khác,
+  /// chỉ ảnh mới (chưa gắn giao dịch) bị xóa (không để rác, bám R12 của luồng
+  /// quét OCR) — ảnh gốc của giao dịch đang sửa giữ nguyên.
+  late String? _receiptImagePath = _emptyToNull(widget.editing?.receiptImage);
+
+  /// Ảnh gốc đã gắn sẵn với giao dịch đang sửa (`null` ở chế độ Thêm mới) —
+  /// mốc để phân biệt "ảnh đã lưu từ trước" với "ảnh vừa chọn trong phiên sửa
+  /// này, chưa lưu". Tính thẳng từ [widget.editing] (không đọc lại
+  /// `_receiptImagePath` — cùng bẫy `late` lười khởi tạo như [_initialTags]).
+  late final String? _originalReceiptImage = _emptyToNull(
+    widget.editing?.receiptImage,
+  );
 
   bool _loading = true;
   List<Wallet> _activeWallets = const [];
@@ -101,8 +149,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     date: _date,
     type: _type,
     now: _openedAt,
-    hasTags: _tags.isNotEmpty,
-    hasReceiptImage: _receiptImagePath != null,
+    // So sánh nội dung (không chỉ có/không) — đúng cho cả chế độ Thêm (baseline
+    // rỗng) lẫn Sửa (baseline = dữ liệu gốc, PBI 39 R5).
+    hasTags: joinTags(_tags) != joinTags(_initialTags),
+    hasReceiptImage: _receiptImagePath != _originalReceiptImage,
+    initialAmount: _editing == null ? 0 : _editing!.amount.abs(),
+    initialCategory: widget.initialCategory,
+    initialNote: _editing?.note ?? '',
+    initialDate: _editing?.date,
+    initialType: _editing?.type ?? TxnType.expense,
   );
 
   Color _amountAccent(SoraColors colors) =>
@@ -130,15 +185,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final active = wallets.where((w) => !w.isHidden).toList()
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       // Pre-select ví mặc định (hoạt động); thiếu mặc định → ví hoạt động đầu.
-      final preselect = currentActiveDefault(active) ?? firstActive(active);
+      // Chế độ sửa (PBI 39) giữ nguyên ví gốc đã seed từ constructor thay vì
+      // ghi đè bằng ví mặc định.
+      final preselect = widget.isEditing
+          ? _wallet
+          : currentActiveDefault(active) ?? firstActive(active);
       setState(() {
         _activeWallets = active;
         _wallet = preselect;
         _loading = false;
       });
       // Vào từ sheet với lựa chọn "Chuyển khoản" → mở luồng chuyển ngay, đúng
-      // một lần (R14); bỏ qua hỏi "bỏ dữ liệu" vì form còn trống.
-      if (widget.initialType == TxnType.transfer && !_autoTransferOpened) {
+      // một lần (R14); bỏ qua hỏi "bỏ dữ liệu" vì form còn trống. Không áp dụng
+      // ở chế độ sửa (R4).
+      if (!widget.isEditing &&
+          widget.initialType == TxnType.transfer &&
+          !_autoTransferOpened) {
         _autoTransferOpened = true;
         await _openTransferFlow(skipDirtyCheck: true);
       }
@@ -282,7 +344,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   /// Chạm dòng Ảnh hóa đơn — chọn nguồn rồi lưu vào kho `receipts/` (PBI 38,
-  /// FR-007/FR-008). Ảnh cũ (nếu có) bị xóa trước khi thay bằng ảnh mới.
+  /// FR-007/FR-008). Ảnh cũ (nếu có) bị xóa trước khi thay bằng ảnh mới — trừ
+  /// [_originalReceiptImage] (PBI 39): ảnh gốc của giao dịch đang sửa vẫn
+  /// đang được tham chiếu (còn lưu ở DB) cho tới khi bấm Lưu, không được xóa.
   Future<void> _pickReceiptImage() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -296,7 +360,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final old = _receiptImagePath;
     if (!mounted) return;
     setState(() => _receiptImagePath = path);
-    if (old != null) unawaited(_imageStore.delete(old));
+    if (old != null && old != _originalReceiptImage) {
+      unawaited(_imageStore.delete(old));
+    }
   }
 
   Future<void> _save() async {
@@ -312,16 +378,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     setState(() => _saving = true);
     try {
-      await _repository.addTransaction(
-        walletId: _wallet!.id,
-        type: _type,
-        amount: _amount,
-        category: _category!,
-        date: _date,
-        note: _noteCtrl.text.trim(),
-        tags: joinTags(_tags),
-        receiptImage: _receiptImagePath ?? '',
-      );
+      final editing = _editing;
+      if (editing != null) {
+        await _repository.updateTransaction(
+          original: editing,
+          walletId: _wallet!.id,
+          type: _type,
+          amount: _amount,
+          category: _category!,
+          date: _date,
+          note: _noteCtrl.text.trim(),
+          tags: joinTags(_tags),
+          receiptImage: _receiptImagePath ?? '',
+        );
+      } else {
+        await _repository.addTransaction(
+          walletId: _wallet!.id,
+          type: _type,
+          amount: _amount,
+          category: _category!,
+          date: _date,
+          note: _noteCtrl.text.trim(),
+          tags: joinTags(_tags),
+          receiptImage: _receiptImagePath ?? '',
+        );
+      }
       // Ảnh đã gắn vào giao dịch — bỏ theo dõi để `_requestClose`/dispose
       // không xóa nhầm nếu có gọi lại sau khi pop (an toàn, không nên xảy ra).
       _receiptImagePath = null;
@@ -382,7 +463,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   void _discardPendingReceiptImage() {
     final path = _receiptImagePath;
-    if (path != null) {
+    // Ảnh gốc của giao dịch đang sửa (chưa đổi) không phải file chờ commit —
+    // không xóa (PBI 39).
+    if (path != null && path != _originalReceiptImage) {
       _receiptImagePath = null;
       unawaited(_imageStore.delete(path));
     }
@@ -398,7 +481,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Thêm giao dịch'.tr),
+          title: Text((widget.isEditing ? 'Sửa giao dịch' : 'Thêm giao dịch').tr),
           leading: IconButton(
             key: const ValueKey('close-add'),
             tooltip: 'Đóng'.tr,
@@ -552,16 +635,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
+  /// Ở chế độ sửa (PBI 39 R4), khóa mục này — sửa giao dịch Thu/Chi không đổi
+  /// được sang Chuyển khoản (khác cấu trúc lưu trữ 1 dòng ↔ 2 dòng liên kết).
   Widget _transferSegment(SoraColors colors) {
     return Expanded(
       child: GestureDetector(
-        onTap: _openTransferFlow,
+        onTap: widget.isEditing ? null : _openTransferFlow,
         child: Container(
           alignment: Alignment.center,
           child: Text(
             'Chuyển khoản'.tr,
             style: TextStyle(
-              color: colors.listLabel,
+              color: widget.isEditing
+                  ? colors.listLabel.withValues(alpha: 0.4)
+                  : colors.listLabel,
               fontSize: 13,
             ),
           ),

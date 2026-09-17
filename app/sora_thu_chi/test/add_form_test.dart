@@ -135,5 +135,46 @@ void main() {
       expect(dirty(date: DateTime(2026, 9, 4, 9, 41)), isTrue); // ngày khác now.
       expect(dirty(type: TxnType.income), isTrue); // đổi loại Chi → Thu.
     });
+
+    test('baseline sửa giao dịch (PBI 39): khớp gốc → chưa dirty', () {
+      final original = _category();
+      expect(
+        isDirty(
+          amount: 50000,
+          category: original,
+          note: 'Ăn trưa',
+          date: DateTime(2026, 9, 1, 12, 0),
+          type: TxnType.expense,
+          initialAmount: 50000,
+          initialCategory: original,
+          initialNote: 'Ăn trưa',
+          initialDate: DateTime(2026, 9, 1, 12, 0),
+          initialType: TxnType.expense,
+        ),
+        isFalse,
+      );
+    });
+
+    test('baseline sửa giao dịch (PBI 39): lệch 1 trường bất kỳ → dirty', () {
+      final original = _category();
+      bool dirtyFrom({int? amount, Category? category, String? note, DateTime? date, TxnType? type}) =>
+          isDirty(
+            amount: amount ?? 50000,
+            category: category ?? original,
+            note: note ?? 'Ăn trưa',
+            date: date ?? DateTime(2026, 9, 1, 12, 0),
+            type: type ?? TxnType.expense,
+            initialAmount: 50000,
+            initialCategory: original,
+            initialNote: 'Ăn trưa',
+            initialDate: DateTime(2026, 9, 1, 12, 0),
+            initialType: TxnType.expense,
+          );
+
+      expect(dirtyFrom(amount: 80000), isTrue);
+      expect(dirtyFrom(note: 'Ăn trưa đắt hơn'), isTrue);
+      expect(dirtyFrom(type: TxnType.income), isTrue);
+      expect(dirtyFrom(date: DateTime(2026, 9, 2, 12, 0)), isTrue);
+    });
   });
 }

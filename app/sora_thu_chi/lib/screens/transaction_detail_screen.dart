@@ -3,14 +3,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../core/category/category.dart';
 import '../core/date_label.dart';
 import '../core/money_format.dart';
 import '../core/transaction/transaction.dart';
 import '../core/transaction/transaction_detail.dart';
+import '../core/wallet/wallet.dart';
 import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
+import 'add_transaction_screen.dart';
+import 'wallet_transfer_screen.dart';
 
 /// Màn "Chi tiết giao dịch" — sub-page đè lên shell (AppBar riêng, không bottom
 /// nav), theo mockup `04-chi-tiet-giao-dich.svg`. Nhận [ref] (R2); nạp lại dữ
@@ -35,6 +39,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   bool _loading = false;
   String? _error;
   TransactionDetailView? _view;
+
+  /// Đang tải dữ liệu gốc để mở màn Sửa (PBI 39) — chặn bấm lặp/Nhân bản.
+  bool _saving = false;
 
   @override
   void initState() {
@@ -105,14 +112,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   /// Thanh 2 nút "Nhân bản" (phụ) / "Sửa" (chính) — chỉ hiện khi có view.
   Widget? _bottomActions(SoraColors colors) {
-    if (_view == null) return null;
+    final view = _view;
+    if (view == null) return null;
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () {}, // no-op — FR-012.
+              onPressed: () {}, // no-op — FR-012 (Nhân bản, PBI khác).
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.textPrimary,
                 side: BorderSide(color: colors.divider),
@@ -130,7 +138,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: FilledButton(
-              onPressed: () {}, // no-op — FR-012.
+              onPressed: _saving ? null : () => _edit(view),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.teal,
                 foregroundColor: AppColors.white,
@@ -148,6 +156,102 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// Chạm "Sửa" (PBI 39): tải lại dữ liệu gốc rồi mở đúng màn theo loại giao
+  /// dịch — Thu/Chi → [AddTransactionScreen] ở chế độ sửa (tải
+  /// [Transaction]/[Category]/[Wallet] theo id); Chuyển khoản →
+  /// [WalletTransferScreen] ở chế độ sửa (tải 2 vế theo `transferGroupId` +
+  /// ví nguồn/đích). Kết quả `true` (đã lưu) → nạp lại màn Chi tiết
+  /// (FR-001/FR-007/FR-008).
+  Future<void> _edit(TransactionDetailView view) async {
+    setState(() => _saving = true);
+    try {
+      final repository = ensureWalletRepository();
+      final wallets = await repository.loadAll();
+      Wallet? findWallet(int id) {
+        for (final w in wallets) {
+          if (w.id == id) return w;
+        }
+        return null;
+      }
+
+      bool? saved;
+      if (view.type == TxnType.transfer) {
+        final groupId = widget.ref.transferGroupId!;
+        final all = await repository.allTransactions();
+        final legs = all
+            .where((t) => t.type == TxnType.transfer && t.transferGroupId == groupId)
+            .toList();
+        Transaction? source;
+        Transaction? dest;
+        for (final leg in legs) {
+          if (leg.amount < 0) source ??= leg;
+          if (leg.amount > 0) dest ??= leg;
+        }
+        if (source == null || dest == null) {
+          throw StateError('Thiếu vế chuyển khoản $groupId.');
+        }
+        final sourceWallet = findWallet(source.walletId);
+        final destWallet = findWallet(dest.walletId);
+        if (sourceWallet == null) {
+          throw StateError('Không tìm thấy ví nguồn ${source.walletId}.');
+        }
+        if (!mounted) return;
+        setState(() => _saving = false);
+        saved = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => WalletTransferScreen(
+              sourceWallet: sourceWallet,
+              destinationWallet: destWallet,
+              controller: ensureWalletController(),
+              editingTransferGroupId: groupId,
+              initialAmount: source!.amount.abs(),
+              initialDate: source.date,
+              initialNote: source.note,
+            ),
+          ),
+        );
+      } else {
+        final all = await repository.allTransactions();
+        final original = all.firstWhere((t) => t.id == widget.ref.transactionId);
+        final categoryType = original.type == TxnType.income
+            ? CategoryType.income
+            : CategoryType.expense;
+        final categories = await repository.categoriesIncludingHidden(
+          type: categoryType,
+        );
+        Category? category;
+        for (final c in categories) {
+          if (c.id == original.categoryId) {
+            category = c;
+            break;
+          }
+        }
+        final wallet = findWallet(original.walletId);
+        if (!mounted) return;
+        setState(() => _saving = false);
+        saved = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => AddTransactionScreen(
+              editing: original,
+              initialCategory: category,
+              initialWallet: wallet,
+            ),
+          ),
+        );
+      }
+      if (saved == true) await _load();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không mở được màn sửa giao dịch.'.tr),
+          backgroundColor: AppColors.coral,
+        ),
+      );
+    }
   }
 }
 

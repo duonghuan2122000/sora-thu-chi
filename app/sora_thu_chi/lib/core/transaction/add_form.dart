@@ -36,6 +36,11 @@ List<String> missingRequiredFields({
 /// Người dùng đã thay đổi gì đó so với trạng thái ban đầu chưa — quyết định có
 /// cần dialog xác nhận khi rời màn (FR-014/R9). So sánh ngày theo phút (không
 /// theo micro-giây) để form mở nguyên vẹn không bị coi là "dirty".
+///
+/// Baseline mặc định là "form trống" của màn Thêm giao dịch (`initialAmount:
+/// 0`, `initialCategory: null`, `initialType: expense`, ngày = [now]/hiện
+/// tại) — không truyền gì giữ nguyên hành vi cũ. Chế độ Sửa giao dịch (PBI 39)
+/// truyền baseline = dữ liệu gốc đã nạp để so sánh đúng "đã sửa gì chưa".
 bool isDirty({
   required int amount,
   required Category? category,
@@ -45,19 +50,26 @@ bool isDirty({
   DateTime? now,
   bool hasTags = false,
   bool hasReceiptImage = false,
+  int initialAmount = 0,
+  Category? initialCategory,
+  String initialNote = '',
+  DateTime? initialDate,
+  TxnType initialType = TxnType.expense,
+  bool initialHasTags = false,
+  bool initialHasReceiptImage = false,
 }) {
-  final ref = now ?? DateTime.now();
+  final ref = initialDate ?? now ?? DateTime.now();
   final sameMinute =
       date.year == ref.year &&
       date.month == ref.month &&
       date.day == ref.day &&
       date.hour == ref.hour &&
       date.minute == ref.minute;
-  return amount > 0 ||
-      category != null ||
-      note.trim().isNotEmpty ||
+  return amount != initialAmount ||
+      category?.id != initialCategory?.id ||
+      note.trim() != initialNote.trim() ||
       !sameMinute ||
-      type != TxnType.expense ||
-      hasTags ||
-      hasReceiptImage;
+      type != initialType ||
+      hasTags != initialHasTags ||
+      hasReceiptImage != initialHasReceiptImage;
 }

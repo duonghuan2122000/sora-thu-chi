@@ -198,6 +198,68 @@ class FakeWalletRepository implements WalletRepository {
   }
 
   @override
+  Future<void> updateTransfer({
+    required int transferGroupId,
+    required int fromWalletId,
+    required int toWalletId,
+    required int amount,
+    required DateTime date,
+    String note = '',
+  }) async {
+    final sourceIdx = _transactions.indexWhere((t) => t.id == transferGroupId);
+    final destIdx = _transactions.indexWhere(
+      (t) => t.transferGroupId == transferGroupId && t.id != transferGroupId,
+    );
+    if (sourceIdx < 0 || destIdx < 0) {
+      throw StateError('Không tìm thấy giao dịch chuyển khoản $transferGroupId trong fake.');
+    }
+    final sourceLeg = _transactions[sourceIdx];
+    final destLeg = _transactions[destIdx];
+
+    final oldSourceWallet = _store[sourceLeg.walletId];
+    final oldDestWallet = _store[destLeg.walletId];
+    if (oldSourceWallet == null || oldDestWallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    _store[sourceLeg.walletId] =
+        oldSourceWallet.copyWith(balance: oldSourceWallet.balance - sourceLeg.amount);
+    _store[destLeg.walletId] =
+        oldDestWallet.copyWith(balance: oldDestWallet.balance - destLeg.amount);
+
+    // Đọc lại sau mỗi ghi — nếu ví mới trùng ví cũ (hoặc trùng nhau), số dư đã
+    // phản ánh đúng phần ghi trước đó (bám mẫu drift `updateTransfer`).
+    final newFromWallet = _store[fromWalletId];
+    if (newFromWallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    _store[fromWalletId] = newFromWallet.copyWith(balance: newFromWallet.balance - amount);
+    final newToWallet = _store[toWalletId];
+    if (newToWallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    _store[toWalletId] = newToWallet.copyWith(balance: newToWallet.balance + amount);
+
+    _transactions[sourceIdx] = Transaction(
+      id: sourceLeg.id,
+      walletId: fromWalletId,
+      type: TxnType.transfer,
+      note: note,
+      amount: -amount,
+      date: date,
+      transferGroupId: sourceLeg.transferGroupId,
+    );
+    _transactions[destIdx] = Transaction(
+      id: destLeg.id,
+      walletId: toWalletId,
+      type: TxnType.transfer,
+      note: note,
+      amount: amount,
+      date: date,
+      transferGroupId: destLeg.transferGroupId,
+    );
+  }
+
+  @override
   Future<List<Category>> categories({required CategoryType type}) async {
     final list = _categories
         .where((c) => !c.isHidden && c.type == type)
@@ -302,6 +364,54 @@ class FakeWalletRepository implements WalletRepository {
         tags: tags,
         receiptImage: receiptImage,
       ),
+    );
+  }
+
+  @override
+  Future<void> updateTransaction({
+    required Transaction original,
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required Category category,
+    required DateTime date,
+    String note = '',
+    String tags = '',
+    String receiptImage = '',
+  }) async {
+    final i = _transactions.indexWhere((t) => t.id == original.id);
+    if (i < 0) {
+      throw StateError('Không tìm thấy giao dịch ${original.id} trong fake.');
+    }
+    final oldWallet = _store[original.walletId];
+    if (oldWallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    _store[original.walletId] =
+        oldWallet.copyWith(balance: oldWallet.balance - original.amount);
+
+    // Đọc lại — nếu trùng ví cũ, số dư đã phản ánh đúng phần hoàn tác ở trên.
+    final newWallet = _store[walletId];
+    if (newWallet == null) {
+      throw StateError('Không tìm thấy ví trong fake.');
+    }
+    final signedAmount = type == TxnType.income ? amount : -amount;
+    _store[walletId] = newWallet.copyWith(balance: newWallet.balance + signedAmount);
+
+    _transactions[i] = Transaction(
+      id: original.id,
+      walletId: walletId,
+      type: type,
+      category: category.name,
+      note: note,
+      amount: signedAmount,
+      date: date,
+      transferGroupId: original.transferGroupId,
+      categoryId: category.id,
+      tags: tags,
+      receiptImage: receiptImage,
+      location: original.location,
+      source: original.source,
     );
   }
 

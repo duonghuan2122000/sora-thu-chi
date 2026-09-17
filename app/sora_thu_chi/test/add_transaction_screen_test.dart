@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:sora_thu_chi/core/category/category.dart';
 import 'package:sora_thu_chi/core/scan/scan_image_store.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
@@ -50,9 +51,13 @@ Future<_Ctx> _pumpAdd(
   List<Wallet>? seedWallets,
   ReceiptImagePicker? pickImage,
   ScanImageStore? imageStore,
+  Transaction? editing,
+  Category? initialCategory,
+  Wallet? initialWallet,
+  FakeWalletRepository? repo,
 }) async {
   Get.reset();
-  final repo = FakeWalletRepository(seedWallets);
+  repo ??= FakeWalletRepository(seedWallets);
   Get.put<WalletRepository>(repo);
   addTearDown(Get.reset);
   final ctx = _Ctx(repo);
@@ -69,6 +74,9 @@ Future<_Ctx> _pumpAdd(
                       repository: repo,
                       pickImage: pickImage,
                       imageStore: imageStore,
+                      editing: editing,
+                      initialCategory: initialCategory,
+                      initialWallet: initialWallet,
                     ),
                   ),
                 );
@@ -508,6 +516,176 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(store.deleted, ['/fake/receipts/0.jpg']);
+    });
+  });
+
+  group('AddTransactionScreen — chế độ sửa (PBI 39)', () {
+    /// Chuẩn bị 1 ví + 1 giao dịch Chi đã lưu trong repo; trả về repo + giao
+    /// dịch + danh mục/ví gốc để bơm màn ở chế độ sửa.
+    Future<
+      ({
+        FakeWalletRepository repo,
+        Transaction original,
+        Category category,
+        Wallet wallet,
+      })
+    >
+    seedExisting() async {
+      final wallet = Wallet(id: 1, name: 'Tiền mặt', type: WalletType.cash, balance: 1000000);
+      // Danh sách giao dịch rỗng tường minh — seed mặc định (11 dòng mẫu) sẽ
+      // đụng `walletId`/id và làm `.single` bên dưới ném lỗi "Too many elements".
+      final repo = FakeWalletRepository([wallet], null, []);
+      final category = (await repo.categories(type: CategoryType.expense))
+          .firstWhere((c) => c.name == 'Nhà ở');
+      await repo.addTransaction(
+        walletId: wallet.id,
+        type: TxnType.expense,
+        amount: 50000,
+        category: category,
+        date: DateTime(2026, 9, 1, 12, 0),
+        note: 'Tiền điện',
+      );
+      final original = (await repo.transactionsOf(wallet.id)).single;
+      return (repo: repo, original: original, category: category, wallet: wallet);
+    }
+
+    testWidgets('mở màn: tiêu đề "Sửa giao dịch", điền sẵn đúng dữ liệu gốc',
+        (tester) async {
+      useTallView(tester);
+      final seed = await seedExisting();
+      await _pumpAdd(
+        tester,
+        repo: seed.repo,
+        editing: seed.original,
+        initialCategory: seed.category,
+        initialWallet: seed.wallet,
+      );
+
+      expect(find.text('Sửa giao dịch'), findsOneWidget);
+      expect(find.text('Thêm giao dịch'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byKey(const ValueKey('amount-field'))).controller!.text,
+        '50.000',
+      );
+      expect(find.text('Nhà ở'), findsOneWidget);
+      expect(find.text('Tiền mặt'), findsOneWidget);
+      final noteField = tester.widget<TextField>(find.byKey(const ValueKey('note-field')));
+      expect(noteField.controller!.text, 'Tiền điện');
+    });
+
+    testWidgets('tab "Chuyển khoản" bị khóa ở chế độ sửa (R4)', (tester) async {
+      final seed = await seedExisting();
+      await _pumpAdd(
+        tester,
+        repo: seed.repo,
+        editing: seed.original,
+        initialCategory: seed.category,
+        initialWallet: seed.wallet,
+      );
+
+      final segment = tester.widget<GestureDetector>(find.ancestor(
+        of: find.text('Chuyển khoản'),
+        matching: find.byType(GestureDetector),
+      ));
+      expect(segment.onTap, isNull);
+    });
+
+    testWidgets('đổi số tiền + ghi chú rồi Lưu → gọi updateTransaction đúng, không tạo dòng mới',
+        (tester) async {
+      final seed = await seedExisting();
+      final ctx = await _pumpAdd(
+        tester,
+        repo: seed.repo,
+        editing: seed.original,
+        initialCategory: seed.category,
+        initialWallet: seed.wallet,
+      );
+
+      await enterAmount(tester, '80000');
+      await tester.enterText(find.byKey(const ValueKey('note-field')), 'Tiền điện tháng 9');
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isTrue);
+      final all = await seed.repo.allTransactions();
+      expect(all.length, 1, reason: 'sửa không tạo thêm dòng mới');
+      final updated = all.single;
+      expect(updated.id, seed.original.id);
+      expect(updated.amount, -80000);
+      expect(updated.note, 'Tiền điện tháng 9');
+      final wallets = await seed.repo.loadAll();
+      // 1.000.000 − 50.000 (cũ) + −30.000 (đổi thêm) = 920.000.
+      expect(wallets.firstWhere((w) => w.id == seed.wallet.id).balance, 920000);
+    });
+
+    testWidgets('đổi loại Chi → Thu rồi Lưu → lưu đúng loại/danh mục mới',
+        (tester) async {
+      final seed = await seedExisting();
+      final ctx = await _pumpAdd(
+        tester,
+        repo: seed.repo,
+        editing: seed.original,
+        initialCategory: seed.category,
+        initialWallet: seed.wallet,
+      );
+
+      await tester.tap(find.text('Thu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('field-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lương'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isTrue);
+      final updated = (await seed.repo.allTransactions()).single;
+      expect(updated.type, TxnType.income);
+      expect(updated.amount, 50000);
+      expect(updated.category, 'Lương');
+    });
+
+    testWidgets('bỏ trống số tiền rồi Lưu → báo thiếu trường, giữ nguyên bản gốc',
+        (tester) async {
+      final seed = await seedExisting();
+      final ctx = await _pumpAdd(
+        tester,
+        repo: seed.repo,
+        editing: seed.original,
+        initialCategory: seed.category,
+        initialWallet: seed.wallet,
+      );
+
+      await enterAmount(tester, '');
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isNull);
+      expect(find.text('Vui lòng nhập số tiền lớn hơn 0'), findsOneWidget);
+      final unchanged = (await seed.repo.allTransactions()).single;
+      expect(unchanged.amount, -50000);
+    });
+
+    testWidgets('đổi 1 trường rồi bấm đóng → hộp thoại xác nhận xuất hiện',
+        (tester) async {
+      final seed = await seedExisting();
+      await _pumpAdd(
+        tester,
+        repo: seed.repo,
+        editing: seed.original,
+        initialCategory: seed.category,
+        initialWallet: seed.wallet,
+      );
+
+      await enterAmount(tester, '80000');
+      await tester.tap(find.byKey(const ValueKey('close-add')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hủy giao dịch?'), findsOneWidget);
+      await tester.tap(find.text('Hủy'));
+      await tester.pumpAndSettle();
+      // Chọn "Hủy" ở hộp thoại → ở lại màn sửa, dữ liệu vừa đổi còn nguyên.
+      expect(find.text('Sửa giao dịch'), findsOneWidget);
     });
   });
 }

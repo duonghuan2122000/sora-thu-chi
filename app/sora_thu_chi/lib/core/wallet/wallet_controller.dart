@@ -118,6 +118,28 @@ class WalletController extends GetxController {
     await _reload();
   }
 
+  /// Sửa atomic một giao dịch Chuyển khoản đã có (PBI 39) rồi reload cache —
+  /// mirror [transfer] nhưng ghi đè 2 vế hiện có thay vì tạo mới.
+  Future<void> updateTransfer({
+    required int transferGroupId,
+    required int fromId,
+    required int toId,
+    required int amount,
+    required DateTime date,
+    String note = '',
+  }) async {
+    await _repository.updateTransfer(
+      transferGroupId: transferGroupId,
+      fromWalletId: fromId,
+      toWalletId: toId,
+      amount: amount,
+      date: date,
+      note: note,
+    );
+    unawaited(ensureNotificationEngine().onTransactionSaved(at: date, type: TxnType.transfer));
+    await _reload();
+  }
+
   /// Giao dịch đúng ví [walletId], mới nhất trước — façade cho màn chi tiết
   /// đọc qua controller (không đụng repository trực tiếp, FR-014).
   Future<List<Transaction>> transactionsOf(int walletId) =>

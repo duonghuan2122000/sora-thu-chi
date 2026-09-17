@@ -41,6 +41,23 @@ abstract class WalletRepository {
     String note = '',
   });
 
+  /// Sửa atomic một giao dịch **Chuyển khoản** đã có (PBI 39, FR-001…008 phần
+  /// Chuyển khoản): [transferGroupId] = id vế nguồn (bất biến, không đổi) —
+  /// đọc 2 vế hiện có, hoàn tác số dư 2 ví theo vế nguồn/đích **cũ**, áp số dư
+  /// mới theo [fromWalletId]/[toWalletId]/[amount], rồi ghi đè tại chỗ 2 dòng
+  /// (không xóa/insert) — trong một `db.transaction()` (bám mẫu
+  /// `performTransfer`/`updateTransaction`). Đầu vào hợp lệ: [amount] > 0,
+  /// `fromWalletId != toWalletId` — repository không tự validate (như
+  /// `performTransfer`).
+  Future<void> updateTransfer({
+    required int transferGroupId,
+    required int fromWalletId,
+    required int toWalletId,
+    required int amount,
+    required DateTime date,
+    String note = '',
+  });
+
   /// Danh mục **đang hoạt động** (`!isHidden`) thuộc [type] — gồm cha & con;
   /// UI tự tách cha-con bằng [Category.parentId]. Sắp theo sortOrder. (R3/R5)
   Future<List<Category>> categories({required CategoryType type});
@@ -89,6 +106,26 @@ abstract class WalletRepository {
   /// (R3); [tags]/[receiptImage] (PBI 38) ghi thẳng nếu người dùng có chọn —
   /// mặc định rỗng giữ hành vi cũ.
   Future<void> addTransaction({
+    required int walletId,
+    required TxnType type,
+    required int amount,
+    required Category category,
+    required DateTime date,
+    String note = '',
+    String tags = '',
+    String receiptImage = '',
+  });
+
+  /// Sửa atomic một giao dịch **thu/chi** đã có (PBI 39, FR-001…007): hoàn tác
+  /// `original.amount` (đã có dấu) khỏi `original.walletId`, áp `amount` mới có
+  /// dấu theo [type] vào [walletId] (có thể trùng ví cũ), rồi ghi đè đủ cột
+  /// nghiệp vụ của dòng `id == original.id` — trong một `db.transaction()`
+  /// (bám mẫu `addTransaction`). `transferGroupId`/`location`/`source` giữ
+  /// nguyên giá trị cũ. Đầu vào hợp lệ: [type] income/expense, [amount] > 0,
+  /// `category.type` khớp [type] — repository không tự validate (như
+  /// `addTransaction`).
+  Future<void> updateTransaction({
+    required Transaction original,
     required int walletId,
     required TxnType type,
     required int amount,
