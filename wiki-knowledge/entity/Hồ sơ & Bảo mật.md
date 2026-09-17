@@ -111,6 +111,7 @@ Không phải "tài khoản" server — là **device profile** lưu local. App o
 - **"Dung lượng model"** *(chỉ hiện khi đã tải model Tier B)* — dung lượng thật đang chiếm (`1.8 GB`).
 - **"Xoá model"** *(chỉ hiện khi đã tải model)* — xoá khỏi máy rồi tự về **Chế độ cơ bản**; **giao dịch đã lưu không bị ảnh hưởng**.
 - **"Kiểm tra lại cấu hình máy"** và **"Kiểm tra cập nhật model"** — cùng đẩy sang màn `scan-10` (đo lại; nếu Tier B thiếu model thì cho tải lại).
+- **"Nhật ký trích xuất AI"** *(PBI 47)* — điểm vào **độc lập** với công tắc `scanEnabled` phía trên (xem lại nhật ký cũ được cả khi đã tắt tính năng); mở màn danh sách nhật ký từng phiên quét — xem [[Giao dịch]] §Nhật ký trích xuất AI cho chi tiết nghiệp vụ.
 
 **Lưu trữ — 4 row trong bảng key-value `AppSettings`** (PBI 17): `scanEnabled`, `scanEngineMode`, `scanModelBytes` (dung lượng model Tier B đã tải), `scanDeviceCheck` (JSON kết quả đo). Ghi write-through **chỉ 4 key của mình** — không xoá `themeMode`/`locale`/2 công tắc Tiện ích. **Key vắng = mặc định an toàn** (tắt / Chế độ cơ bản / 0 / chưa kiểm tra), chuỗi lạ hoặc JSON hỏng ⇒ về mặc định, **không ném**. `AppSettings` **vẫn schema v5, không migration** — schemaVersion **v8** của DB đến từ `transactions.source` + bảng `scan_sessions` ([[Giao dịch]]).
 

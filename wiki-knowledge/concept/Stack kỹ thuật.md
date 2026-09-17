@@ -18,7 +18,7 @@ Chốt trong doc tính năng tổng §Stack. App: **Flutter Mobile (Android/iOS)
 ## Thư viện chính
 | Thư viện | Mục đích | Module dùng |
 |---|---|---|
-| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions`, `notifications` (PBI 30), **`notification_ledger` (schema **v10** — PBI 31)**, `app_settings` |
+| `drift` | Local DB (SQLite) | Toàn app — bảng `wallets`, `transactions`, `categories`, `budgets`, `scan_sessions`, `notifications` (PBI 30), `notification_ledger` (PBI 31), **`scan_extraction_logs` (schema **v11** — PBI 47)**, `app_settings` |
 | `GetX` | State management + **Translations (i18n)** | Toàn app — VD `BudgetController` quản DS budget active + snapshot (budget doc §9) |
 | `fl_chart` `^1.2.0` | Biểu đồ | **Đã dùng thật**: `BarChart` cột đôi + `ExtraLinesData` nét đứt ở màn `03` Chi tiết Ngân sách (PBI 21), **`PieChart` lần đầu** (vòng tròn phân bổ) + `BarChart` cột ghép đôi có tooltip ở màn `01` Báo cáo (PBI 22), **`LineChart` + `dashArray`** ở màn `03` So sánh kỳ (PBI 26) — [[Báo cáo]]. Còn lại: line chart xu hướng **một kỳ** ở màn `01` |
 | `pdf` `^3.13.0` *(PBI 27)* | Sinh **PDF thuần Dart** (`pw.Document` + `MultiPage` + `ThemeData.withFont`) — chạy được trong isolate | Màn `04` Xuất báo cáo (định dạng PDF) |
@@ -139,6 +139,15 @@ Chặng 1 = **Chế độ cơ bản** (bộ luật, không LLM) + kiểm tra c�
 - 🪤 **exact alarm "im lặng"**: bị hệ điều hành từ chối thì `zonedSchedule` **không** ném lỗi và **không** tạo lịch ⇒ luôn phải hỏi `canScheduleExactNotifications()` và **lùi** inexact.
 - 🪤 **Test drift chạy thật** trên host này (có sqlite native) nên trần 200 **và** luật "sổ chỉ đụng 1 bảng, 6 bảng nghiệp vụ nguyên vẹn" được kiểm thật.
 - **Nâng schema v9 → v10 ⇒ phải sửa số khẳng định ở 5 file test drift cũ** (`notification_history_store_drift` / `notification_store_drift` / `scan_settings_store_drift` / `utilities_store_drift` / `scan_dao`) — chỉ đổi con số, không đổi hành vi kiểm. (`wallets_dao_test` **không** khẳng định `schemaVersion` nên không phải sửa.)
+
+### Nhật ký trích xuất AI (PBI 47, schema v11) — [[Giao dịch]]
+- **Bảng drift `scan_extraction_logs`** — 10 cột (`id, created_at, image_path?, raw_text?, extraction_json?, engine?, outcome, final_values_json?, error_message?, events_json`), `events_json` là **1 blob JSON** (mảng sự kiện) thay vì bảng con — không có nhu cầu query từng sự kiện riêng, đúng pattern `scan_sessions.parsed_json` đã có. Migration `from < 11` = thuần `createTable`, **không seed**. Không FK — độc lập hoàn toàn với `transactions`/`scan_sessions`.
+- **Trần `kMaxScanLogs = 200`** — cùng kỹ thuật FIFO `DriftNotificationHistoryStore._trimToLimit()` (`(created_at DESC, id DESC)`), khác biệt duy nhất: trim xong còn phải xoá **file ảnh** của các dòng bị trim (notification không có file kèm nên không cần bước này).
+- **Kho ảnh riêng `<appDocuments>/scan_logs/`** (`ScanLogImageStore`, cùng khuôn `ScanImageStore` — interface + impl chung 1 file `core/scan/`, không phải data layer) — **không** dùng chung `receipts/`: `ScanImageStore` chỉ `save()` ở nhánh lưu giao dịch thành công, còn nhật ký cần ảnh cả khi phiên hủy/lỗi.
+- **`ScanLogSession`** (buffer thuần, `core/scan/`) — tích `tempImagePath`/`rawText`/`extraction`/`events` trong bộ nhớ suốt phiên, `finish()` copy ảnh + ghi DB **một lần** lúc kết thúc, tự chống gọi lặp (`_finished` guard) — an toàn khi cả `PopScope` back lẫn nhánh lỗi cùng cố kết thúc phiên.
+- **0 dependency mới cho xuất file** — `exportScanLogs`/`defaultShareScanLogExport` (`core/scan/scan_log_export.dart`) tái dùng `share_plus` đã có (PBI 27/35/43), cùng khuôn `backup_share.dart`: ghi JSON ra thư mục tạm (`getTemporaryDirectory`, seam test bơm thư mục giả — tránh phải mock kênh native `path_provider`) rồi `SharePlus.instance.share`.
+- 🪤 **Widget test đụng `ScanProcessingScreen`/`ScanConfirmScreen` phải bơm `scanLogStore`/`scanLogImageStore`/`logSession` giả** — mặc định rơi vào `ensureScanLogStore()` (tạo `AppDatabase()` thật) sẽ ném `MissingPluginException` khi `finish()` chạm I/O trong `flutter test` (không có plugin `path_provider`/sqlite native).
+- **Nâng schema v10 → v11 ⇒ sửa số khẳng định ở 6 file test drift cũ** (5 file của đợt v9→v10 + `scan_dao_test` đã tính, cộng bản thân không cần sửa gì thêm ở `wallets_dao_test`).
 
 ## Liên kết
 - [[Lộ trình phát triển]] — giai đoạn gắn tech (notification là GĐ2, backup GĐ3); đa ngôn ngữ đã xong ở PBI 19.

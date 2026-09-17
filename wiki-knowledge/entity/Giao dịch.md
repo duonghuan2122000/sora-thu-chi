@@ -131,6 +131,17 @@ Màn con **"Tìm kiếm & Lọc"** (`05-tim-kiem-loc.svg`), toàn màn hình đ�
 - **Danh mục gợi ý**: nhánh bộ luật để **trống** (không đủ cơ sở như tên cửa hàng); nhánh AI vẫn được yêu cầu gợi ý nếu ngữ cảnh đủ rõ, chọn đúng danh sách chi/thu theo `type` model suy ra (prompt gửi **cả 2** danh sách danh mục có gắn nhãn).
 - **Tổng quát, không giới hạn ngân hàng cụ thể** — dựa từ khoá/mẫu câu tiếng Việt phổ biến, không cứng theo tên/bố cục riêng một ngân hàng.
 
+## Nhật ký trích xuất AI — đã triển khai (PBI 47)
+> Nguồn: `.specify/specs/47/`. Mục đích: thu thập dữ liệu (kết quả AI sai ở đâu, người dùng sửa gì) để **sau này** dùng tinh chỉnh prompt/model trích xuất — bản thân PBI này **không** huấn luyện lại gì, chỉ ghi log local.
+
+**Độc lập hoàn toàn với `scan_sessions`** (mục trên) — bảng mới **`scan_extraction_logs`** (schema **v11**, không FK) ghi **mọi** phiên quét (kể cả hủy/lỗi, khác `scan_sessions` vốn chỉ ghi khi **đã lưu**): `id, created_at, image_path?, raw_text?, extraction_json?, engine?, outcome(saved/cancelled/error), final_values_json?, error_message?, events_json`. Ghi **một lần** lúc phiên kết thúc (không update lại) — `ScanLogSession` (buffer trong bộ nhớ suốt luồng chụp→xử lý→xác nhận) tích event rồi `finish()` 1 lần, tự chống gọi lặp.
+
+**Chuỗi hành vi** (`events_json`, đúng thứ tự thời gian): sự kiện `edit` (trường/giá trị trước/sau — loại, số tiền, ngày, danh mục; riêng "cửa hàng/ghi chú" không có callback rời rạc nên diff tại thời điểm lưu thay vì instrument từng phím gõ), `back` (thoát mà chưa lưu), `save`. **3 kết cục** (`outcome`): `saved` (có `final_values_json`), `cancelled` (back/thoát giữa chừng — vẫn giữ ảnh/OCR đã có), `error` (OCR rỗng hoặc trích xuất AI lỗi/exception — vẫn ghi log dù chưa tới màn xác nhận).
+
+**Ảnh log lưu kho riêng** `<appDocuments>/scan_logs/` (không dùng chung `receipts/` của `ScanImageStore` — store đó **chỉ** ghi khi lưu giao dịch thành công, còn nhật ký cần ảnh cả khi hủy/lỗi). **Trần `kMaxScanLogs = 200`** cưỡng chế ngay trong `DriftScanLogStore.append` (cùng kỹ thuật FIFO của `NotificationHistoryStore`), kèm xóa file ảnh của dòng bị trim.
+
+**Màn hình mới**: "Nhật ký trích xuất AI" — danh sách mới nhất trước (Cài đặt → cạnh mục "Quét hóa đơn AI", [[Hồ sơ & Bảo mật]]) → chi tiết 1 bản ghi (ảnh, OCR, AI đề xuất ban đầu vs giá trị cuối, timeline sự kiện) → xóa từng bản ghi/xóa tất cả → **xuất file JSON** toàn bộ nhật ký qua bảng chia sẻ hệ thống (tái dùng `share_plus`, không dependency mới — [[Stack kỹ thuật]]).
+
 ## Import CSV/Excel (chưa có PBI)
 - Chọn file → map cột → preview → xác nhận → báo cáo lỗi. Danh mục chưa có → tạo mới hoặc map "Khác". Vẫn **chưa định vị giai đoạn** — [[Lộ trình phát triển]].
 
