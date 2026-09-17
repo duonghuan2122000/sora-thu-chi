@@ -10,10 +10,13 @@ import '../transaction/transaction_list.dart';
 /// Một dòng giao dịch: icon bubble + tên/dòng phụ + số tiền căn phải.
 /// Thu teal `+`, chi coral `−`, chuyển khoản/điều chỉnh trung tính không dấu.
 /// Tách từ `transaction_screen.dart` để dùng chung với màn Tổng quan (PBI 33).
+/// [masked] che số tiền cho Privacy mode (mặc định `false` — giữ nguyên hành
+/// vi cũ; chỉ màn Tổng quan truyền `true`, màn Giao dịch không đổi — PBI 48).
 class TxnRowTile extends StatelessWidget {
-  const TxnRowTile({super.key, required this.row});
+  const TxnRowTile({super.key, required this.row, this.masked = false});
 
   final TxnRow row;
+  final bool masked;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +82,9 @@ class TxnRowTile extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
                 child: Text(
-                  neutral
+                  masked
+                      ? maskMoney(row.amount)
+                      : neutral
                       ? formatMoney(row.amount)
                       : formatSignedMoney(row.amount),
                   style: TextStyle(

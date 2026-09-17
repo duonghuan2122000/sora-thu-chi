@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:sora_thu_chi/core/locale/locale_controller.dart';
 import 'package:sora_thu_chi/core/theme/theme_controller.dart';
 import 'package:sora_thu_chi/core/utilities/utilities_store.dart';
+import 'package:sora_thu_chi/data/privacy_deps.dart';
 import 'package:sora_thu_chi/screens/language_screen.dart';
 import 'package:sora_thu_chi/screens/theme_screen.dart';
 import 'package:sora_thu_chi/screens/utilities_screen.dart';
@@ -317,6 +318,38 @@ void main() {
     expect(find.text('Sáng'), findsOneWidget);
     expect(find.text('Theo hệ thống'), findsNothing);
   });
+
+  testWidgets(
+    'Bật Privacy mode ở nơi khác (VD icon mắt Tổng quan) → công tắc "Ẩn số dư" '
+    'phản ánh ngay (PBI 48, PrivacyController dùng chung)',
+    (tester) async {
+      registerThemeController();
+      registerLocaleController();
+      final fake = FakeUtilitiesStore();
+      Get.put<UtilitiesStore>(fake);
+
+      // Mô phỏng "bật ở Tổng quan": gọi thẳng singleton dùng chung, không qua
+      // UtilitiesScreen — giống DashboardScreen chạm icon mắt.
+      final shared = ensurePrivacyController();
+      shared.setHideBalance(true);
+      await tester.pump();
+
+      await tester.binding.setSurfaceSize(const Size(390, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      // store: null → UtilitiesScreen dùng ensurePrivacyController() (cùng
+      // singleton) thay vì controller cục bộ riêng.
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.themeData,
+          home: const UtilitiesScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final hideSwitch = tester.widgetList<Switch>(find.byType(Switch)).toList()[1];
+      expect(hideSwitch.value, isTrue);
+    },
+  );
 
   testWidgets('Cỡ chữ lớn + màn nhỏ: cuộn tới hàng cuối, không overflow', (tester) async {
     registerThemeController();

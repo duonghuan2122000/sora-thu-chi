@@ -3,11 +3,13 @@ import 'package:get/get.dart';
 
 import '../core/money_format.dart';
 import '../core/notification/notification_history_store.dart';
+import '../core/privacy/privacy_controller.dart';
 import '../core/transaction/transaction_controller.dart';
 import '../core/widgets/month_stat_row.dart';
 import '../core/widgets/screen_header.dart';
 import '../core/widgets/txn_row_tile.dart';
 import '../data/notification_history_deps.dart';
+import '../data/privacy_deps.dart';
 import '../data/transaction_deps.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
@@ -20,7 +22,12 @@ import 'notification_center_screen.dart';
 /// đọc chỉ đổi được ở màn Trung tâm, mà màn đó mở từ chính màn này ⇒ `await
 /// push` rồi đếm lại là đúng và đủ (research R5).
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, this.store, this.onSelectTab});
+  const DashboardScreen({
+    super.key,
+    this.store,
+    this.onSelectTab,
+    this.privacyController,
+  });
 
   /// Seam test: mặc định null → [ensureNotificationHistoryStore] khi vào.
   final NotificationHistoryStore? store;
@@ -29,18 +36,24 @@ class DashboardScreen extends StatefulWidget {
   /// shell** — shell bơm xuống.
   final ValueChanged<int>? onSelectTab;
 
+  /// Seam test: mặc định null → [ensurePrivacyController] khi vào (PBI 48).
+  final PrivacyController? privacyController;
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late final NotificationHistoryStore _store;
+  late final PrivacyController _privacy;
   int _unread = 0;
 
   @override
   void initState() {
     super.initState();
     _store = widget.store ?? ensureNotificationHistoryStore();
+    _privacy = widget.privacyController ?? ensurePrivacyController();
+    _privacy.load();
     _refresh();
     // Tab mặc định lúc boot — không đi qua AppShell._onTabSelected nên tự
     // nạp ở đây (FR-001); các lần quay lại sau do AppShell nạp (FR-007).
@@ -75,6 +88,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _refresh();
   }
 
+  /// Đang tắt → bật hẳn Privacy mode (đồng bộ Cài đặt, kịch bản 6). Đang bật →
+  /// đảo "xem tạm thời" (FR-003/004/005, PBI 48).
+  void _toggleEye() {
+    if (!_privacy.hideBalance.value) {
+      _privacy.setHideBalance(true);
+    } else {
+      _privacy.revealed.value = !_privacy.revealed.value;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = ensureTransactionController();
@@ -82,9 +105,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         ScreenHeader(
           title: 'Tổng quan'.tr,
-          trailing: _BellButton(unread: _unread, onTap: _openCenter),
+          trailing: Obx(
+            () => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _EyeButton(hideBalance: _privacy.hideBalance.value, onTap: _toggleEye),
+                _BellButton(unread: _unread, onTap: _openCenter),
+              ],
+            ),
+          ),
           bottom: Obx(() {
             final view = controller.data.value;
+            final masked = _privacy.hideBalance.value && !_privacy.revealed.value;
+            final total = view?.walletTotal ?? 0;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -97,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  formatMoney(view?.walletTotal ?? 0),
+                  masked ? maskMoney(total) : formatMoney(total),
                   style: const TextStyle(
                     color: AppColors.white,
                     fontSize: 26,
@@ -115,6 +148,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return _DashboardContent(
               view: view,
               onSelectTab: widget.onSelectTab,
+              masked: _privacy.hideBalance.value && !_privacy.revealed.value,
             );
           }),
         ),
@@ -125,10 +159,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 /// Nội dung dưới header: thẻ thu/chi + 5 giao dịch gần nhất (FR-002 → FR-006).
 class _DashboardContent extends StatelessWidget {
-  const _DashboardContent({required this.view, required this.onSelectTab});
+  const _DashboardContent({
+    required this.view,
+    required this.onSelectTab,
+    this.masked = false,
+  });
 
   final TransactionView view;
   final ValueChanged<int>? onSelectTab;
+  final bool masked;
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +175,7 @@ class _DashboardContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 96),
       children: [
-        MonthStatRow(stat: view.stat),
+        MonthStatRow(stat: view.stat, masked: masked),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
           child: Row(
@@ -160,7 +199,7 @@ class _DashboardContent extends StatelessWidget {
         if (recent.isEmpty)
           const _RecentEmptyState()
         else
-          for (final row in recent) TxnRowTile(row: row),
+          for (final row in recent) TxnRowTile(row: row, masked: masked),
       ],
     );
   }
@@ -188,6 +227,39 @@ class _RecentEmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Icon con mắt trên vùng tiêu đề (cạnh chuông, mockup `06`, PBI 48) — mở =
+/// đang hiện số thật, gạch chéo = Privacy mode đang bật (che hoặc đang xem
+/// tạm thời cũng hiện gạch chéo, vì Privacy mode vẫn đang bật).
+class _EyeButton extends StatelessWidget {
+  const _EyeButton({required this.hideBalance, required this.onTap});
+
+  final bool hideBalance;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: (hideBalance ? 'Hiện số tiền' : 'Ẩn số tiền (Privacy mode)').tr,
+      child: InkWell(
+        key: const ValueKey('dashboard-privacy-eye'),
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Icon(
+              hideBalance ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              size: 22,
+              color: AppColors.white,
+            ),
+          ),
+        ),
       ),
     );
   }

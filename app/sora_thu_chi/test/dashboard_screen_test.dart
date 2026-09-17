@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
+import 'package:sora_thu_chi/core/privacy/privacy_controller.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/transaction/transaction_controller.dart';
+import 'package:sora_thu_chi/core/utilities/utilities.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/dashboard_screen.dart';
 import 'package:sora_thu_chi/theme/app_theme.dart';
 
 import 'fakes/fake_notification_history_store.dart';
+import 'fakes/fake_utilities_store.dart';
 import 'fakes/fake_wallet_repository.dart';
 
 /// Mốc cố định 10/09 — khớp seed 11 dòng mẫu như `transaction_screen_test.dart`
@@ -20,6 +23,7 @@ Future<int> _pumpDashboard(
   WidgetTester tester, {
   FakeWalletRepository? repo,
   ValueChanged<int>? onSelectTab,
+  PrivacyController? privacyController,
 }) async {
   Get.reset();
   final repository = repo ?? FakeWalletRepository(null, _now);
@@ -29,6 +33,8 @@ Future<int> _pumpDashboard(
   await controller.load(now: _now);
   addTearDown(Get.reset);
   var selectedTab = -1;
+  final privacy = privacyController ?? PrivacyController(FakeUtilitiesStore());
+  await privacy.load();
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.themeData,
@@ -36,6 +42,7 @@ Future<int> _pumpDashboard(
         body: DashboardScreen(
           store: FakeNotificationHistoryStore(),
           onSelectTab: onSelectTab ?? (i) => selectedTab = i,
+          privacyController: privacy,
         ),
       ),
     ),
@@ -215,6 +222,69 @@ void main() {
         expect(find.text('+300.000 đ'), findsNothing);
         expect(find.text('-300.000 đ'), findsNothing);
         expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('DashboardScreen — Privacy mode (PBI 48)', () {
+    testWidgets('(i) hideBalance=false → hiện số thật, icon mắt "mở"', (
+      tester,
+    ) async {
+      await _pumpDashboard(tester);
+
+      expect(find.text('19.450.000 đ'), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
+    });
+
+    testWidgets(
+      '(j) hideBalance=true → che số dư tổng, thẻ thu/chi, giao dịch gần đây',
+      (tester) async {
+        final privacy = PrivacyController(
+          FakeUtilitiesStore(storedPrefs: const UtilitiesPrefs(hideBalance: true)),
+        );
+        await _pumpDashboard(tester, privacyController: privacy);
+
+        expect(find.text('19.450.000 đ'), findsNothing);
+        expect(find.text('•••••••• đ'), findsWidgets); // số dư tổng + 1 số khác trùng độ dài
+        expect(find.text('15.000.000 đ'), findsNothing);
+        expect(find.text('2.455.000 đ'), findsNothing);
+        expect(find.text('-85.000 đ'), findsNothing);
+        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('(k) chạm icon mắt lúc đang tắt → bật Privacy mode + che ngay', (
+      tester,
+    ) async {
+      await _pumpDashboard(tester);
+
+      await tester.tap(find.byKey(const ValueKey('dashboard-privacy-eye')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('19.450.000 đ'), findsNothing);
+      expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+      '(l) chạm icon mắt lúc đang bật → xem tạm thời (hiện số thật ngay)',
+      (tester) async {
+        final privacy = PrivacyController(
+          FakeUtilitiesStore(storedPrefs: const UtilitiesPrefs(hideBalance: true)),
+        );
+        await _pumpDashboard(tester, privacyController: privacy);
+        expect(find.text('19.450.000 đ'), findsNothing);
+
+        await tester.tap(find.byKey(const ValueKey('dashboard-privacy-eye')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('19.450.000 đ'), findsOneWidget);
+
+        // Chạm lại → ẩn trở lại.
+        await tester.tap(find.byKey(const ValueKey('dashboard-privacy-eye')));
+        await tester.pumpAndSettle();
+        expect(find.text('19.450.000 đ'), findsNothing);
       },
     );
   });

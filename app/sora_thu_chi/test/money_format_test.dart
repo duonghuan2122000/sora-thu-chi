@@ -59,6 +59,22 @@ void main() {
     });
   });
 
+  group('maskMoney — che số tiền cho Privacy mode (PBI 48)', () {
+    test('0 → 1 dấu chấm + " đ"', () {
+      expect(maskMoney(0), '• đ');
+    });
+
+    test('số dương → số dấu chấm bằng số chữ số', () {
+      expect(maskMoney(5), '• đ');
+      expect(maskMoney(19450000), '•••••••• đ');
+      expect(maskMoney(2455000), '••••••• đ');
+    });
+
+    test('số âm → không lộ dấu trừ, số dấu chấm theo giá trị tuyệt đối', () {
+      expect(maskMoney(-450000), '•••••• đ');
+    });
+  });
+
   group('parseAmount — đọc-xuôi-ngược formatAmount (spec FR-005, research R9)', () {
     test('bỏ dấu chấm phân tách nghìn', () {
       expect(parseAmount('2.000.000'), 2000000);

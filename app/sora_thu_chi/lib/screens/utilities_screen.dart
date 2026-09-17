@@ -4,12 +4,12 @@ import 'package:get/get.dart';
 
 import '../core/locale/locale_controller.dart';
 import '../core/locale/locale_prefs.dart';
+import '../core/privacy/privacy_controller.dart';
 import '../core/theme/theme_controller.dart';
 import '../core/theme/theme_mode.dart';
-import '../core/utilities/utilities.dart';
 import '../core/utilities/utilities_store.dart';
 import '../core/widgets/sub_page_scaffold.dart';
-import '../data/utilities_deps.dart';
+import '../data/privacy_deps.dart';
 import '../theme/sora_colors.dart';
 import 'language_screen.dart';
 import 'theme_screen.dart';
@@ -22,8 +22,8 @@ import 'theme_screen.dart';
 /// cho tới khi implement xong. Mỗi hàng vòng nền nhạt + icon teal + tên + dòng
 /// phụ + phần cuối. Hàng Widget màn hình chính hiển thị switch "bật" câm, chạm
 /// toàn hàng mở hướng dẫn ghim widget theo nền tảng (R5); **2 công tắc thật**
-/// (Ẩn số dư tắt / Máy tính bật — FR-006) bật/tắt + nhớ qua [UtilitiesStore]
-/// (ghi-through), nhưng chưa kéo hiệu ứng màn khác (FR-007).
+/// (Ẩn số dư tắt / Máy tính bật — FR-006) bật/tắt + nhớ qua [PrivacyController]
+/// (ghi-through) — "Ẩn số dư" nay có tác dụng thật ở màn Tổng quan (PBI 48).
 ///
 /// Hàng "Giao diện" **đã kích hoạt** (PBI 18) và hàng "Ngôn ngữ" **đã kích
 /// hoạt** (PBI 19): phần cuối đọc reactive [ThemeController]/[LocaleController]
@@ -32,13 +32,16 @@ import 'theme_screen.dart';
 /// push `ThemeScreen`/`LanguageScreen` (FR-001). Màu màn đọc theo theme qua
 /// [SoraColors] nên giao diện tối không còn vùng trắng chói.
 ///
-/// StatefulWidget (R6) đọc store 1 lần khi mở, không GetX controller; seam
-/// [store] để test bơm fake (R7). Ghi-through nối đuôi để bật/tắt nhanh không
-/// để save cũ đè save mới (plan §Rủi ro — trạng thái cuối đúng lần chạm cuối).
+/// StatefulWidget (R6) đọc controller 1 lần khi mở; seam [store] để test bơm
+/// fake (R7) — khi truyền, dựng [PrivacyController] cục bộ riêng cho màn thay
+/// vì singleton Get, giữ test cô lập như trước (PBI 48). Không truyền → dùng
+/// chung [ensurePrivacyController] với Tổng quan (nguồn chân lý duy nhất của
+/// "Ẩn số dư"/"Máy tính" — PBI 48 research R2), nên bật/tắt ở màn này hay ở
+/// icon mắt Tổng quan luôn khớp nhau ngay.
 class UtilitiesScreen extends StatefulWidget {
   const UtilitiesScreen({super.key, this.store});
 
-  /// Seam test: mặc định null → [ensureUtilitiesStore] khi vào.
+  /// Seam test: mặc định null → [ensurePrivacyController] khi vào.
   final UtilitiesStore? store;
 
   @override
@@ -46,19 +49,16 @@ class UtilitiesScreen extends StatefulWidget {
 }
 
 class _UtilitiesScreenState extends State<UtilitiesScreen> {
-  late final UtilitiesStore _store;
-  UtilitiesPrefs _prefs = const UtilitiesPrefs();
+  late final PrivacyController _controller;
   bool _loading = true;
   String? _error;
-
-  /// Nối đuôi các lần save — bật/tắt liên tiếp ghi tuần tự, save cuối cùng
-  /// (trạng thái mới nhất) luôn là lần ghi cuối (không lẫn trường khác).
-  Future<void> _saveTail = Future<void>.value();
 
   @override
   void initState() {
     super.initState();
-    _store = widget.store ?? ensureUtilitiesStore();
+    _controller = widget.store != null
+        ? PrivacyController(widget.store!)
+        : ensurePrivacyController();
     _load();
   }
 
@@ -68,12 +68,9 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
       _error = null;
     });
     try {
-      final prefs = await _store.load();
+      await _controller.load();
       if (!mounted) return;
-      setState(() {
-        _prefs = prefs;
-        _loading = false;
-      });
+      setState(() => _loading = false);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -82,23 +79,6 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
       });
     }
   }
-
-  void _setPrefs(UtilitiesPrefs next) {
-    setState(() => _prefs = next);
-    _saveTail = _saveTail.then((_) async {
-      try {
-        await _store.save(next);
-      } catch (_) {
-        // Ghi lỗi bỏ qua — lần chạm sau ghi lại toàn trạng thái mới nhất.
-      }
-    });
-  }
-
-  void _toggleHideBalance(bool value) =>
-      _setPrefs(_prefs.copyWith(hideBalance: value));
-
-  void _toggleCalculator(bool value) =>
-      _setPrefs(_prefs.copyWith(amountCalculatorEnabled: value));
 
   /// Hướng dẫn ghim widget — việc ghim do hệ điều hành quản lý (R5/FR-008).
   /// Ghép từng dòng đã dịch (không nối chuỗi thủ công) để mỗi dòng là một khóa
@@ -222,21 +202,25 @@ class _UtilitiesScreenState extends State<UtilitiesScreen> {
             subtitle: 'Hiện số dư & chi tiêu hôm nay'.tr,
             trailing: const Switch(value: true, onChanged: null),
           ),
-          _switchRow(
-            colors: colors,
-            icon: Icons.visibility_off_outlined,
-            name: 'Ẩn số dư (Privacy mode)'.tr,
-            subtitle: 'Che số tiền trên màn hình chính'.tr,
-            value: _prefs.hideBalance,
-            onChanged: _toggleHideBalance,
+          Obx(
+            () => _switchRow(
+              colors: colors,
+              icon: Icons.visibility_off_outlined,
+              name: 'Ẩn số dư (Privacy mode)'.tr,
+              subtitle: 'Che số tiền trên màn hình chính'.tr,
+              value: _controller.hideBalance.value,
+              onChanged: _controller.setHideBalance,
+            ),
           ),
-          _switchRow(
-            colors: colors,
-            icon: Icons.calculate_outlined,
-            name: 'Máy tính khi nhập số tiền'.tr,
-            subtitle: 'Cho phép +, -, x, / khi nhập'.tr,
-            value: _prefs.amountCalculatorEnabled,
-            onChanged: _toggleCalculator,
+          Obx(
+            () => _switchRow(
+              colors: colors,
+              icon: Icons.calculate_outlined,
+              name: 'Máy tính khi nhập số tiền'.tr,
+              subtitle: 'Cho phép +, -, x, / khi nhập'.tr,
+              value: _controller.amountCalculatorEnabled.value,
+              onChanged: _controller.setAmountCalculatorEnabled,
+            ),
           ),
         ]),
       ],

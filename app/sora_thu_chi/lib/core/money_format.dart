@@ -21,6 +21,14 @@ String formatSignedMoney(int value) {
   return '$sign${formatMoney(value)}';
 }
 
+/// Che số tiền cho Privacy mode (PBI 48) — `'•' * số-chữ-số` + `' đ'`, số
+/// chữ số xấp xỉ theo độ lớn giá trị gốc (không lộ số chữ số thật, không giữ
+/// dấu phân tách/dấu +/-/-). Số chữ số tối thiểu 1 (giá trị `0`).
+String maskMoney(int value) {
+  final digitCount = value.abs().toString().length;
+  return '${'•' * digitCount} đ';
+}
+
 /// Đọc-xuôi ngược của [formatAmount]: lọc ký tự không phải chữ số (bỏ `.`
 /// phân tách nghìn, khoảng trắng…) từ chuỗi nhập ở màn chuyển tiền (FR-005).
 /// Rỗng / không có chữ số → `0`; có dấu trừ đứng trước (ASCII `-` hoặc `−`)

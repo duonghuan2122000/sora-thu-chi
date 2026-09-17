@@ -9,6 +9,7 @@ import '../screens/scan/add_transaction_sheet.dart';
 import '../screens/settings_screen.dart';
 import '../screens/transaction_screen.dart';
 import '../data/notification_deps.dart';
+import '../data/privacy_deps.dart';
 import '../data/report_deps.dart';
 import '../data/transaction_deps.dart';
 import 'notification/notification_presence.dart';
@@ -77,6 +78,10 @@ class _AppShellState extends State<AppShell> {
     // lại để số dư/thẻ thu-chi/giao dịch gần đây phản ánh dữ liệu mới (FR-007).
     if (index == 0) {
       ensureTransactionController().load();
+    } else {
+      // Rời tab Tổng quan → tắt "xem tạm thời" Privacy mode (PBI 48 FR-005) —
+      // IndexedStack giữ DashboardScreen sống nên không thể dựa vào initState.
+      ensurePrivacyController().revealed.value = false;
     }
     // Màn Giao dịch đã build sẵn (IndexedStack) từ boot — nạp dữ liệu ngay lúc
     // chọn tab: lần đầu cũng là lần nạp đầu, mỗi lần quay lại tự làm mới

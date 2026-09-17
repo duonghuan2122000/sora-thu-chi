@@ -7,10 +7,13 @@ import '../transaction/transaction_list.dart';
 
 /// 2 khối "Thu tháng này / Chi tháng này" cạnh nhau (FR-002/003). Tách từ
 /// `transaction_screen.dart` để dùng chung với màn Tổng quan (PBI 33).
+/// [masked] che số tiền cho Privacy mode (mặc định `false` — giữ nguyên hành
+/// vi cũ; chỉ màn Tổng quan truyền `true`, màn Giao dịch không đổi — PBI 48).
 class MonthStatRow extends StatelessWidget {
-  const MonthStatRow({super.key, required this.stat});
+  const MonthStatRow({super.key, required this.stat, this.masked = false});
 
   final MonthStat stat;
+  final bool masked;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +27,7 @@ class MonthStatRow extends StatelessWidget {
               label: 'Thu tháng này'.tr,
               isIncome: true,
               value: stat.incomeTotal,
+              masked: masked,
             ),
           ),
           const SizedBox(width: 10),
@@ -32,6 +36,7 @@ class MonthStatRow extends StatelessWidget {
               label: 'Chi tháng này'.tr,
               isIncome: false,
               value: stat.expenseTotal,
+              masked: masked,
             ),
           ),
         ],
@@ -46,11 +51,13 @@ class _StatBlock extends StatelessWidget {
     required this.label,
     required this.isIncome,
     required this.value,
+    this.masked = false,
   });
 
   final String label;
   final bool isIncome;
   final int value;
+  final bool masked;
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +100,7 @@ class _StatBlock extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              formatMoney(value),
+              masked ? maskMoney(value) : formatMoney(value),
               style: TextStyle(
                 color: amountColor,
                 fontSize: 20,
