@@ -19,8 +19,9 @@ import 'wallet_transfer_screen.dart';
 /// Màn "Chi tiết giao dịch" — sub-page đè lên shell (AppBar riêng, không bottom
 /// nav), theo mockup `04-chi-tiet-giao-dich.svg`. Nhận [ref] (R2); nạp lại dữ
 /// liệu mỗi lần mở qua seam [loader] — mặc định đọc repository rồi dựng view
-/// thuần [buildTransactionDetail] (FR-010, R1). Sửa/Nhân bản/3 chấm là điểm vào
-/// no-op cho PBI thêm/sửa giao dịch (FR-012).
+/// thuần [buildTransactionDetail] (FR-010, R1). Sửa (PBI 39) và Nhân bản
+/// (PBI 40) đều mở lại [AddTransactionScreen]/[WalletTransferScreen] theo
+/// đúng loại giao dịch; 3 chấm vẫn là điểm vào no-op (FR-012, Xóa PBI khác).
 class TransactionDetailScreen extends StatefulWidget {
   const TransactionDetailScreen({super.key, required this.ref, this.loader});
 
@@ -120,7 +121,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () {}, // no-op — FR-012 (Nhân bản, PBI khác).
+              onPressed: _saving ? null : () => _duplicate(view),
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.textPrimary,
                 side: BorderSide(color: colors.divider),
@@ -248,6 +249,105 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Không mở được màn sửa giao dịch.'.tr),
+          backgroundColor: AppColors.coral,
+        ),
+      );
+    }
+  }
+
+  /// Chạm "Nhân bản" (PBI 40): tải lại dữ liệu gốc rồi mở màn **tạo mới**
+  /// đúng loại giao dịch — bám sát cấu trúc [_edit], khác duy nhất ở chỗ
+  /// KHÔNG truyền `editing`/`editingTransferGroupId` (giữ nhánh tạo mới của
+  /// `AddTransactionScreen`/`WalletTransferScreen`, không đụng bản gốc) và ép
+  /// ngày giờ = hiện tại thay vì giữ ngày gốc (FR-002/FR-003/FR-005).
+  Future<void> _duplicate(TransactionDetailView view) async {
+    setState(() => _saving = true);
+    try {
+      final repository = ensureWalletRepository();
+      final wallets = await repository.loadAll();
+      Wallet? findWallet(int id) {
+        for (final w in wallets) {
+          if (w.id == id) return w;
+        }
+        return null;
+      }
+
+      bool? saved;
+      if (view.type == TxnType.transfer) {
+        final groupId = widget.ref.transferGroupId!;
+        final all = await repository.allTransactions();
+        final legs = all
+            .where((t) => t.type == TxnType.transfer && t.transferGroupId == groupId)
+            .toList();
+        Transaction? source;
+        Transaction? dest;
+        for (final leg in legs) {
+          if (leg.amount < 0) source ??= leg;
+          if (leg.amount > 0) dest ??= leg;
+        }
+        if (source == null || dest == null) {
+          throw StateError('Thiếu vế chuyển khoản $groupId.');
+        }
+        final sourceWallet = findWallet(source.walletId);
+        final destWallet = findWallet(dest.walletId);
+        if (sourceWallet == null) {
+          throw StateError('Không tìm thấy ví nguồn ${source.walletId}.');
+        }
+        if (!mounted) return;
+        setState(() => _saving = false);
+        saved = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => WalletTransferScreen(
+              sourceWallet: sourceWallet,
+              destinationWallet: destWallet,
+              controller: ensureWalletController(),
+              initialAmount: source!.amount.abs(),
+              initialDate: DateTime.now(),
+              initialNote: source.note,
+            ),
+          ),
+        );
+      } else {
+        final all = await repository.allTransactions();
+        final original = all.firstWhere((t) => t.id == widget.ref.transactionId);
+        final categoryType = original.type == TxnType.income
+            ? CategoryType.income
+            : CategoryType.expense;
+        final categories = await repository.categoriesIncludingHidden(
+          type: categoryType,
+        );
+        Category? category;
+        for (final c in categories) {
+          if (c.id == original.categoryId) {
+            category = c;
+            break;
+          }
+        }
+        final wallet = findWallet(original.walletId);
+        if (!mounted) return;
+        setState(() => _saving = false);
+        saved = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => AddTransactionScreen(
+              initialType: original.type,
+              initialCategory: category,
+              initialWallet: wallet,
+              initialAmount: original.amount.abs(),
+              initialNote: original.note,
+              initialDate: DateTime.now(),
+              initialTags: original.tags,
+              initialReceiptImage: original.receiptImage,
+            ),
+          ),
+        );
+      }
+      if (saved == true) await _load();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không mở được màn nhân bản giao dịch.'.tr),
           backgroundColor: AppColors.coral,
         ),
       );

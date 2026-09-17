@@ -255,7 +255,8 @@ void main() {
       expect(find.byType(BackButton), findsOneWidget);
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
 
-      // 3 điểm vào đều no-op: không crash, không rời màn.
+      // 3 chấm vẫn no-op; Sửa/Nhân bản không có repo backing → rơi vào nhánh
+      // lỗi (catch), báo snackbar, không crash/không rời màn (PBI 39/40).
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.tap(find.text('Nhân bản'));
@@ -505,6 +506,145 @@ void main() {
         expect(legs.length, 2);
         expect(legs.firstWhere((t) => t.walletId == vcb.id).amount, -1000000);
         expect(legs.firstWhere((t) => t.walletId == momo.id).amount, 1000000);
+      },
+    );
+  });
+
+  group('TransactionDetailScreen — chạm "Nhân bản" điều hướng (PBI 40)', () {
+    testWidgets(
+      'giao dịch Chi: mở AddTransactionScreen (tạo mới) điền sẵn dữ liệu gốc, '
+      'lưu tạo bản ghi mới, giao dịch gốc không đổi',
+      (tester) async {
+        Get.reset();
+        addTearDown(Get.reset);
+        final wallet = Wallet(id: 1, name: 'Tiền mặt', type: WalletType.cash, balance: 1000000);
+        final repo = FakeWalletRepository([wallet], null, []);
+        Get.put<WalletRepository>(repo);
+        final category = (await repo.categories(type: CategoryType.expense))
+            .firstWhere((c) => c.name == 'Nhà ở');
+        await repo.addTransaction(
+          walletId: wallet.id,
+          type: TxnType.expense,
+          amount: 50000,
+          category: category,
+          date: DateTime(2026, 9, 1, 12, 0),
+          note: 'Tiền điện',
+        );
+        final original = (await repo.transactionsOf(wallet.id)).single;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.themeData,
+            home: _Host(
+              screen: TransactionDetailScreen(
+                ref: TransactionDetailRef(transactionId: original.id),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('mở chi tiết'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Nhân bản'));
+        await tester.pumpAndSettle();
+
+        // Mở đúng màn TẠO MỚI (không phải "Sửa giao dịch"), điền sẵn dữ liệu gốc.
+        expect(find.text('Thêm giao dịch'), findsOneWidget);
+        expect(find.text('Sửa giao dịch'), findsNothing);
+        expect(find.text('Nhà ở'), findsOneWidget);
+        expect(find.text('Tiền mặt'), findsOneWidget);
+
+        // Không sửa gì, đóng bằng X thì không có gì để mất → không hỏi xác
+        // nhận, không tạo giao dịch nào (baseline dirty phải khớp dữ liệu điền
+        // sẵn, FR-002/FR-006).
+        await tester.tap(find.byKey(const ValueKey('close-add')));
+        await tester.pumpAndSettle();
+        expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+        expect((await repo.allTransactions()).length, 1);
+
+        // Mở lại, lần này lưu luôn.
+        await tester.tap(find.text('Nhân bản'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('save-transaction')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+        final all = await repo.allTransactions();
+        expect(all.length, 2); // bản gốc + bản nhân bản, không ghi đè.
+        final original2 = all.firstWhere((t) => t.id == original.id);
+        expect(original2.amount, -50000);
+        expect(original2.date, DateTime(2026, 9, 1, 12, 0));
+        final copy = all.firstWhere((t) => t.id != original.id);
+        expect(copy.amount, -50000);
+        expect(copy.categoryId, original.categoryId);
+        expect(copy.walletId, original.walletId);
+        expect(copy.note, 'Tiền điện');
+        // Ngày giờ bản sao = hiện tại, khác hẳn ngày gốc (FR-003).
+        expect(copy.date.isAfter(DateTime(2026, 9, 2)), isTrue);
+      },
+    );
+
+    testWidgets(
+      'giao dịch Chuyển khoản: mở WalletTransferScreen (tạo mới) điền sẵn '
+      'ví/số tiền/ghi chú, lưu tạo giao dịch chuyển khoản mới độc lập',
+      (tester) async {
+        Get.reset();
+        addTearDown(Get.reset);
+        final vcb = Wallet(id: 1, name: 'Vietcombank', type: WalletType.bank, balance: 14800000);
+        final momo = Wallet(id: 2, name: 'Momo', type: WalletType.eWallet, balance: 1450000);
+        final repo = FakeWalletRepository([vcb, momo], null, []);
+        Get.put<WalletRepository>(repo);
+        await repo.performTransfer(
+          fromWalletId: vcb.id,
+          toWalletId: momo.id,
+          amount: 700000,
+          date: DateTime(2026, 9, 1, 10, 0),
+          note: 'Nạp Momo',
+        );
+        final source = (await repo.allTransactions())
+            .firstWhere((t) => t.walletId == vcb.id);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.themeData,
+            home: _Host(
+              screen: TransactionDetailScreen(
+                ref: TransactionDetailRef(transferGroupId: source.id),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('mở chi tiết'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Nhân bản'));
+        await tester.pumpAndSettle();
+
+        // Mở đúng màn chuyển tiền TẠO MỚI (không phải "Sửa chuyển khoản").
+        expect(find.text('Chuyển tiền giữa ví'), findsOneWidget);
+        expect(find.text('Sửa chuyển khoản'), findsNothing);
+        expect(find.text('Vietcombank'), findsOneWidget);
+        expect(find.text('Momo'), findsOneWidget);
+        expect(find.text('Xác nhận chuyển tiền'), findsOneWidget);
+
+        await tester.tap(find.text('Xác nhận chuyển tiền'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Chi tiết giao dịch'), findsOneWidget);
+        final legs = (await repo.allTransactions())
+            .where((t) => t.type == TxnType.transfer)
+            .toList();
+        expect(legs.length, 4); // 2 vế gốc + 2 vế bản sao, không ghi đè.
+        final originalLegs = legs.where((t) => t.transferGroupId == source.id);
+        expect(originalLegs.length, 2);
+        expect(
+          originalLegs.firstWhere((t) => t.walletId == vcb.id).amount,
+          -700000,
+        );
+        final newLegs = legs.where((t) => t.transferGroupId != source.id);
+        expect(newLegs.length, 2);
+        expect(newLegs.firstWhere((t) => t.walletId == vcb.id).amount, -700000);
+        expect(newLegs.firstWhere((t) => t.walletId == momo.id).amount, 700000);
       },
     );
   });

@@ -238,6 +238,8 @@ class SoraTranslations extends Translations {
     'Thêm giao dịch': 'Add transaction',
     'Sửa giao dịch': 'Edit transaction',
     'Không mở được màn sửa giao dịch.': 'Could not open the edit screen.',
+    'Không mở được màn nhân bản giao dịch.':
+        'Could not open the duplicate screen.',
     'Sửa chuyển khoản': 'Edit transfer',
     'Hủy sửa chuyển khoản?': 'Discard transfer changes?',
     'Dữ liệu đã sửa sẽ bị mất.': 'Your edits will be lost.',

@@ -51,6 +51,11 @@ class AddTransactionScreen extends StatefulWidget {
     this.editing,
     this.initialCategory,
     this.initialWallet,
+    this.initialAmount,
+    this.initialNote,
+    this.initialDate,
+    this.initialTags,
+    this.initialReceiptImage,
   });
 
   /// Seam test: mặc định null → [ensureWalletRepository] khi vào (R11).
@@ -79,6 +84,18 @@ class AddTransactionScreen extends StatefulWidget {
   /// Ví gốc của [editing] — tương tự [initialCategory].
   final Wallet? initialWallet;
 
+  /// Dữ liệu điền sẵn khi **nhân bản** giao dịch (PBI 40) — chỉ dùng lúc
+  /// [editing] == null (chế độ tạo mới); bị bỏ qua khi đang sửa (khi đó state
+  /// đọc thẳng từ [editing]). Điểm vào: nút "Nhân bản" ở
+  /// `transaction_detail_screen.dart`, ngày giờ luôn ép về hiện tại nên không
+  /// có tham số `initialDate` cố định — [initialDate] ở đây do nơi gọi tự
+  /// truyền `DateTime.now()`.
+  final int? initialAmount;
+  final String? initialNote;
+  final DateTime? initialDate;
+  final String? initialTags;
+  final String? initialReceiptImage;
+
   /// Đang ở chế độ sửa — tiện dùng ở nhiều nơi trong state.
   bool get isEditing => editing != null;
 
@@ -97,22 +114,26 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   late TxnType _type = _editing?.type ?? widget.initialType;
   late final TextEditingController _amountCtrl = TextEditingController(
-    text: _editing == null ? '' : formatAmount(_editing!.amount.abs()),
+    text: _editing != null
+        ? formatAmount(_editing!.amount.abs())
+        : (widget.initialAmount == null ? '' : formatAmount(widget.initialAmount!)),
   );
   int get _amount => parseAmount(_amountCtrl.text);
   late Category? _category = widget.initialCategory;
   late Wallet? _wallet = widget.initialWallet;
-  late DateTime _date = _editing?.date ?? DateTime.now();
+  late DateTime _date = _editing?.date ?? widget.initialDate ?? DateTime.now();
   late final TextEditingController _noteCtrl = TextEditingController(
-    text: _editing?.note ?? '',
+    text: _editing?.note ?? widget.initialNote ?? '',
   );
-  late List<String> _tags = parseTags(_editing?.tags ?? '');
+  late List<String> _tags = parseTags(_editing?.tags ?? widget.initialTags ?? '');
 
   /// Baseline tag gốc (chế độ sửa) — so sánh nội dung (không chỉ có/không) để
   /// phát hiện đổi tag dù vẫn còn ít nhất 1 tag trước/sau (FR-006). Tính thẳng
   /// từ [_editing] (không đọc lại `_tags`) — `late` chỉ khởi tạo ở lần đọc đầu
   /// tiên, mà lúc đó `_tags` có thể đã bị đổi (test (q) từng lộ bug này).
-  late final List<String> _initialTags = parseTags(_editing?.tags ?? '');
+  late final List<String> _initialTags = parseTags(
+    _editing?.tags ?? widget.initialTags ?? '',
+  );
 
   /// Đường dẫn ảnh hóa đơn hiện tại — `null` = chưa đính kèm. Ở chế độ sửa,
   /// khởi tạo bằng ảnh đã có sẵn của giao dịch gốc (đã lưu, **không** phải
@@ -120,15 +141,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   /// [_originalReceiptImage]). Nếu rời màn không lưu và đã đổi sang ảnh khác,
   /// chỉ ảnh mới (chưa gắn giao dịch) bị xóa (không để rác, bám R12 của luồng
   /// quét OCR) — ảnh gốc của giao dịch đang sửa giữ nguyên.
-  late String? _receiptImagePath = _emptyToNull(widget.editing?.receiptImage);
+  late String? _receiptImagePath =
+      _emptyToNull(widget.editing?.receiptImage) ??
+      _emptyToNull(widget.initialReceiptImage);
 
   /// Ảnh gốc đã gắn sẵn với giao dịch đang sửa (`null` ở chế độ Thêm mới) —
   /// mốc để phân biệt "ảnh đã lưu từ trước" với "ảnh vừa chọn trong phiên sửa
   /// này, chưa lưu". Tính thẳng từ [widget.editing] (không đọc lại
   /// `_receiptImagePath` — cùng bẫy `late` lười khởi tạo như [_initialTags]).
-  late final String? _originalReceiptImage = _emptyToNull(
-    widget.editing?.receiptImage,
-  );
+  /// Ảnh "đã tồn tại từ trước phiên này" — gồm cả ảnh nhân bản từ giao dịch
+  /// gốc (PBI 40): vẫn đang được giao dịch gốc tham chiếu trong DB, không được
+  /// xóa nếu người dùng đổi ảnh khác hoặc hủy màn mà không lưu.
+  late final String? _originalReceiptImage =
+      _emptyToNull(widget.editing?.receiptImage) ??
+      _emptyToNull(widget.initialReceiptImage);
 
   bool _loading = true;
   List<Wallet> _activeWallets = const [];
@@ -153,11 +179,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     // rỗng) lẫn Sửa (baseline = dữ liệu gốc, PBI 39 R5).
     hasTags: joinTags(_tags) != joinTags(_initialTags),
     hasReceiptImage: _receiptImagePath != _originalReceiptImage,
-    initialAmount: _editing == null ? 0 : _editing!.amount.abs(),
+    initialAmount: _editing?.amount.abs() ?? widget.initialAmount ?? 0,
     initialCategory: widget.initialCategory,
-    initialNote: _editing?.note ?? '',
-    initialDate: _editing?.date,
-    initialType: _editing?.type ?? TxnType.expense,
+    initialNote: _editing?.note ?? widget.initialNote ?? '',
+    initialDate: _editing?.date ?? widget.initialDate,
+    initialType: _editing?.type ?? widget.initialType,
   );
 
   Color _amountAccent(SoraColors colors) =>
