@@ -1,6 +1,6 @@
 ---
 title: "Lộ trình phát triển"
-date: 2026-09-13
+date: 2026-09-17
 tags: [concept, roadmap]
 sources:
   - ../docs/tinh-nang-nghiep-vu-app-quan-ly-thu-chi.md
@@ -17,6 +17,7 @@ sources:
   - ../../.specify/specs/28/spec.md
   - ../../.specify/specs/29/spec.md
   - ../../.specify/specs/30/spec.md
+  - ../../.specify/specs/39/spec.md
 ---
 
 # Lộ trình phát triển
@@ -31,7 +32,8 @@ Phân nhóm tính năng theo giai đoạn (doc tính năng tổng §"Gợi ý nh
 | **GĐ3** | Mục tiêu tiết kiệm, Quản lý nợ, **Backup/Restore JSON** | — |
 
 ### Ghi chú giai đoạn
-- **Màn Thêm giao dịch (MVP) — cập nhật giao diện đã triển khai (PBI 38, 2026-09-17)**: bàn phím số hệ thống thay numpad tự vẽ; Tag và Ảnh hóa đơn — vốn đã đặc tả ở `docs/transaction §3.1` từ đầu nhưng đường nhập tay (`addTransaction`) trước giờ luôn để trống — nay nhập/đính kèm được qua màn `TagPickerScreen` mới + tái dùng seam ảnh của PBI 24; không schema mới. Chưa làm: nút "Sửa giao dịch" ở màn Chi tiết (UI mới tự áp dụng khi PBI đó tới), màn quản lý Tag độc lập. Chi tiết [[Giao dịch]], [[Design system]], [[Stack kỹ thuật]].
+- **Màn Thêm giao dịch (MVP) — cập nhật giao diện đã triển khai (PBI 38, 2026-09-17)**: bàn phím số hệ thống thay numpad tự vẽ; Tag và Ảnh hóa đơn — vốn đã đặc tả ở `docs/transaction §3.1` từ đầu nhưng đường nhập tay (`addTransaction`) trước giờ luôn để trống — nay nhập/đính kèm được qua màn `TagPickerScreen` mới + tái dùng seam ảnh của PBI 24; không schema mới. Còn lại sau PBI 38: màn quản lý Tag độc lập. Chi tiết [[Giao dịch]], [[Design system]], [[Stack kỹ thuật]].
+- **Sửa giao dịch (MVP) — đã triển khai (PBI 39, 2026-09-17)**: nút "Sửa" ở màn Chi tiết giao dịch (trước no-op) nay tái dùng `AddTransactionScreen` (Thu/Chi) và `WalletTransferScreen` (Chuyển khoản) ở chế độ sửa, không tạo màn riêng, không đổi schema — 2 method mới `WalletRepository.updateTransaction`/`updateTransfer` (hoàn tác-rồi-áp-lại số dư, atomic). **⚠ Quyết định thu hẹp phạm vi cố ý**: chỉ đổi loại Thu ⇄ Chi được, không đổi nhóm sang/từ Chuyển khoản khi sửa (khác cấu trúc lưu trữ, spec không yêu cầu). Còn lại: Xóa/Nhân bản giao dịch (nút vẫn no-op), Undo sau sửa, sửa/xóa trong chuỗi định kỳ (chưa có tính năng định kỳ). Chi tiết [[Giao dịch]].
 - **Khóa app = mã PIN bắt buộc lần đầu mở app** — quyết định chốt (lệch `docs/auth §2.1` vốn tùy chọn) và **đã triển khai xong (PBI 3)**. Sinh trắc (vân tay/FaceID) là lớp tiện lợi để sau, chưa thuộc đợt này — chi tiết rule tại [[Hồ sơ & Bảo mật]]. `docs/auth` chưa đồng bộ theo.
 - **Module Danh mục (MVP)** — màn danh sách `01` **đã triển khai (PBI 13)** + màn thêm/sửa `02` **đã triển khai (PBI 14)** + màn danh sách con `03` **đã triển khai (PBI 15)** + màn sắp xếp kéo-thả `04` **đã triển khai (PBI 16)** qua điểm vào Cài đặt → "Danh mục" (mô tả tại [[Danh mục]]); icon "Sắp xếp" màn `01` (no-op PBI 13) nay mở màn `04` theo tab đang mở. Còn lại: xóa/gộp danh mục (PBI sau) + sắp thứ tự con trong từng nhóm cha–con.
 - **Tiện ích & Cá nhân hóa — màn danh sách `01` đã triển khai (PBI 17)** — điểm vào Cài đặt nhóm KHÁC → "Tiện ích & Cá nhân hóa" (chi tiết tại [[Hồ sơ & Bảo mật]]): 3 nhóm/8 hàng mockup; **2 công tắc thật** (Ẩn số dư tắt, Máy tính bật) nhớ trạng thái bằng bảng drift key-value **`AppSettings` schema v5**; hàng Widget = switch câm + dialog hướng dẫn ghim (không lưu); 5 hàng điều hướng no-op.

@@ -1,6 +1,6 @@
 ---
 title: "Giao dịch"
-date: 2026-09-03
+date: 2026-09-17
 tags: [module, transaction, entity]
 sources:
   - ../docs/transaction/nghiep-vu-thiet-ke-quan-ly-giao-dich.md
@@ -9,6 +9,8 @@ sources:
   - ../docs/ai/tinh-nang-quet-hoa-don-ai-local.md
   - ../../.specify/specs/24/spec.md
   - ../../.specify/specs/24/data-model.md
+  - ../../.specify/specs/39/spec.md
+  - ../../.specify/specs/39/plan.md
 ---
 
 # Giao dịch
@@ -40,13 +42,25 @@ Nhóm nghiệp vụ **trung tâm thao tác** (tần suất cao nhất) → gắn
 - **Tag nay ghi được, không chỉ hiển thị**: trước PBI 38, cột `tags` (schema v3) chỉ được `addScannedTransaction` ghi (luồng quét) và màn Chi tiết/Tìm kiếm chỉ *đọc*; `addTransaction` (đường nhập tay) luôn để trống. Nay dòng "Tag" mở màn **`TagPickerScreen`** mới (khuôn `CategoryPickerScreen`) — chọn nhiều tag đã dùng trước đó hoặc gõ tạo tag mới tại chỗ (khử trùng không phân biệt hoa/thường). **Không có bảng `tags` riêng**: danh sách gợi ý suy bằng cách quét `tags` của toàn bộ giao dịch hiện có (`distinctTags`) — chấp nhận được ở quy mô dữ liệu cá nhân, nâng cấp lên bảng riêng nếu sau này cần sửa/xóa tag hàng loạt.
 - **Ảnh hóa đơn nay đính kèm được ở đường nhập tay**: chạm dòng "Ảnh hóa đơn" mở action sheet "Chụp ảnh"/"Chọn từ thư viện" (`image_picker`, không phải camera preview tự vẽ của luồng quét), ảnh lưu qua đúng seam `ScanImageStore`/`LocalScanImageStore` đã có từ PBI 24 (`<appDocuments>/receipts/`). Rời màn không lưu → ảnh vừa chụp/chọn bị xóa (không để rác) — vì vậy `isDirty` (hàm thuần màn Thêm) được bổ sung 2 điều kiện `hasTags`/`hasReceiptImage`, nếu không chỉ đính ảnh mà chưa đổi gì khác sẽ bị coi "sạch" và bỏ qua bước dọn file.
 - `WalletRepository.addTransaction` thêm 2 tham số optional `tags`/`receiptImage` (default `''`, tương thích lời gọi cũ) — ghi thẳng vào 2 cột đã tồn tại từ schema v3, **không migration**.
-- **Chưa làm** (ngoài phạm vi PBI 38): nút/luồng "Sửa giao dịch" từ màn Chi tiết vẫn chưa tồn tại — UI mới sẽ tự áp dụng khi luồng Sửa được xây ở PBI khác; màn quản lý Tag độc lập (đổi tên/xóa/gộp) cũng chưa có.
+- **Chưa làm** (ngoài phạm vi PBI 38, đã xây ở PBI 39 — xem mục dưới): nút/luồng "Sửa giao dịch" từ màn Chi tiết; màn quản lý Tag độc lập (đổi tên/xóa/gộp) vẫn chưa có.
 
 ## Sửa / xóa / nhân bản
-- Sửa: mở lại màn Thêm với data điền sẵn, tiêu đề "Sửa giao dịch".
-- Xóa: dialog xác nhận → snackbar **Undo ~5s** trước xóa vĩnh viễn.
-- Sửa/xóa trong chuỗi định kỳ → hỏi phạm vi "Chỉ giao dịch này" / "Toàn bộ chuỗi từ đây".
-- **Nhân bản** (Duplicate): bản sao ngày = now, mở màn sửa trước khi lưu — cho khoản chi lặp không đều đặn (khác recurring).
+
+### Sửa giao dịch — **đã triển khai (PBI 39)**
+> Nguồn: `.specify/specs/39/`.
+
+Nút "Sửa" ở màn Chi tiết giao dịch (trước là no-op từ PBI 10/38) nay tái dùng đúng 2 màn hiện có thay vì tạo màn riêng — bám mô tả nghiệp vụ gốc "mở lại màn Thêm với data điền sẵn":
+
+- **Thu/Chi** → mở `AddTransactionScreen` ở chế độ sửa (tham số `editing`/`initialCategory`/`initialWallet`): điền sẵn toàn bộ trường (số tiền/danh mục/ví/ngày giờ/ghi chú/tag/ảnh hóa đơn), tiêu đề đổi "Sửa giao dịch". Lưu gọi `WalletRepository.updateTransaction` — **hoàn tác số dư cũ rồi áp lại số dư mới** (atomic, một `db.transaction()`, đúng cả khi đổi ví lẫn đổi loại) thay vì tính delta trực tiếp — bám nguyên tắc số dư là đại lượng suy ra ([[Nguyên tắc nghiệp vụ]]).
+- **Chuyển khoản** → mở thẳng `WalletTransferScreen` ở chế độ sửa (tham số `editingTransferGroupId`/`destinationWallet`/`initialAmount`/`initialDate`/`initialNote`, không đi qua `AddTransactionScreen`), tiêu đề đổi "Sửa chuyển khoản", nút chính đổi "Lưu thay đổi". Lưu gọi `WalletRepository.updateTransfer` — **ghi đè tại chỗ 2 vế liên kết** (giữ nguyên `id`/`transfer_group_id`, không xóa/insert lại) sau khi hoàn tác số dư 2 ví cũ và áp lại theo ví/tiền mới.
+- **Không đổi schema drift** — cả 2 method mới chỉ `UPDATE` dòng `transactions`/`wallets` đã có.
+- **⚠ Quyết định thu hẹp phạm vi cố ý (PBI 39)**: khi sửa, đổi loại chỉ cho phép trong nhóm **Thu ⇄ Chi** (segmented tab khóa mục "Chuyển khoản" ở chế độ sửa) — **không** cho đổi giữa nhóm Thu/Chi và Chuyển khoản, vì khác cấu trúc lưu trữ (1 dòng ↔ 2 dòng liên kết) và spec không yêu cầu (xem [[Lộ trình phát triển]]).
+- Rời màn sửa khi có thay đổi chưa lưu → hỏi xác nhận (áp dụng cho cả 2 màn ở chế độ sửa; luồng "Thêm mới"/"Chuyển tiền mới" giữ nguyên hành vi cũ, không hỏi khi đóng ngay cả khi có dữ liệu).
+
+### Xóa / Nhân bản / Undo / Định kỳ — **chưa triển khai** (ngoài phạm vi PBI 39)
+- Xóa: nút 3 chấm ở màn Chi tiết vẫn no-op. Nghiệp vụ gốc: dialog xác nhận → snackbar **Undo ~5s** trước xóa vĩnh viễn.
+- **Nhân bản** (Duplicate): nút vẫn no-op. Nghiệp vụ gốc: bản sao ngày = now, mở màn sửa trước khi lưu.
+- Sửa/xóa trong chuỗi định kỳ → hỏi phạm vi "Chỉ giao dịch này" / "Toàn bộ chuỗi từ đây" — chưa áp dụng vì app **chưa có tính năng giao dịch định kỳ**.
 
 ## Định kỳ (Recurring — GĐ2)
 - Cấu hình: loại, số tiền (có thể trống nếu đổi mỗi kỳ), danh mục, ví, chu kỳ (ngày/tuần/tháng/năm + mốc, VD "ngày 25 hằng tháng"), ngày bắt đầu/kết thúc, nhắc trước N ngày.
