@@ -142,7 +142,11 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       key: const ValueKey('backup-restore-screen'),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
-        _LastBackupCard(prefs: prefs, colors: colors),
+        _LastBackupCard(
+          prefs: prefs,
+          entries: _controller.backups,
+          colors: colors,
+        ),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
@@ -196,14 +200,31 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
 }
 
 class _LastBackupCard extends StatelessWidget {
-  const _LastBackupCard({required this.prefs, required this.colors});
+  const _LastBackupCard({
+    required this.prefs,
+    required this.entries,
+    required this.colors,
+  });
 
   final BackupPrefs prefs;
+  final List<LocalBackupEntry> entries;
   final SoraColors colors;
+
+  /// Chỉ hiện đường dẫn nếu bản gần nhất còn trong danh sách hiện tại và là
+  /// bản tự động (research.md R2 — tra cứu chéo, không thêm cờ riêng).
+  String? get _autoLastBackupPath {
+    final path = prefs.lastBackupPath;
+    if (path == null) return null;
+    for (final entry in entries) {
+      if (entry.path == path && entry.isAuto) return entry.path;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final lastAt = prefs.lastBackupAt;
+    final autoPath = _autoLastBackupPath;
     return Container(
       key: const ValueKey('backup-last-card'),
       width: double.infinity,
@@ -250,6 +271,16 @@ class _LastBackupCard extends StatelessWidget {
                   }),
               style: TextStyle(color: colors.textSecondary, fontSize: 12),
             ),
+            if (autoPath != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                autoPath,
+                key: const ValueKey('backup-last-auto-path'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: colors.tabInactive, fontSize: 11),
+              ),
+            ],
           ],
         ],
       ),
@@ -428,6 +459,17 @@ class _BackupList extends StatelessWidget {
                             fontSize: 11,
                           ),
                         ),
+                        if (entry.isAuto)
+                          Text(
+                            entry.path,
+                            key: ValueKey('backup-entry-path-${entry.path}'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.tabInactive,
+                              fontSize: 11,
+                            ),
+                          ),
                       ],
                     ),
                   ),

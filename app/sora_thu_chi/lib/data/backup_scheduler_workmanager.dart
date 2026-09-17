@@ -85,6 +85,7 @@ Future<void> _runAutoBackup() async {
       lastBackupAt: entry.createdAt,
       lastBackupCounts: data.counts,
       lastBackupSizeBytes: entry.sizeBytes,
+      lastBackupPath: entry.path,
     ),
   );
   // ponytail: chưa bắn thông báo "Đã tự động sao lưu..." (doc §4.2) — engine

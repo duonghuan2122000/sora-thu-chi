@@ -21,6 +21,7 @@ class BackupPrefs {
     this.lastBackupAt,
     this.lastBackupCounts,
     this.lastBackupSizeBytes,
+    this.lastBackupPath,
   });
 
   static const BackupPrefs defaults = BackupPrefs();
@@ -32,6 +33,10 @@ class BackupPrefs {
   final Map<String, int>? lastBackupCounts;
   final int? lastBackupSizeBytes;
 
+  /// Đường dẫn file của lần sao lưu gần nhất (PBI 42) — đối chiếu với
+  /// `LocalBackupEntry.path` khi hiển thị, không phải nguồn sự thật riêng.
+  final String? lastBackupPath;
+
   Map<String, Object?> toJson() => {
     'autoEnabled': autoEnabled,
     'autoFrequency': autoFrequency.name,
@@ -39,6 +44,7 @@ class BackupPrefs {
     'lastBackupAt': lastBackupAt?.toIso8601String(),
     'lastBackupCounts': lastBackupCounts,
     'lastBackupSizeBytes': lastBackupSizeBytes,
+    'lastBackupPath': lastBackupPath,
   };
 
   Map<String, String> toSettings() => {kKeyBackupPrefs: jsonEncode(toJson())};
@@ -64,8 +70,11 @@ class BackupPrefs {
       lastBackupSizeBytes: _nullableNonNegativeInt(
         decoded['lastBackupSizeBytes'],
       ),
+      lastBackupPath: _string(decoded['lastBackupPath']),
     );
   }
+
+  static String? _string(Object? raw) => raw is String ? raw : null;
 
   static bool _bool(Object? raw, bool fallback) =>
       raw is bool ? raw : fallback;
@@ -107,6 +116,7 @@ class BackupPrefs {
     DateTime? lastBackupAt,
     Map<String, int>? lastBackupCounts,
     int? lastBackupSizeBytes,
+    String? lastBackupPath,
   }) => BackupPrefs(
     autoEnabled: autoEnabled ?? this.autoEnabled,
     autoFrequency: autoFrequency ?? this.autoFrequency,
@@ -114,6 +124,7 @@ class BackupPrefs {
     lastBackupAt: lastBackupAt ?? this.lastBackupAt,
     lastBackupCounts: lastBackupCounts ?? this.lastBackupCounts,
     lastBackupSizeBytes: lastBackupSizeBytes ?? this.lastBackupSizeBytes,
+    lastBackupPath: lastBackupPath ?? this.lastBackupPath,
   );
 
   @override
@@ -124,7 +135,8 @@ class BackupPrefs {
       other.maxKeepLocal == maxKeepLocal &&
       other.lastBackupAt == lastBackupAt &&
       mapEquals(other.lastBackupCounts, lastBackupCounts) &&
-      other.lastBackupSizeBytes == lastBackupSizeBytes;
+      other.lastBackupSizeBytes == lastBackupSizeBytes &&
+      other.lastBackupPath == lastBackupPath;
 
   @override
   int get hashCode => Object.hash(
@@ -138,5 +150,6 @@ class BackupPrefs {
             lastBackupCounts!.entries.map((e) => Object.hash(e.key, e.value)),
           ),
     lastBackupSizeBytes,
+    lastBackupPath,
   );
 }

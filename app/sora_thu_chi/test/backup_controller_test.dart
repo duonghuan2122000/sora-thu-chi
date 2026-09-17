@@ -77,6 +77,8 @@ void main() {
           'budgets': 0,
         });
         expect(prefsStore.storedPrefs.lastBackupAt, isNotNull);
+        expect(controller.prefs.value.lastBackupPath, path);
+        expect(prefsStore.storedPrefs.lastBackupPath, path);
       },
     );
 
@@ -142,6 +144,10 @@ void main() {
       expect(await safetyDir.list().length, 1);
       expect(dataSource.restoreCallCount, 1);
       expect(dataSource.restoredWith!.wallets.single.id, 1);
+      // confirmRestore không gắn với 1 file backup mới được ghi ở bước này
+      // (PBI 42) — lastBackupPath giữ nguyên giá trị của lần backup thủ công
+      // trước đó, không bị xoá/đổi.
+      expect(controller.prefs.value.lastBackupPath, backupPath);
     });
 
     test('file schema_version không tương thích → BackupIncompatibleException', () async {

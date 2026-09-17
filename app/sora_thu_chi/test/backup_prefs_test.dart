@@ -15,6 +15,7 @@ void main() {
       expect(p.lastBackupAt, isNull);
       expect(p.lastBackupCounts, isNull);
       expect(p.lastBackupSizeBytes, isNull);
+      expect(p.lastBackupPath, isNull);
     });
 
     test('row vắng → cả bộ mặc định', () {
@@ -70,6 +71,18 @@ void main() {
       );
       expect(p.lastBackupCounts, {'wallets': 3});
     });
+
+    test('lastBackupPath sai kiểu → null', () {
+      final p = BackupPrefs.fromSettings(_row('{"lastBackupPath":123}'));
+      expect(p.lastBackupPath, isNull);
+    });
+
+    test('lastBackupPath hợp lệ đọc đúng', () {
+      final p = BackupPrefs.fromSettings(
+        _row('{"lastBackupPath":"/data/backups/auto/backup_1.json"}'),
+      );
+      expect(p.lastBackupPath, '/data/backups/auto/backup_1.json');
+    });
   });
 
   group('Roundtrip toSettings/fromSettings', () {
@@ -84,6 +97,7 @@ void main() {
       final withDate = prefs.copyWith(
         lastBackupAt: now,
         lastBackupCounts: {'wallets': 2, 'transactions': 30},
+        lastBackupPath: '/data/backups/auto/backup_1.json',
       );
       final rows = withDate.toSettings();
       final restored = BackupPrefs.fromSettings(rows);

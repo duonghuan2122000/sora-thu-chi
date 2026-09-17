@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -190,5 +191,94 @@ void main() {
 
     expect(scheduler.scheduledWith, BackupFrequency.daily);
     expect(prefsStore.storedPrefs.autoFrequency, BackupFrequency.daily);
+  });
+
+  group('PBI 42 — đường dẫn file tự động sao lưu', () {
+    testWidgets(
+      'bản gần nhất là tự động → thẻ + danh sách hiện đường dẫn',
+      (tester) async {
+        final localStore = FakeLocalBackupStore();
+        final entry = await localStore.write(
+          bytes: Uint8List(0),
+          extension: 'json',
+          destination: BackupDestination.auto,
+        );
+        final prefsStore = FakeBackupPrefsStore(
+          BackupPrefs.defaults.copyWith(
+            lastBackupAt: entry.createdAt,
+            lastBackupPath: entry.path,
+          ),
+        );
+
+        await _pumpScreen(
+          tester,
+          _controller(localStore: localStore, prefsStore: prefsStore),
+        );
+
+        expect(
+          find.byKey(const ValueKey('backup-last-auto-path')),
+          findsOneWidget,
+        );
+        expect(find.text(entry.path), findsWidgets);
+        expect(
+          find.byKey(ValueKey('backup-entry-path-${entry.path}')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('bản gần nhất là thủ công → thẻ không hiện đường dẫn', (
+      tester,
+    ) async {
+      final localStore = FakeLocalBackupStore();
+      final entry = await localStore.write(
+        bytes: Uint8List(0),
+        extension: 'json',
+        destination: BackupDestination.manual,
+      );
+      final prefsStore = FakeBackupPrefsStore(
+        BackupPrefs.defaults.copyWith(
+          lastBackupAt: entry.createdAt,
+          lastBackupPath: entry.path,
+        ),
+      );
+
+      await _pumpScreen(
+        tester,
+        _controller(localStore: localStore, prefsStore: prefsStore),
+      );
+
+      expect(
+        find.byKey(const ValueKey('backup-last-auto-path')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(ValueKey('backup-entry-path-${entry.path}')),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'lastBackupPath không khớp entry nào còn lại (đã bị dọn) → không hiện đường dẫn',
+      (tester) async {
+        final localStore = FakeLocalBackupStore();
+        final prefsStore = FakeBackupPrefsStore(
+          BackupPrefs.defaults.copyWith(
+            lastBackupAt: DateTime.now(),
+            lastBackupPath: '/fake/backups/auto/backup_đã_xoá.json',
+          ),
+        );
+
+        await _pumpScreen(
+          tester,
+          _controller(localStore: localStore, prefsStore: prefsStore),
+        );
+
+        expect(
+          find.byKey(const ValueKey('backup-last-auto-path')),
+          findsNothing,
+        );
+      },
+    );
   });
 }

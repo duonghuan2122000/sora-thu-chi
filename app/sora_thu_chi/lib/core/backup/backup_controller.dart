@@ -92,6 +92,7 @@ class BackupController extends GetxController {
         lastBackupAt: entry.createdAt,
         lastBackupCounts: data.counts,
         lastBackupSizeBytes: entry.sizeBytes,
+        lastBackupPath: entry.path,
       );
       prefs.value = next;
       await prefsStore.save(next);
