@@ -52,7 +52,18 @@ class BackupResultScreen extends StatelessWidget {
       key: const ValueKey('backup-result-screen'),
       backgroundColor: colors.surface,
       body: SafeArea(
-        child: Padding(
+        child: Stack(
+          children: [
+            Positioned(
+              top: 4,
+              left: 4,
+              child: IconButton(
+                key: const ValueKey('backup-result-back'),
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -122,6 +133,8 @@ class BackupResultScreen extends StatelessWidget {
               ),
             ],
           ),
+            ),
+          ],
         ),
       ),
     );

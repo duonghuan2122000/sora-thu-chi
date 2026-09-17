@@ -4,6 +4,43 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sora_thu_chi/screens/backup_result_screen.dart';
 
 void main() {
+  testWidgets('có nút back tường minh → pop 1 cấp, không popUntil (PBI 44)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const BackupResultScreen(
+                      mode: BackupResultMode.backup,
+                    ),
+                  ),
+                ),
+                child: const Text('mở kết quả'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('mở kết quả'));
+    await tester.pumpAndSettle();
+
+    final backButton = find.byKey(const ValueKey('backup-result-back'));
+    expect(backButton, findsOneWidget);
+
+    await tester.tap(backButton);
+    await tester.pumpAndSettle();
+
+    // Pop 1 cấp về màn mở — khác `_done` (popUntil isFirst).
+    expect(find.text('mở kết quả'), findsOneWidget);
+    expect(find.byType(BackupResultScreen), findsNothing);
+  });
+
   testWidgets('mode backup → hiện nút "Chia sẻ lại file"', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(

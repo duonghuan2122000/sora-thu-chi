@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../core/category/category.dart';
 import '../core/widgets/category_icon.dart';
+import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
@@ -90,9 +91,9 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text('Chọn danh mục'.tr)),
-      body: SafeArea(
+    return SubPageScaffold(
+      title: 'Chọn danh mục'.tr,
+      child: SafeArea(
         top: false,
         child: _body(colors),
       ),

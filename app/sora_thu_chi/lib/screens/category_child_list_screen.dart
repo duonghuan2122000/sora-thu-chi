@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../core/category/category.dart';
 import '../core/category/category_list.dart';
 import '../core/widgets/category_row.dart';
+import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
@@ -14,9 +15,9 @@ import 'category_form_screen.dart';
 /// cùng loại** của cha đang xem theo [Category.sortOrder]; entry từ màn danh
 /// sách `01` khi chạm một danh mục **có con** (R1).
 ///
-/// Tự dựng [Scaffold] + [AppBar] (theme teal) thay vì `SubPageScaffold` — cần
-/// tiêu đề 2 dòng chạm được (R3): back trái, khối **tên cha + dòng phụ "Danh
-/// mục con"** (bọc `FittedBox` + `InkWell` giữa back và "+") → chạm mở form Sửa
+/// Dùng `SubPageScaffold` (app bar teal + back chuẩn, PBI 44) với
+/// `titleWidget` cho tiêu đề 2 dòng chạm được (R3): khối **tên cha + dòng phụ
+/// "Danh mục con"** (bọc `FittedBox` + `InkWell`) → chạm mở form Sửa
 /// cha (cha có con nên form tự khóa loại + không mở sheet cha — màn `02` dựng
 /// đủ PBI 14); "+" phải mở form Thêm con preset (R5). Body [ListView]: từng con
 /// là [CategoryRow] (subtitle null — con cấp 2 không có con) + hàng cuối
@@ -148,51 +149,42 @@ class _CategoryChildListScreenState extends State<CategoryChildListScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        // Khối tiêu đề = điểm sửa danh mục cha (R3): nằm giữa back và "+",
-        // không đè 2 nút — AppBar bố trí leading/actions riêng.
-        title: InkWell(
-          key: const ValueKey('parent-title'),
-          onTap: _editParent,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _parent.name.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Danh mục con'.tr,
-                  style: TextStyle(
-                    color: AppColors.white.withValues(alpha: 0.85),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
+    return SubPageScaffold(
+      // Khối tiêu đề = điểm sửa danh mục cha (R3): nằm giữa back và "+",
+      // không đè 2 nút — AppBar bố trí leading/actions riêng.
+      titleWidget: InkWell(
+        key: const ValueKey('parent-title'),
+        onTap: _editParent,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _parent.name.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                'Danh mục con'.tr,
+                style: const TextStyle(fontSize: 11),
+              ),
+            ],
           ),
         ),
-        actions: [
-          IconButton(
-            key: const ValueKey('add-child'),
-            tooltip: 'Thêm danh mục con'.tr,
-            onPressed: _addChild,
-            icon: const Icon(Icons.add, color: AppColors.white),
-          ),
-        ],
       ),
-      body: SafeArea(top: false, child: _body(colors)),
+      actions: [
+        IconButton(
+          key: const ValueKey('add-child'),
+          tooltip: 'Thêm danh mục con'.tr,
+          onPressed: _addChild,
+          icon: const Icon(Icons.add),
+        ),
+      ],
+      child: SafeArea(top: false, child: _body(colors)),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../core/transaction/transaction_detail.dart';
+import '../core/widgets/sub_page_scaffold.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
@@ -113,9 +114,8 @@ class _TagPickerScreenState extends State<TagPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = SoraColors.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text('Chọn tag'.tr)),
-      body: SafeArea(top: false, child: _body(colors)),
+    return SubPageScaffold(
+      title: 'Chọn tag'.tr,
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
@@ -139,6 +139,7 @@ class _TagPickerScreenState extends State<TagPickerScreen> {
           ),
         ),
       ),
+      child: SafeArea(top: false, child: _body(colors)),
     );
   }
 
