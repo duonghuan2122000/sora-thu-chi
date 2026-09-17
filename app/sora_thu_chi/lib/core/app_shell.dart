@@ -145,7 +145,7 @@ class _AppShellState extends State<AppShell> {
 
   Future<bool?> _pushAddForm(TxnType type) {
     return Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => AddTransactionScreen(initialType: type)),
+      MaterialPageRoute<bool>(builder: (_) => AddTransactionScreen(initialType: type)),
     );
   }
 

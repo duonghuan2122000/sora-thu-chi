@@ -108,7 +108,7 @@ class _BudgetFormScreenState extends State<BudgetFormScreen> {
 
   Future<void> _pickCategory() async {
     final picked = await Navigator.of(context).push<Category>(
-      MaterialPageRoute(
+      MaterialPageRoute<Category>(
         builder: (_) => CategoryPickerScreen(
           type: CategoryType.expense,
           repository: _repository,

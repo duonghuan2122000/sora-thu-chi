@@ -34,8 +34,8 @@ class TxnRowTile extends StatelessWidget {
         final detailRef = row.detailGroupId != null
             ? TransactionDetailRef(transferGroupId: row.detailGroupId)
             : TransactionDetailRef(transactionId: row.detailTransactionId);
-        Navigator.of(context).push(
-          MaterialPageRoute(
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
             builder: (_) => TransactionDetailScreen(ref: detailRef),
           ),
         );

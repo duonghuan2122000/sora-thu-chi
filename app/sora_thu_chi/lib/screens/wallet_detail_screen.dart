@@ -72,7 +72,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   Future<void> _openEdit() async {
     final edited = await Navigator.of(context).push<Wallet>(
-      MaterialPageRoute(
+      MaterialPageRoute<Wallet>(
         builder: (_) => WalletFormScreen(
           wallet: _wallet,
           hasTransactions: _hasTransactions,
@@ -110,7 +110,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       return;
     }
     final transferred = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
+      MaterialPageRoute<bool>(
         builder: (_) => WalletTransferScreen(
           sourceWallet: _wallet,
           controller: _controller,

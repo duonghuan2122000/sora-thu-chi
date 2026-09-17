@@ -27,7 +27,7 @@ class TransactionScreen extends StatelessWidget {
     TransactionController controller,
   ) async {
     final filter = await Navigator.of(context).push<TxnSearchFilter>(
-      MaterialPageRoute(
+      MaterialPageRoute<TxnSearchFilter>(
         builder: (_) => SearchFilterScreen(
           now: controller.now,
           initial: controller.activeFilter.value,

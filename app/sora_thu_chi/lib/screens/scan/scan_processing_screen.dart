@@ -121,7 +121,7 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
       if (!mounted) return;
       setState(() => _step = 4);
       final saved = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
+        MaterialPageRoute<bool>(
           builder: (_) => ScanConfirmScreen(
             extraction: extraction,
             imagePath: widget.imagePath,

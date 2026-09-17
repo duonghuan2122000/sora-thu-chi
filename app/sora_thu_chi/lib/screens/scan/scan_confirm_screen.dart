@@ -173,7 +173,7 @@ class _ScanConfirmScreenState extends State<ScanConfirmScreen> {
 
   Future<void> _pickCategory() async {
     final picked = await Navigator.of(context).push<Category>(
-      MaterialPageRoute(
+      MaterialPageRoute<Category>(
         builder: (_) => CategoryPickerScreen(
           type: _type == TxnType.income ? CategoryType.income : CategoryType.expense,
         ),

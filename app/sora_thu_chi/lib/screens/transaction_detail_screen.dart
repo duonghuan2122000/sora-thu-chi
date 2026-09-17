@@ -201,7 +201,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (!mounted) return;
         setState(() => _saving = false);
         saved = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
+          MaterialPageRoute<bool>(
             builder: (_) => WalletTransferScreen(
               sourceWallet: sourceWallet,
               destinationWallet: destWallet,
@@ -233,7 +233,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (!mounted) return;
         setState(() => _saving = false);
         saved = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
+          MaterialPageRoute<bool>(
             builder: (_) => AddTransactionScreen(
               editing: original,
               initialCategory: category,
@@ -296,7 +296,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (!mounted) return;
         setState(() => _saving = false);
         saved = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
+          MaterialPageRoute<bool>(
             builder: (_) => WalletTransferScreen(
               sourceWallet: sourceWallet,
               destinationWallet: destWallet,
@@ -327,7 +327,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (!mounted) return;
         setState(() => _saving = false);
         saved = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
+          MaterialPageRoute<bool>(
             builder: (_) => AddTransactionScreen(
               initialType: original.type,
               initialCategory: category,

@@ -126,7 +126,7 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
 
   Future<void> _openForm({Budget? budget}) async {
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
+      MaterialPageRoute<bool>(
         builder: (_) => BudgetFormScreen(
           budget: budget,
           repository: _repository,
@@ -142,7 +142,7 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
   /// Quay về nạp lại im lặng: trong đó có thể vừa sửa giới hạn hoặc vừa lưu trữ.
   Future<void> _openDetail(Budget budget) async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute(
+      MaterialPageRoute<void>(
         builder: (_) => BudgetDetailScreen(
           budgetId: budget.id,
           repository: _repository,
@@ -159,7 +159,7 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
   /// "đã chi" khớp (SC-009).
   Future<void> _openAddTransaction() async {
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+      MaterialPageRoute<bool>(builder: (_) => const AddTransactionScreen()),
     );
     if (!mounted || saved != true) return;
     await _reloadSilent();

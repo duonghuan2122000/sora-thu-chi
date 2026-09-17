@@ -153,7 +153,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
   /// còn tồn tại → về kỳ mặc định mới — Rủi ro 4).
   Future<void> _edit(Budget budget) async {
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
+      MaterialPageRoute<bool>(
         builder: (_) => BudgetFormScreen(
           budget: budget,
           repository: _repository,

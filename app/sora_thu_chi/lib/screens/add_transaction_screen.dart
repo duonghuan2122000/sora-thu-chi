@@ -272,7 +272,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
     final transferred = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
+      MaterialPageRoute<bool>(
         builder: (_) => WalletTransferScreen(
           sourceWallet: source,
           controller: ensureWalletController(),
@@ -308,7 +308,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Future<void> _pickCategory() async {
     final picked = await Navigator.of(context).push<Category>(
-      MaterialPageRoute(
+      MaterialPageRoute<Category>(
         builder: (_) => CategoryPickerScreen(type: _toCategoryType(_type)),
       ),
     );
@@ -360,7 +360,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   /// Chạm dòng Tag — mở màn chọn tag riêng (mockup v2, PBI 38, chốt 2B).
   Future<void> _pickTags() async {
     final picked = await Navigator.of(context).push<List<String>>(
-      MaterialPageRoute(
+      MaterialPageRoute<List<String>>(
         builder: (_) => TagPickerScreen(initialSelected: _tags),
       ),
     );

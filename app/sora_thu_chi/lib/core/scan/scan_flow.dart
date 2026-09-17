@@ -36,7 +36,7 @@ Future<bool> startScanFlow(
     // ngày (FR-008) hoặc người dùng bấm "Kiểm tra lại" ở màn Cài đặt.
     if (scan.settings.value.needsDeviceCheck(clock())) {
       final proceed = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
+        MaterialPageRoute<bool>(
           builder: (_) => DeviceCheckScreen(controller: scan),
         ),
       );
@@ -46,14 +46,14 @@ Future<bool> startScanFlow(
     // Mỗi bước đều có `await` → kiểm tra context còn sống trước khi đẩy tiếp.
     if (!context.mounted) return false;
     final imagePath = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
+      MaterialPageRoute<String>(
         builder: (_) => ScanCameraScreen(gateway: cameraGateway),
       ),
     );
     if (imagePath == null || !context.mounted) return false;
 
     final step = await Navigator.of(context).push<ScanStepResult>(
-      MaterialPageRoute(
+      MaterialPageRoute<ScanStepResult>(
         builder: (_) => ScanProcessingScreen(
           imagePath: imagePath,
           ocr: ocr,
@@ -74,7 +74,7 @@ Future<bool> startScanFlow(
       case ScanStepResult.manualEntry:
         // "Nhập tay" → form thêm giao dịch **trống** (không mang dữ liệu quét).
         final saved = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
+          MaterialPageRoute<bool>(
             builder: (_) =>
                 legacyFormBuilder?.call() ?? const AddTransactionScreen(),
           ),
