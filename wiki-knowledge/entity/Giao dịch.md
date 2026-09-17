@@ -57,9 +57,22 @@ Nút "Sửa" ở màn Chi tiết giao dịch (trước là no-op từ PBI 10/38)
 - **⚠ Quyết định thu hẹp phạm vi cố ý (PBI 39)**: khi sửa, đổi loại chỉ cho phép trong nhóm **Thu ⇄ Chi** (segmented tab khóa mục "Chuyển khoản" ở chế độ sửa) — **không** cho đổi giữa nhóm Thu/Chi và Chuyển khoản, vì khác cấu trúc lưu trữ (1 dòng ↔ 2 dòng liên kết) và spec không yêu cầu (xem [[Lộ trình phát triển]]).
 - Rời màn sửa khi có thay đổi chưa lưu → hỏi xác nhận (áp dụng cho cả 2 màn ở chế độ sửa; luồng "Thêm mới"/"Chuyển tiền mới" giữ nguyên hành vi cũ, không hỏi khi đóng ngay cả khi có dữ liệu).
 
-### Xóa / Nhân bản / Undo / Định kỳ — **chưa triển khai** (ngoài phạm vi PBI 39)
+### Nhân bản giao dịch — **đã triển khai (PBI 40)**
+> Nguồn: `.specify/specs/40/`.
+
+Nút "Nhân bản" ở màn Chi tiết giao dịch (trước no-op) tái dùng đúng 2 màn của PBI 39 (Sửa) nhưng ở **chế độ tạo mới có điền sẵn** — không phải chế độ sửa:
+
+- Method `_duplicate(view)` bám sát cấu trúc `_edit(view)` (tải lại `Transaction`/`Category`/`Wallet` gốc), khác duy nhất ở chỗ **không truyền `editing`/`editingTransferGroupId`** (giữ nhánh tạo mới `addTransaction`/`WalletController.transfer`, không đụng bản gốc) và **ép ngày giờ = `DateTime.now()`** thay vì giữ ngày gốc.
+- `AddTransactionScreen` thêm 5 tham số optional mới `initialAmount`/`initialNote`/`initialDate`/`initialTags`/`initialReceiptImage` (song song `initialCategory`/`initialWallet` đã có từ PBI 38), dùng để điền state khi `editing == null`. Cờ `editing != null` **vẫn là điều kiện duy nhất** quyết định `addTransaction` vs `updateTransaction` — không đổi.
+- `WalletTransferScreen` **không cần sửa gì** — cờ `editingTransferGroupId` đã tách biệt sẵn khỏi các tham số `initial*` từ PBI 39, khớp thẳng nhu cầu nhân bản.
+- Ảnh hóa đơn nhân bản dùng chung tham chiếu file với giao dịch gốc — `_originalReceiptImage` (cơ chế chặn xóa nhầm file khi hủy màn/đổi ảnh, có từ PBI 39) mở rộng để tính cả ảnh điền sẵn lúc nhân bản, tránh xóa nhầm ảnh mà giao dịch gốc vẫn đang tham chiếu trong DB.
+- Baseline `isDirty` (quyết định có hỏi "Hủy giao dịch?" khi rời màn) cũng đọc từ `initial*` khi `editing == null` — mở màn Nhân bản không sửa gì rồi thoát **không** hỏi xác nhận.
+- Áp dụng cả 3 loại giao dịch (Thu/Chi/Chuyển khoản). Giao dịch định kỳ: không cần xử lý riêng vì `Transaction` không có trường liên kết định kỳ — bản sao tự động độc lập.
+- **⚠ Lệch so với mô tả nghiệp vụ gốc (docs/transaction §3.3/§4.4)**: **không sao chép trường "Vị trí" (`location`)** — `AddTransactionScreen` (dùng chung cho Thêm/Sửa) chưa từng có ô nhập/hiển thị Vị trí; trường này chỉ được `addScannedTransaction` (luồng quét OCR) ghi, `WalletRepository.addTransaction` không có tham số `location`. Giữ nguyên giới hạn kiến trúc sẵn có, không mở rộng repository API cho tính năng nhỏ này.
+- Không đổi schema drift.
+
+### Xóa / Undo / Định kỳ — **chưa triển khai**
 - Xóa: nút 3 chấm ở màn Chi tiết vẫn no-op. Nghiệp vụ gốc: dialog xác nhận → snackbar **Undo ~5s** trước xóa vĩnh viễn.
-- **Nhân bản** (Duplicate): nút vẫn no-op. Nghiệp vụ gốc: bản sao ngày = now, mở màn sửa trước khi lưu.
 - Sửa/xóa trong chuỗi định kỳ → hỏi phạm vi "Chỉ giao dịch này" / "Toàn bộ chuỗi từ đây" — chưa áp dụng vì app **chưa có tính năng giao dịch định kỳ**.
 
 ## Định kỳ (Recurring — GĐ2)
