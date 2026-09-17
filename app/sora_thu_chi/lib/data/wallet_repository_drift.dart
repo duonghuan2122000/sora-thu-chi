@@ -251,6 +251,8 @@ class DriftWalletRepository implements WalletRepository {
     required Category category,
     required DateTime date,
     String note = '',
+    String tags = '',
+    String receiptImage = '',
   }) async {
     // Một db.transaction(): bù balance + insert — không bao giờ lệch một phía
     // (FR-012/SC-003). Số dư cập nhật ngay theo ngày ghi (balance eager,
@@ -271,6 +273,8 @@ class DriftWalletRepository implements WalletRepository {
           note: Value(note),
           transactionDate: date,
           categoryId: Value(category.id),
+          tags: Value(tags),
+          receiptImage: Value(receiptImage),
         ),
       );
     });

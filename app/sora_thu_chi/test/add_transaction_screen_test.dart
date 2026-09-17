@@ -1,10 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
+import 'package:sora_thu_chi/core/scan/scan_image_store.dart';
 import 'package:sora_thu_chi/core/transaction/transaction.dart';
 import 'package:sora_thu_chi/core/wallet/wallet.dart';
-import 'package:sora_thu_chi/core/widgets/amount_keypad.dart';
 import 'package:sora_thu_chi/data/wallet_repository.dart';
 import 'package:sora_thu_chi/screens/add_transaction_screen.dart';
 import 'package:sora_thu_chi/screens/wallet_transfer_screen.dart';
@@ -19,10 +22,34 @@ class _Ctx {
   bool? result;
 }
 
+/// [ScanImageStore] giả cho test — không đụng file thật, ghi lại đường dẫn đã
+/// lưu/xóa để assert hành vi dọn rác (PBI 38).
+class _FakeImageStore implements ScanImageStore {
+  final List<String> saved = [];
+  final List<String> deleted = [];
+  var _next = 0;
+
+  @override
+  Future<String> save(Uint8List bytes) async {
+    final path = '/fake/receipts/${_next++}.jpg';
+    saved.add(path);
+    return path;
+  }
+
+  @override
+  Future<void> delete(String path) async {
+    deleted.add(path);
+  }
+}
+
 /// Pump màn thêm đẩy lên từ một host (bắt kết quả pop qua [ctx.result]).
+/// [pickImage]/[imageStore] (PBI 38): seam Ảnh hóa đơn — mặc định null dùng
+/// hành vi thật (không cần trong test không đụng ảnh).
 Future<_Ctx> _pumpAdd(
   WidgetTester tester, {
   List<Wallet>? seedWallets,
+  ReceiptImagePicker? pickImage,
+  ScanImageStore? imageStore,
 }) async {
   Get.reset();
   final repo = FakeWalletRepository(seedWallets);
@@ -38,7 +65,11 @@ Future<_Ctx> _pumpAdd(
               onPressed: () async {
                 ctx.result = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
-                    builder: (_) => AddTransactionScreen(repository: repo),
+                    builder: (_) => AddTransactionScreen(
+                      repository: repo,
+                      pickImage: pickImage,
+                      imageStore: imageStore,
+                    ),
                   ),
                 );
               },
@@ -54,18 +85,20 @@ Future<_Ctx> _pumpAdd(
   return ctx;
 }
 
-Future<void> tapDigits(WidgetTester tester, String digits) async {
-  for (final d in digits.split('')) {
-    await tester.tap(find.text(d));
-    await tester.pump();
-  }
+/// Gõ số tiền qua bàn phím hệ thống (mô phỏng bằng `enterText` trên ô
+/// `amount-field`) — thay `tapDigits` numpad cũ (PBI 38: bỏ `AmountKeypad`
+/// khỏi màn này, dùng `TextField` số hệ thống như `wallet_transfer_screen`).
+Future<void> enterAmount(WidgetTester tester, String digits) async {
+  await tester.enterText(find.byKey(const ValueKey('amount-field')), digits);
+  await tester.pump();
 }
 
 Color _amountAccent(WidgetTester tester) {
-  final c = tester.widget<Container>(
-    find.byKey(const ValueKey('amount-underline')),
+  final field = tester.widget<TextField>(
+    find.byKey(const ValueKey('amount-field')),
   );
-  return (c.decoration! as BoxDecoration).color!;
+  final border = field.decoration!.enabledBorder! as OutlineInputBorder;
+  return border.borderSide.color;
 }
 
 /// Màn ảo cao (logical 360x1000) — đủ hiện mọi dòng trường + nút lưu không cần
@@ -79,7 +112,7 @@ void useTallView(WidgetTester tester) {
 
 void main() {
   group('AddTransactionScreen — màn thêm giao dịch (mockup 02, R7)', () {
-    testWidgets('(a) bố cục mockup: title, X/check, segmented Chi, 4 trường + numpad + Lưu',
+    testWidgets('(a) bố cục mockup: title, X/check, segmented Chi, 4 trường + ô số tiền hệ thống + Lưu',
         (tester) async {
       useTallView(tester);
       await _pumpAdd(tester);
@@ -90,35 +123,28 @@ void main() {
       for (final label in ['Chi', 'Thu', 'Chuyển khoản']) {
         expect(find.text(label), findsOneWidget);
       }
-      expect(find.text('0 đ'), findsOneWidget);
+      expect(find.byKey(const ValueKey('amount-field')), findsOneWidget);
       for (final label in ['Danh mục', 'Ví', 'Ngày giờ', 'Ghi chú']) {
         expect(find.text(label), findsOneWidget);
       }
-      expect(find.byType(AmountKeypad), findsOneWidget);
       expect(find.text('Lưu giao dịch'), findsOneWidget);
       // Không có bottom nav shell.
       expect(find.text('Tổng quan'), findsNothing);
     });
 
-    testWidgets('(b) numpad 1250000 → 1.250.000 đ; backspace; phím "," no-op; Thu → teal',
+    testWidgets('(b) gõ 1250000 → 1.250.000 (bàn phím hệ thống); sửa lại còn 125000; Thu → teal',
         (tester) async {
       useTallView(tester);
       await _pumpAdd(tester);
 
-      await tapDigits(tester, '1250000');
-      expect(find.text('1.250.000 đ'), findsOneWidget);
+      await enterAmount(tester, '1250000');
+      expect(find.text('1.250.000'), findsOneWidget);
       // Accent chi = coral.
       expect(_amountAccent(tester), AppColors.coral);
 
-      // Phím "," (VND số nguyên) no-op.
-      await tester.tap(find.text(','));
-      await tester.pump();
-      expect(find.text('1.250.000 đ'), findsOneWidget);
-
-      // Backspace xóa một số.
-      await tester.tap(find.byIcon(Icons.backspace_outlined));
-      await tester.pump();
-      expect(find.text('125.000 đ'), findsOneWidget);
+      // Sửa lại còn 125000 (mô phỏng backspace của bàn phím hệ thống).
+      await enterAmount(tester, '125000');
+      expect(find.text('125.000'), findsOneWidget);
 
       // Đổi Thu → accent teal.
       await tester.tap(find.text('Thu'));
@@ -180,7 +206,7 @@ void main() {
       useTallView(tester);
       final ctx = await _pumpAdd(tester);
 
-      await tapDigits(tester, '50000');
+      await enterAmount(tester, '50000');
       await tester.tap(find.byKey(const ValueKey('field-category')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ăn uống'));
@@ -227,7 +253,7 @@ void main() {
         (tester) async {
       // Dirty: gõ tiền rồi X.
       var ctx = await _pumpAdd(tester);
-      await tapDigits(tester, '1000');
+      await enterAmount(tester, '1000');
       await tester.tap(find.byKey(const ValueKey('close-add')));
       await tester.pumpAndSettle();
 
@@ -235,7 +261,7 @@ void main() {
       await tester.tap(find.text('Hủy'));
       await tester.pumpAndSettle();
       expect(find.text('Thêm giao dịch'), findsOneWidget); // ở lại, dữ liệu giữ.
-      expect(find.text('1.000 đ'), findsOneWidget);
+      expect(find.text('1.000'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('close-add')));
       await tester.pumpAndSettle();
@@ -255,7 +281,7 @@ void main() {
     testWidgets('(h) Lưu 2 lần nhanh → chỉ 1 giao dịch (cờ _saving)', (tester) async {
       final ctx = await _pumpAdd(tester);
 
-      await tapDigits(tester, '20000');
+      await enterAmount(tester, '20000');
       await tester.tap(find.byKey(const ValueKey('field-category')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nhà ở'));
@@ -347,6 +373,141 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('Lưu giao dịch'), findsOneWidget);
+    });
+
+    testWidgets('(m) chạm dòng Tag → chọn/tạo tag → hiện lại trên dòng, lưu mang đúng tag (PBI 38)',
+        (tester) async {
+      useTallView(tester);
+      final ctx = await _pumpAdd(tester);
+
+      await tester.tap(find.byKey(const ValueKey('field-tags')));
+      await tester.pumpAndSettle();
+      expect(find.text('Chọn tag'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const ValueKey('new-tag-field')), 'ăn trưa');
+      await tester.tap(find.byKey(const ValueKey('add-tag-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('confirm-tags')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chọn tag'), findsNothing); // đã quay về màn thêm.
+      expect(find.text('ăn trưa'), findsOneWidget); // hiện trên dòng Tag.
+
+      await enterAmount(tester, '30000');
+      await tester.tap(find.byKey(const ValueKey('field-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nhà ở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isTrue);
+      final added = (await ctx.repo.allTransactions())
+          .where((t) => t.category == 'Nhà ở' && t.amount == -30000)
+          .toList();
+      expect(added.single.tags, 'ăn trưa');
+    });
+
+    testWidgets('(n) không chọn Tag → vẫn lưu được bình thường (trường tùy chọn, FR-009)',
+        (tester) async {
+      final ctx = await _pumpAdd(tester);
+
+      await enterAmount(tester, '15000');
+      await tester.tap(find.byKey(const ValueKey('field-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nhà ở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isTrue);
+      final added = (await ctx.repo.allTransactions())
+          .where((t) => t.category == 'Nhà ở' && t.amount == -15000)
+          .toList();
+      expect(added.single.tags, '');
+    });
+
+    testWidgets('(o) đính kèm ảnh hóa đơn (chụp ảnh) → thumbnail hiện, lưu mang đúng đường dẫn (PBI 38)',
+        (tester) async {
+      useTallView(tester);
+      final store = _FakeImageStore();
+      final ctx = await _pumpAdd(
+        tester,
+        imageStore: store,
+        pickImage: (source) async {
+          expect(source, ImageSource.camera);
+          return XFile.fromData(Uint8List.fromList([1, 2, 3]), name: 'hoadon.jpg');
+        },
+      );
+
+      await tester.tap(find.byKey(const ValueKey('field-receipt-image')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('receipt-source-camera')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('receipt-image-thumbnail')), findsOneWidget);
+      expect(store.saved, ['/fake/receipts/0.jpg']);
+
+      await enterAmount(tester, '40000');
+      await tester.tap(find.byKey(const ValueKey('field-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nhà ở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isTrue);
+      final added = (await ctx.repo.allTransactions())
+          .where((t) => t.category == 'Nhà ở' && t.amount == -40000)
+          .toList();
+      expect(added.single.receiptImage, '/fake/receipts/0.jpg');
+      // Đã gắn vào giao dịch — không bị xóa.
+      expect(store.deleted, isEmpty);
+    });
+
+    testWidgets('(p) không đính kèm ảnh → vẫn lưu bình thường (trường tùy chọn, FR-009)',
+        (tester) async {
+      final ctx = await _pumpAdd(tester);
+
+      await enterAmount(tester, '18000');
+      await tester.tap(find.byKey(const ValueKey('field-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Nhà ở'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('save-transaction')));
+      await tester.pumpAndSettle();
+
+      expect(ctx.result, isTrue);
+      final added = (await ctx.repo.allTransactions())
+          .where((t) => t.category == 'Nhà ở' && t.amount == -18000)
+          .toList();
+      expect(added.single.receiptImage, '');
+    });
+
+    testWidgets('(q) đính kèm ảnh rồi thoát không lưu → file bị xóa, không để rác (PBI 38)',
+        (tester) async {
+      final store = _FakeImageStore();
+      await _pumpAdd(
+        tester,
+        imageStore: store,
+        pickImage: (source) async =>
+            XFile.fromData(Uint8List.fromList([1, 2, 3]), name: 'hoadon.jpg'),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('field-receipt-image')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('receipt-source-gallery')));
+      await tester.pumpAndSettle();
+      expect(store.saved, ['/fake/receipts/0.jpg']);
+
+      // Đã đính kèm ảnh → coi là dirty, X hiện dialog xác nhận.
+      await tester.tap(find.byKey(const ValueKey('close-add')));
+      await tester.pumpAndSettle();
+      expect(find.text('Hủy giao dịch?'), findsOneWidget);
+      await tester.tap(find.text('Thoát'));
+      await tester.pumpAndSettle();
+
+      expect(store.deleted, ['/fake/receipts/0.jpg']);
     });
   });
 }

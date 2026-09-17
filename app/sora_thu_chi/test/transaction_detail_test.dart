@@ -197,4 +197,38 @@ void main() {
       expect(parseTags('côngty,,'), ['côngty']);
     });
   });
+
+  group('distinctTags — gộp + khử trùng tag từ toàn bộ giao dịch (PBI 38)', () {
+    test('gộp tag nhiều giao dịch, khử trùng không phân biệt hoa/thường', () {
+      final all = [
+        txn(1, 1, TxnType.expense, -1000, tags: 'côngty, Ăn trưa'),
+        txn(2, 1, TxnType.expense, -2000, tags: 'ăn trưa, xăng xe'),
+      ];
+      // "Ăn trưa" và "ăn trưa" là 1 tag — giữ dạng xuất hiện đầu tiên.
+      expect(distinctTags(all), ['côngty', 'Ăn trưa', 'xăng xe']);
+    });
+
+    test('không giao dịch nào có tag → []', () {
+      final all = [txn(1, 1, TxnType.expense, -1000)];
+      expect(distinctTags(all), isEmpty);
+    });
+  });
+
+  group('joinTags — đối xứng parseTags (PBI 38)', () {
+    test('nối tag đã chọn thành chuỗi phân tách phẩy', () {
+      expect(joinTags(['côngty', 'ăn trưa']), 'côngty, ăn trưa');
+    });
+
+    test('lọc rỗng/khoảng trắng thừa trước khi nối', () {
+      expect(joinTags(['côngty', '  ', '', ' ăn trưa ']), 'côngty, ăn trưa');
+    });
+
+    test('rỗng → chuỗi rỗng', () {
+      expect(joinTags(const []), '');
+    });
+
+    test('đối nghịch đúng parseTags — không mất tag khi đi-về', () {
+      expect(parseTags(joinTags(['côngty', 'ăn trưa'])), ['côngty', 'ăn trưa']);
+    });
+  });
 }

@@ -85,8 +85,9 @@ abstract class WalletRepository {
   /// (`income` `+x`, `expense` `−x`), `category_id = category.id`,
   /// `category = category.name`, trong một `db.transaction()` — không lệch phía.
   /// Đầu vào hợp lệ: [type] income/expense, [amount] > 0, `category.type` khớp
-  /// [type], `category.id` > 0. Giao dịch mới để trống transferGroupId/tags/
-  /// receiptImage/location (R3).
+  /// [type], `category.id` > 0. Giao dịch mới để trống transferGroupId/location
+  /// (R3); [tags]/[receiptImage] (PBI 38) ghi thẳng nếu người dùng có chọn —
+  /// mặc định rỗng giữ hành vi cũ.
   Future<void> addTransaction({
     required int walletId,
     required TxnType type,
@@ -94,6 +95,8 @@ abstract class WalletRepository {
     required Category category,
     required DateTime date,
     String note = '',
+    String tags = '',
+    String receiptImage = '',
   });
 
   /// Ghi atomic một giao dịch **quét hóa đơn** (PBI 24, FR-033/FR-034): một

@@ -248,6 +248,16 @@ class SoraTranslations extends Translations {
     'Chưa có ví hoạt động — hãy tạo ví trong Quản lý ví.':
         'No active wallet — create one in Manage wallets.',
     'Thêm ghi chú (tùy chọn)': 'Add a note (optional)',
+    // Tag & Ảnh hóa đơn — màn Thêm giao dịch (PBI 38)
+    'Thêm tag (tùy chọn)': 'Add tags (optional)',
+    'Chọn tag': 'Select tags',
+    'Tạo tag mới': 'Create new tag',
+    'Xác nhận': 'Confirm',
+    'Chưa có tag nào — tạo tag mới ở ô trên.':
+        'No tags yet — create one in the field above.',
+    'Đính kèm ảnh (tùy chọn)': 'Attach a photo (optional)',
+    'Đã đính kèm': 'Attached',
+    'Chọn từ thư viện': 'Choose from library',
 
     // Giao dịch — chi tiết & danh sách domain
     'Chi tiết giao dịch': 'Transaction details',

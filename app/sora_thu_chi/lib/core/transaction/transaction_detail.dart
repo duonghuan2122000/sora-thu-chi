@@ -162,3 +162,27 @@ List<String> parseTags(String tags) {
       .where((t) => t.isNotEmpty)
       .toList();
 }
+
+/// Gộp tag của toàn bộ giao dịch hiện có thành danh sách gợi ý cho màn chọn
+/// tag (PBI 38) — không có bảng `tags` riêng (ponytail: quét toàn bộ giao dịch
+/// đủ nhanh ở quy mô dữ liệu cá nhân; nâng cấp lên bảng riêng nếu dữ liệu lớn
+/// dần). Khử trùng không phân biệt hoa/thường, giữ dạng chữ xuất hiện đầu tiên.
+List<String> distinctTags(List<Transaction> transactions) {
+  final seen = <String>{};
+  final result = <String>[];
+  for (final t in transactions) {
+    for (final tag in parseTags(t.tags)) {
+      final key = tag.toLowerCase();
+      if (seen.add(key)) result.add(tag);
+    }
+  }
+  return result;
+}
+
+/// Đối xứng [parseTags] — nối list tag đã chọn thành chuỗi lưu cột `tags`.
+/// Trim + lọc rỗng trước khi nối, để chuỗi ghi ra luôn đọc lại đúng bằng
+/// [parseTags].
+String joinTags(List<String> tags) => tags
+    .map((t) => t.trim())
+    .where((t) => t.isNotEmpty)
+    .join(', ');

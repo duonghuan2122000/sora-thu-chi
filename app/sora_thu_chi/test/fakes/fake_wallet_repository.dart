@@ -280,6 +280,8 @@ class FakeWalletRepository implements WalletRepository {
     required Category category,
     required DateTime date,
     String note = '',
+    String tags = '',
+    String receiptImage = '',
   }) async {
     final wallet = _store[walletId];
     if (wallet == null) {
@@ -297,6 +299,8 @@ class FakeWalletRepository implements WalletRepository {
         amount: signedAmount,
         date: date,
         categoryId: category.id,
+        tags: tags,
+        receiptImage: receiptImage,
       ),
     );
   }

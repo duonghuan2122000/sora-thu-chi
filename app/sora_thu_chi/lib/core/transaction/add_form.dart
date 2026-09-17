@@ -43,6 +43,8 @@ bool isDirty({
   required DateTime date,
   required TxnType type,
   DateTime? now,
+  bool hasTags = false,
+  bool hasReceiptImage = false,
 }) {
   final ref = now ?? DateTime.now();
   final sameMinute =
@@ -55,5 +57,7 @@ bool isDirty({
       category != null ||
       note.trim().isNotEmpty ||
       !sameMinute ||
-      type != TxnType.expense;
+      type != TxnType.expense ||
+      hasTags ||
+      hasReceiptImage;
 }

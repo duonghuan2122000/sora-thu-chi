@@ -1,34 +1,46 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../core/category/category.dart';
 import '../core/date_label.dart';
 import '../core/money_format.dart';
+import '../core/scan/scan_image_store.dart';
 import '../core/transaction/add_form.dart';
 import '../core/transaction/transaction.dart';
+import '../core/transaction/transaction_detail.dart' show joinTags;
 import '../core/wallet/wallet.dart';
 import '../core/wallet/wallet_rules.dart';
-import '../core/widgets/amount_keypad.dart';
 import '../data/notification_deps.dart';
 import '../data/wallet_deps.dart';
 import '../data/wallet_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/sora_colors.dart';
 import 'category_picker_screen.dart';
+import 'tag_picker_screen.dart';
 import 'wallet_transfer_screen.dart';
 
-/// Màn "Thêm giao dịch" (mockup `02`, R7) — ghi khoản thu/chi mới, màn toàn
-/// màn hình (app bar teal: X đóng / check lưu, **không** bottom nav).
-/// Segmented Chi|Thu|Chuyển khoản (mặc định Chi); số tiền gõ bằng numpad tùy
-/// chỉnh; 4 trường Danh mục/Ví/Ngày giờ/Ghi chú; nút "Lưu giao dịch" cố định.
-/// Stateful + [WalletRepository] inject (không GetX — màn tác vụ một-lần, R11).
+/// Seam chọn ảnh (camera hệ thống hoặc thư viện) — test bơm fake không cần
+/// plugin thật (PBI 38, R). Impl thật: `ImagePicker().pickImage(source: ...)`.
+typedef ReceiptImagePicker = Future<XFile?> Function(ImageSource source);
+
+/// Màn "Thêm giao dịch" (mockup `02-them-giao-dich-v2`, PBI 38) — ghi khoản
+/// thu/chi mới, màn toàn màn hình (app bar teal: X đóng / check lưu, **không**
+/// bottom nav). Segmented Chi|Thu|Chuyển khoản (mặc định Chi); số tiền gõ bằng
+/// bàn phím số của hệ thống; 6 trường Danh mục/Ví/Ngày giờ/Tag/Ảnh hóa đơn/Ghi
+/// chú; nút "Lưu giao dịch" cố định. Stateful + [WalletRepository] inject
+/// (không GetX — màn tác vụ một-lần, R11).
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({
     super.key,
     this.repository,
     this.initialType = TxnType.expense,
+    this.pickImage,
+    this.imageStore,
   });
 
   /// Seam test: mặc định null → [ensureWalletRepository] khi vào (R11).
@@ -38,20 +50,37 @@ class AddTransactionScreen extends StatefulWidget {
   /// khi nạp ví xong. Mặc định `expense` = hành vi cũ.
   final TxnType initialType;
 
+  /// Seam test đính kèm Ảnh hóa đơn (PBI 38) — mặc định `ImagePicker().pickImage`.
+  final ReceiptImagePicker? pickImage;
+
+  /// Seam test nơi lưu file ảnh hóa đơn — mặc định [LocalScanImageStore] (tái
+  /// dùng đúng seam của luồng quét OCR, `<appDocuments>/receipts/`).
+  final ScanImageStore? imageStore;
+
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late final WalletRepository _repository;
+  late final ReceiptImagePicker _pickImage =
+      widget.pickImage ?? ((source) => ImagePicker().pickImage(source: source));
+  late final ScanImageStore _imageStore = widget.imageStore ?? LocalScanImageStore();
   late final DateTime _openedAt = DateTime.now();
 
   late TxnType _type = widget.initialType;
-  int _amount = 0;
+  final TextEditingController _amountCtrl = TextEditingController();
+  int get _amount => parseAmount(_amountCtrl.text);
   Category? _category;
   Wallet? _wallet;
   late DateTime _date = DateTime.now();
   final TextEditingController _noteCtrl = TextEditingController();
+  List<String> _tags = [];
+
+  /// Đường dẫn ảnh hóa đơn đã copy vào kho `receipts/` — `null` = chưa đính
+  /// kèm. Nếu rời màn không lưu, file này bị xóa (không để rác, bám R12 của
+  /// luồng quét OCR).
+  String? _receiptImagePath;
 
   bool _loading = true;
   List<Wallet> _activeWallets = const [];
@@ -72,6 +101,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     date: _date,
     type: _type,
     now: _openedAt,
+    hasTags: _tags.isNotEmpty,
+    hasReceiptImage: _receiptImagePath != null,
   );
 
   Color _amountAccent(SoraColors colors) =>
@@ -86,6 +117,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   @override
   void dispose() {
+    _amountCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
   }
@@ -165,15 +197,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
   }
 
-  void _appendDigit(int digit) {
-    setState(() {
-      _amount = appendAmountDigit(_amount, digit);
-      _missing.remove('amount');
-    });
-  }
-
-  void _backspace() {
-    setState(() => _amount = backspaceAmount(_amount));
+  /// Tự format lại ô Số tiền khi gõ (bàn phím hệ thống) — bám đúng mẫu
+  /// `wallet_transfer_screen.dart`: lọc còn chữ số, format dấu chấm nghìn,
+  /// giữ con trỏ ở cuối. Không giới hạn số chữ số riêng — `LengthLimitingTextInputFormatter`
+  /// ở `TextField` đã chặn tràn.
+  void _onAmountChanged(String _) {
+    final digits = _amountCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      _amountCtrl.clear();
+    } else {
+      final formatted = formatAmount(int.parse(digits));
+      if (_amountCtrl.text != formatted) {
+        _amountCtrl.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+    }
+    if (_missing.contains('amount')) setState(() => _missing.remove('amount'));
+    setState(() {});
   }
 
   Future<void> _pickCategory() async {
@@ -227,6 +269,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
+  /// Chạm dòng Tag — mở màn chọn tag riêng (mockup v2, PBI 38, chốt 2B).
+  Future<void> _pickTags() async {
+    final picked = await Navigator.of(context).push<List<String>>(
+      MaterialPageRoute(
+        builder: (_) => TagPickerScreen(initialSelected: _tags),
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _tags = picked);
+    }
+  }
+
+  /// Chạm dòng Ảnh hóa đơn — chọn nguồn rồi lưu vào kho `receipts/` (PBI 38,
+  /// FR-007/FR-008). Ảnh cũ (nếu có) bị xóa trước khi thay bằng ảnh mới.
+  Future<void> _pickReceiptImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (_) => const _ReceiptImageSourceSheet(),
+    );
+    if (source == null || !mounted) return;
+    final file = await _pickImage(source);
+    if (file == null || !mounted) return;
+    final bytes = await file.readAsBytes();
+    final path = await _imageStore.save(bytes);
+    final old = _receiptImagePath;
+    if (!mounted) return;
+    setState(() => _receiptImagePath = path);
+    if (old != null) unawaited(_imageStore.delete(old));
+  }
+
   Future<void> _save() async {
     if (_saving || !_hasActiveWallets) return;
     final missing = missingRequiredFields(
@@ -247,7 +319,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         category: _category!,
         date: _date,
         note: _noteCtrl.text.trim(),
+        tags: joinTags(_tags),
+        receiptImage: _receiptImagePath ?? '',
       );
+      // Ảnh đã gắn vào giao dịch — bỏ theo dõi để `_requestClose`/dispose
+      // không xóa nhầm nếu có gọi lại sau khi pop (an toàn, không nên xảy ra).
+      _receiptImagePath = null;
       // Thông báo đẩy (PBI 31): huỷ mốc nhắc hôm nay nếu cờ "chỉ nhắc nếu chưa
       // ghi" đang bật + xét ngưỡng ngân sách. **Fire-and-forget** — không await,
       // lỗi nuốt bên trong engine (FR-024/SC-012): luồng lưu không đổi.
@@ -287,15 +364,27 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   );
 
   /// Đóng (X / back) — dirty thì xác nhận; đang lưu thì chặn rời (FR-014/R9).
+  /// Rời màn mà chưa lưu → xóa ảnh hóa đơn đã copy vào `receipts/` (nếu có),
+  /// tránh để rác file (PBI 38, bám R12 của luồng quét OCR).
   Future<void> _requestClose() async {
     if (_saving) return;
     if (!_isDirty) {
+      _discardPendingReceiptImage();
       Navigator.of(context).pop();
       return;
     }
     final leave = await _confirmDiscard();
     if (leave == true && mounted) {
+      _discardPendingReceiptImage();
       Navigator.of(context).pop();
+    }
+  }
+
+  void _discardPendingReceiptImage() {
+    final path = _receiptImagePath;
+    if (path != null) {
+      _receiptImagePath = null;
+      unawaited(_imageStore.delete(path));
     }
   }
 
@@ -325,12 +414,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            Expanded(child: _scrollableBody(colors)),
-            AmountKeypad(onDigit: _appendDigit, onBackspace: _backspace),
-          ],
-        ),
+        body: _scrollableBody(colors),
         bottomNavigationBar: SafeArea(
           top: false,
           child: Padding(
@@ -408,6 +492,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             error: _missing.contains('date') ? 'Chưa chọn ngày giờ'.tr : null,
             colors: colors,
           ),
+          _fieldRow(
+            key: const ValueKey('field-tags'),
+            icon: Icons.sell_outlined,
+            label: 'Tag'.tr,
+            value: _tags.isEmpty ? null : _tags.join(', '),
+            hint: 'Thêm tag (tùy chọn)'.tr,
+            onTap: _pickTags,
+            colors: colors,
+          ),
+          _receiptImageRow(colors),
           _noteRow(colors),
         ],
         const SizedBox(height: 8),
@@ -476,28 +570,135 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
+  /// Ô Số tiền (mockup `02-them-giao-dich-v2`, PBI 38 R): bàn phím số của
+  /// **hệ thống** thay numpad tự vẽ — bám đúng mẫu `wallet_transfer_screen.dart`
+  /// (`_onAmountChanged` format lại khi gõ). Viền màu theo ngữ cảnh loại giao
+  /// dịch (Thu teal / Chi coral), như quy tắc `_amountAccent` cũ.
   Widget _amountSection(SoraColors colors) {
+    final accent = _amountAccent(colors);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            formatMoney(_amount),
-            key: const ValueKey('amount-text'),
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 30,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          'SỐ TIỀN'.tr,
+          style: TextStyle(
+            color: colors.tabInactive,
+            fontSize: 10,
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 6),
-        Container(
-          key: const ValueKey('amount-underline'),
-          width: 110,
-          height: 2,
-          decoration: BoxDecoration(color: _amountAccent(colors)),
+        TextField(
+          key: const ValueKey('amount-field'),
+          controller: _amountCtrl,
+          onChanged: _onAmountChanged,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(12),
+          ],
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+          decoration: InputDecoration(
+            hintText: '0',
+            suffixText: 'đ',
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: accent, width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: accent, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: accent, width: 1.5),
+            ),
+          ),
         ),
+      ],
+    );
+  }
+
+  /// Dòng "Ảnh hóa đơn" (mockup v2, PBI 38) — thumbnail thay icon khi đã đính
+  /// kèm; chạm mở action sheet chọn "Chụp ảnh"/"Chọn từ thư viện" (FR-007/008).
+  Widget _receiptImageRow(SoraColors colors) {
+    final path = _receiptImagePath;
+    return Column(
+      children: [
+        InkWell(
+          key: const ValueKey('field-receipt-image'),
+          onTap: _pickReceiptImage,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: path == null
+                      ? Container(
+                          width: 28,
+                          height: 28,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: colors.tealLightBg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            Icons.receipt_long_outlined,
+                            color: colors.tealOnNeutral,
+                            size: 15,
+                          ),
+                        )
+                      : Image.file(
+                          File(path),
+                          key: const ValueKey('receipt-image-thumbnail'),
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.cover,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ảnh hóa đơn'.tr,
+                        style: TextStyle(
+                          color: colors.listLabel,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        path == null ? 'Đính kèm ảnh (tùy chọn)'.tr : 'Đã đính kèm'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: path != null ? colors.textPrimary : colors.tabInactive,
+                          fontSize: 14,
+                          fontWeight: path != null ? FontWeight.w500 : FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: colors.tabInactive, size: 20),
+              ],
+            ),
+          ),
+        ),
+        Divider(color: colors.listDivider, height: 1),
       ],
     );
   }
@@ -629,8 +830,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 child: TextField(
                   key: const ValueKey('note-field'),
                   controller: _noteCtrl,
-                  minLines: 1,
-                  maxLines: 3,
+                  minLines: 3,
+                  maxLines: 6,
                   style: TextStyle(fontSize: 14, color: colors.textPrimary),
                   decoration: InputDecoration(
                     isDense: true,
@@ -745,6 +946,36 @@ class _WalletSheet extends StatelessWidget {
                 ),
               ),
             ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet chọn nguồn ảnh hóa đơn — "Chụp ảnh" (camera hệ thống) hoặc
+/// "Chọn từ thư viện" (PBI 38).
+class _ReceiptImageSourceSheet extends StatelessWidget {
+  const _ReceiptImageSourceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            key: const ValueKey('receipt-source-camera'),
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: Text('Chụp ảnh'.tr),
+            onTap: () => Navigator.of(context).pop(ImageSource.camera),
+          ),
+          ListTile(
+            key: const ValueKey('receipt-source-gallery'),
+            leading: const Icon(Icons.photo_library_outlined),
+            title: Text('Chọn từ thư viện'.tr),
+            onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+          ),
           const SizedBox(height: 8),
         ],
       ),

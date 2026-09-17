@@ -195,8 +195,9 @@ void main() {
       await tester.tap(find.text('Khoản Chi'));
       await tester.pumpAndSettle();
 
-      // Nhập khoản chi 90 đ danh mục "Nhà ở" (cha không con → chọn ngay).
-      await tester.tap(find.text('9'));
+      // Nhập khoản chi 9 đ danh mục "Nhà ở" (cha không con → chọn ngay). Số
+      // tiền gõ qua bàn phím hệ thống (PBI 38 — bỏ numpad tự vẽ trong app).
+      await tester.enterText(find.byKey(const ValueKey('amount-field')), '9');
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('field-category')));
       await tester.pumpAndSettle();
